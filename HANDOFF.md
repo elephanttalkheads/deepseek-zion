@@ -53,7 +53,6 @@
   - preview(复刻页面):`npx vite preview --config renderer/vite.config.ts --port 5199 --strictPort`(后台 job)。
   - Electron 壳:无头验收用 `npx electron <probe>.mjs`(各探针,见 §5)。
   - 依赖:`npm install`(file: 引本地 rc.6;`dsh-llm-retry` 那行 file: 指向 dsh 安装内部 node_modules,换机器要改,见 §6)。
-- **重要盘符约束**:视觉工具(`D:\pi-martix-ui\zion-verify\` 证据目录)与源码 `D:\deepseek-zion` 是**分隔的**;图片需在 allowedDirs(workspace 或 temp)内,跨盘要先拷。
 
 ---
 
