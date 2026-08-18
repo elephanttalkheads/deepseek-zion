@@ -1,0 +1,16 @@
+# deps
+node_modules/
+
+# build output
+dist/
+out/
+release/
+
+# logs & smoke
+*.log
+smoke-*
+!smoke-cdp.mjs
+
+# os
+.DS_Store
+Thumbs.db

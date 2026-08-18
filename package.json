@@ -1,0 +1,28 @@
+{
+  "name": "deepseek-zion",
+  "productName": "DeepSeek Zion",
+  "version": "0.1.0-proto",
+  "description": "PROTOTYPE — Electron desktop shell for DeepSeek Harness (dsh web). Revives the official dsh web UI as-is; no ZION visual layer yet. Feature parity with current dsh web by loading the real harness server.",
+  "license": "MIT",
+  "type": "module",
+  "main": "main.mjs",
+  "scripts": {
+    "start": "electron .",
+    "dev": "electron . --dev",
+    "pack": "electron-builder --dir",
+    "dist": "electron-builder"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "electron": "^43.2.0",
+    "electron-builder": "^26.15.3"
+  },
+  "build": {
+    "appId": "ai.deepseek.zion",
+    "productName": "DeepSeek Zion",
+    "files": ["main.mjs", "preload.cjs", "assets/**"],
+    "win": { "target": ["nsis", "portable"] },
+    "mac": { "target": ["dmg"] },
+    "linux": { "target": ["AppImage"] }
+  }
+}
