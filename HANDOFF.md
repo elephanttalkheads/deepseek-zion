@@ -9,7 +9,7 @@
 
 `deepseek-zion` = 为 DeepSeek Harness(DSH)封装的桌面 GUI。**干掉「官方 UI 皮肤层」这一条路线**,改走:**自建 React 18 + Vite 复刻 renderer,数据层直接用官方纯类(B 直拼),插件底座让社区插件跑起来**。当前做到「功能对等(大致相似)+ 插件运行时底座 + 真后端联通」,尚未做「像素 1:1 精修」。
 
-一句话当前状态:**M1–M6 全部完成并推送,工作区干净**(`git status` 0),远端正出 `f038516`。
+一句话当前状态:**M1–M6 全部完成并推送,工作区干净**(`git status` 0),远端正出 `356580c`。
 
 ---
 
@@ -25,6 +25,11 @@
 | `e11cd60` | 追回被 gitignore 误吞的 `renderer/M1-验收记录.md`(Windows 大小写不敏感,`m1-*` 吃了 `M1-*`) |
 | `d544290` | M5:剩余附加型槽锚点(assistant-actions / settings.plugin.item / tool.call.toolview)+ cordis_run 审批编排 |
 | `f038516` | M6:host.call remote invoke + 队列 steer/updateQueue + approve 全链路路径验证 |
+| `5ccb3b2` | docs:handoff 交接文档(即本文件) |
+| `5c8ff40` | docs:README 复刻优先改写 + CONTEXT.md 同步到当前实装 |
+| `3a0c754` | docs:SYNC.md(官方更新后如何同步;4 耦合面 + 升级流程 + 换机链) |
+| `44a3154` | docs:AGENTS.md UI 风格铁律 + ui-change-log 记账本 |
+| `356580c` | docs:修剪 CONTEXT.md/HANDOFF.md(去机器专有盘符/路径指针) |
 
 **里程碑验收记录(主文档,先读)**:`renderer/M1-验收记录.md` — 含每批交付/验证/遗留,最后一节是 M6。
 
@@ -58,7 +63,7 @@
 
 ## 3. 后续开发方向(按优先级,来自验收记录「遗留」+ 本项目本质)
 
-1. **像素 1:1 精修(浅色主题)**:官方当前新版是**浅色两栏**(品牌/工作区/搜索/设置嵌左栏 + 中央 hero/composer),复刻是深色三栏骨架。要接近官方,需:主题变量改浅色、右栏与顶栏布局对齐、中央 hero/composer 字面已一致(探索未至之境/预览版)。→ 属于「超出大致相似线、下一步最有视觉感」的工作。
+1. **像素 1:1 精修(浅色主题)**:官方当前新版是**浅色两栏**(品牌/工作区/搜索/设置嵌左栏 + 中央 hero/composer),复刻是深色三栏骨架。要接近官方,需:主题变量改浅色、右栏与顶栏布局对齐、中央 hero/composer 字面已一致(探索未至之境/预览版)。→ 属于「超出大致相似线、下一步最有视觉感」的工作。**⚠ 做任何 UI 风格改造前,先读 `AGENTS.md` 的 UI 风格铁律**:只改样式、不删复刻的 dsh web 展示内容(如输入框左下的 `+` 按钮命令列表入口/发送/停止/模型/附件/队列等),确需删除先记入 `ui-change-log/`。改样式不改功能是此项目的默认动作。
 2. **approve 全链路最后一段**:真后端当前插件 inventory 为空,且新建会话的 agent(web profile)**没有 cordis_define/cordis_run 工具**,浏览器侧也没有 define RPC(define 仅模型工具)。要验证「批准→client 加载→槽渲染」最后一跳,需要:(a) 在带 cordis 工具的宿主会话里定义并运行一个真实插件,或 (b) 未来 host 暴露 define 的浏览器通道。wire 形状已按官方 remote-client 对齐,只差真实运行对象。
 3. **host.call 成功路径**:当前 `host.call` 在无宿主半时教学拒绝已闭环;真插件跑起来后,`harness.handle`(宿主半注册)→ `host.call`(client 半调用)双向要验。
 4. **队列 edit 操作**:QueueAction 支持 `{kind:'edit', content}`;UI 只接了 steer/remove,可补编辑。
@@ -147,7 +152,7 @@ npm install
 npx vite build --config renderer/vite.config.ts
 ```
 换机常见坑:
-- **file: 依赖路径**是你的机器专属,clone 下来会自动指向仓库里的原路径(不存在)→ `npm install` 会失败或装到错地方。做法:改 package.json 的 file: 指向你机器上的对应包,或把这些面包也 vendor。
+- **file: 依赖路径**是你的机器专属,clone 下来会自动指向仓库里的原路径(不存在)→ `npm install` 会失败或装到错地方。做法:改 package.json 的 file: 指向你机器上的对应包,或把这些面包也 vendor。**注意:这些绝对路径是必需的,不能改相对路径**——`D:\deepseek-zion`(D 盘)声明 file: 指向 `C:\Users\zyf\.dsh\...`(C 盘),Windows 相对路径无法跨盘符(`../` 到不了另一块盘);`package.json` 里也没有可移植的写法能同时覆盖两盘。要真正可移植只有两条路:(a) 把工程移到 C 盘与目标同盘(相对路径才合法但依然脆弱),(b) 把这些 `@deepseek-ai/*` 面包包 vendor 进仓库(真正解决换机问题,见 SYNC.md 换机链)。
 - 官方源码 clone 用于查契约/改代码(`D:\github-Clone\deepseek-harness` 本机),换机可另 clone 或只依赖文档/注释。
 - 视觉工具证据目录 `zion-verify` 在 `D:\pi-martix-ui\`,不是仓库内容;换机可自建任意目录,记得把探针输出拷进 allowedDirs 才能被 vision 工具读。
 - **不要改宿主 dsh 组合**(红线):复刻可移植到任何跑着 dsh web(3080)的机器,只要 `/api` proxy 指向它。
@@ -164,7 +169,9 @@ npx vite build --config renderer/vite.config.ts
 ## 6. 交接对象特别说明(本机新会话 & 远程 clone)
 
 - 本文件即你(接任 agent)的入口。**先读这个文件,再读 `renderer/M1-验收记录.md` 尾部(M1→M6)与 `CONTEXT.md`**。
-- 你在哪台机器都行:**主仓库在 GitHub**(`elephanttalkheads/deepseek-zion`,`main` 最新 `f038516`)。clone 即得全部代码和探针。
+- **若你做 UI 风格改造(换肤/动效/迁移)**:先读 `AGENTS.md` 的 UI 风格铁律 + `ui-change-log/`,再动手;默认动作=改样式保留功能,官方展示内容(如输入框左下 `+` 命令列表入口)不禁删。
+- UI 风格迁移的**源文件**在本机 `D:\pi-martix-ui-dev`(ZION 主工程,不是工作区 `D:\pi-martix-ui`);视觉工具证据目录才在 `D:\pi-martix-ui\zion-verify\`。两处别混。
+- 你在哪台机器都行:**主仓库在 GitHub**(`elephanttalkheads/deepseek-zion`,`main` 最新 `356580c`)。clone 即得全部代码和探针。
 - 你的职责延续方向见 §3;第一优先建议做「浅色主题化逼近官方布局」,因为它最能肉眼见效且不碰任何红线。
 - 若你做插件相关:`renderer/src/plugin/` 是全部答案;`CONTEXT.md`「插件运行时/slot 注入面」给设计口径。
 - 若做真后端验收:先 `dsh --profile web --port 3080`(或已有),再起 5199 preview,探针 `probe-real/checklist/queue-*` 覆盖大部分。
@@ -202,6 +209,7 @@ npx vite build --config renderer/vite.config.ts
 - **`grilling` / `grill-with-docs`** — 立项/方案定稿前压测思路(本项目当初就是靠 grilling 定了 Q1–Q20 决策)。
 - **`vision-skills`** — 像素回归/UI 还原/元素定位都走它(注意 allowedDirs:图片要在 workspace 或 temp)。
 - **`research`** — 查官方契约/源码时,委托子代理读 `D:\github-Clone\deepseek-harness` 并对齐 wire(本会话的 `plugin-runtime-design.md` 就是这么来的)。
+- **`writing-for-agents`** — 改写/扩充 `AGENTS.md`(UI 风格铁律等面向 agent 的规则)或新建给 agent 读的文档时,先加载它,保证写法(正面指令优先、少用否定、剪冗余)符合 agent 消费习惯。
 
 ---
 
@@ -217,4 +225,4 @@ R7 动效不拖累主线程(当前深色主题无大动效,未来加动效要遵
 
 ---
 
-*本文件由原开发会话生成,信息截至 M6(`f038516`)。如接手后有重大架构变化,请更新本文 §1/§3/§4 并 git add 之。*
+*本文件由原开发会话生成并持续维护,信息截至 `356580c`。如接手后有重大架构变化(新增里程碑、架构调整、UI 大规模改版),请更新本文 §1/§3/§4 并按 `AGENTS.md` 铁律记录 UI 删改后 git 提交。*
