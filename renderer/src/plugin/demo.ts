@@ -41,6 +41,19 @@ export const demoPluginSource = `return {
       { name: 'tool.call.toolview', key: 'zion_tool_demo', label: '自定义工具视图' },
       () => React.createElement('div', { className: 'plugin-demo-toolview' }, '🛠 zion_tool_demo 专属工具卡'),
     ))
+    // 5b) host.call 演示: 点击按钮走 remote invoke 通道(真后端下路由到宿主半)
+    ctx.slots.inject('conversation.input.dock', () => ctx.slots.register(
+      { name: 'conversation.input.dock', id: 'zion-hostcall', order: 30, label: 'host.call' },
+      () => React.createElement('button', {
+        className: 'plugin-demo-hostcall', type: 'button',
+        onClick: () => {
+          host.call('zion.demo.ping', { hello: 'world' }).then(
+            (value) => console.log('[zion-demo] host.call ok:', JSON.stringify(value)),
+            (error) => console.log('[zion-demo] host.call failed (expected without host half):', String(error)),
+          )
+        },
+      }, 'host.call 测试'),
+    ))
     // 6) 禁区验证: 注册主机位 → 抛 guard 错误 (下面 try/catch 演示拒绝同时不崩)
     try {
       ctx.slots.register({ name: 'root' }, () => React.createElement('div', null, 'host seat'))

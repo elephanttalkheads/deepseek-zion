@@ -71,6 +71,8 @@ export interface CordisRunnerRemote {
   getClientCode(agentId: string, pluginId: string, pluginRunId: string): Promise<RemoteResult<DynamicCordisClientSource>>
   resolveRequestRun(requestId: string, resolution: DynamicCordisRunResolution): Promise<RemoteResult<DynamicCordisResolveAck>>
   settleUserRun(agentId: string, pluginId: string, resolution: DynamicCordisRunResolution): Promise<RemoteResult<DynamicCordisRunResponse>>
+  /** Route host.call(method, args) to the active Host half of one exact run. */
+  invoke(pluginId: string, pluginRunId: string, method: string, args: unknown): Promise<RemoteResult<unknown>>
 }
 
 /** Build the remote caller over the browser connection RPC channel. */
@@ -89,5 +91,7 @@ export function createCordisRunnerRemote(rpc: ClientConnectionRpc = createWebCon
       call('resolveRequestRun', { requestId, resolution }),
     settleUserRun: (agentId, pluginId, resolution) =>
       call('settleUserRun', { agentId, pluginId, resolution }),
+    invoke: (pluginId, pluginRunId, method, args) =>
+      call('invoke', { pluginId, pluginRunId, method, args }),
   }
 }

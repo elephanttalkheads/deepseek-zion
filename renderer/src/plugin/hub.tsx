@@ -39,8 +39,30 @@ let singleton: { runtime: PluginRuntime; registry: SlotRegistry; orchestrator: C
 function handle(): PluginRuntimeHandle {
   if (singleton === undefined) {
     const registry = new SlotRegistry()
-    const runtime = new PluginRuntime({ slots: registry })
     const remote = createCordisRunnerRemote()
+    const runtime = new PluginRuntime({
+      slots: registry,
+      invoke: async (pluginId, pluginRunId, method, args) => {
+        const answered = await remote.invoke(pluginId, pluginRunId, method, args)
+        if (!answered.ok) {
+          throw new Error(`host.call("${method}") on ${pluginId} did not complete: ${answered.error.code}: ${answered.error.message}`)
+        }
+        // Business layer: the host half answers with its own ok/error envelope.
+        const result = answered.value as { ok?: boolean; code?: string; message?: string; value?: unknown }
+        if (result.ok !== false) return result?.value
+        const where = `host.call("${method}") on ${pluginId}`
+        if (result.code === 'plugin-not-running') {
+          throw new Error(`${where} found no active Host half — the Plugin is stopped or was removed.`)
+        }
+        if (result.code === 'stale-run') {
+          throw new Error(`${where} belongs to an activation that has already been replaced.`)
+        }
+        if (result.code === 'method-not-found') {
+          throw new Error(`${where} is not registered: the host half must declare it with harness.handle("${method}", fn).`)
+        }
+        throw new Error(`${where} failed inside the host handler: ${result.message ?? 'unknown error'}`)
+      },
+    })
     const orchestrator = new CordisRunOrchestrator(
       runtime,
       {

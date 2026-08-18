@@ -27,8 +27,9 @@ export interface DynamicPluginLoadResult {
 
 export interface PluginRuntimeOptions {
   slots: SlotRegistry
-  /** Optional host-call stub for host.call (this底座 has no host half). */
-  invoke?(method: string, args: unknown): Promise<unknown>
+  /** host.call(method, args) route to the active Host half of one exact run
+   *  (official invoke): pluginId/pluginRunId are bound per load. */
+  invoke?(pluginId: string, pluginRunId: string, method: string, args: unknown): Promise<unknown>
   reportError?(pluginId: string, error: Error): void
 }
 
@@ -65,12 +66,11 @@ export class PluginRuntime {
       ...options,
     }
   }
-
   /** Load + apply one client half; returns registered slots snapshot. */
   async load(pkg: DynamicPluginPackage): Promise<DynamicPluginLoadResult> {
     const styles = new DynamicCordisStyles(pkg.pluginId)
     const env = {
-      invoke: (method: string, args: unknown) => this.options.invoke(method, args),
+      invoke: (method: string, args: unknown) => this.options.invoke(pkg.pluginId, pkg.pluginRunId, method, args),
       noteError: (message: string) => console.error(`[cordis:${pkg.pluginId}]`, message),
     }
     let plugin: DynamicCordisEvaluatedPlugin | ((ctx: unknown) => unknown)

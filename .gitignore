@@ -26,6 +26,10 @@ probe-plugin-out/
 probe-queue-out/
 probe-cordis-out/
 probe-cordis-approval-out/
+probe-hostcall-out/
+probe-queue-ops-out/
+probe-approve-real-out/
+probe-approve-path-out/
 
 # logs & smoke
 *.log

@@ -58,6 +58,8 @@ export interface AppRuntime {
   sendPrompt: (parts: PromptContentPart[]) => void
   /** Cancel the selected session's active turn. */
   stop: () => void
+  /** Apply one mutation to a still-pending queue item (remove / steer / edit). */
+  updateQueue: (itemId: string, action: { kind: 'remove' } | { kind: 'steer' } | { kind: 'edit'; content: unknown[] }) => Promise<void>
   /** Model catalog + current selection for the SELECTED session (null while loading / no selection). */
   models: SessionModels | null
   /** Pick a model (and optional reasoning effort) for the selected session. */
@@ -200,6 +202,11 @@ export function RuntimeProvider({ children }: { children: ReactNode }): JSX.Elem
       if (selectedId === undefined) return
       const session = runtime.wire.sessions.get(selectedId)
       void session.cancel()
+    },
+    async updateQueue(itemId, action) {
+      if (selectedId === undefined) return
+      const session = runtime.wire.sessions.get(selectedId)
+      await session.updateQueue(itemId as never, action as never)
     },
     models,
     selectModel(selection) {

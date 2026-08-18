@@ -1,13 +1,10 @@
 /**
- * M3 — QueueDock (Q19A self-authored presentational layer).
+ * M3/M5 — QueueDock (Q19A self-authored presentational layer).
  *
  * Renders the selected session's transient inbox snapshot (snapshot.queue):
  * queued / steering / context placements the host pushes during and across
- * turns (the fixture never pushes session/queue, so this dock stays dormant
- * there and activates against the real backend).
- *
- * Also surfaces the session feedback strip: lastAgentError and (when present)
- * the finished-turn summary.
+ * turns, plus per-row queue mutations (remove / steer) for queued items.
+ * Also surfaces the session feedback strip: lastAgentError.
  */
 import { useRuntime } from '../app/runtime.tsx'
 
@@ -22,7 +19,7 @@ function textOf(content: unknown): string {
 }
 
 export function QueueDock(): JSX.Element | null {
-  const { useConversation } = useRuntime()
+  const { useConversation, updateQueue } = useRuntime()
   const queue = useConversation(s => s.queue)
   const lastAgentError = useConversation(s => s.lastAgentError)
   const hasQueue = queue.length > 0
@@ -41,6 +38,18 @@ export function QueueDock(): JSX.Element | null {
             <div className="queue-row" key={msg.id} data-placement={msg.placement}>
               <span className="queue-placement">{PLACEMENT_LABELS[msg.placement] ?? msg.placement}</span>
               <span className="queue-preview">{msg.preview || textOf(msg.content) || '(empty)'}</span>
+              {msg.placement === 'queued' && (
+                <span className="queue-actions">
+                  <button
+                    type="button" className="queue-action" title="提升为插队(steer)"
+                    onClick={() => void updateQueue(String(msg.id), { kind: 'steer' })}
+                  >插队</button>
+                  <button
+                    type="button" className="queue-action" title="移除排队"
+                    onClick={() => void updateQueue(String(msg.id), { kind: 'remove' })}
+                  >移除</button>
+                </span>
+              )}
             </div>
           ))}
         </div>
