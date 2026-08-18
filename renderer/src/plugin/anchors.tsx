@@ -49,9 +49,14 @@ export function SlotAnchor({ slot, ownerProps, fallback }: {
   if (spec.kind === 'keyed') {
     const entries = runtime.slots.entries(slot)
     if (entries.length === 0) return fallback?.() ?? null
+    const ownerKey = ownerProps?.key ?? ownerProps?.tool
+    const matched = typeof ownerKey === 'string'
+      ? entries.filter(e => e.options.key === ownerKey)
+      : entries
+    if (matched.length === 0) return fallback?.() ?? null
     return (
       <div className="plugin-slot plugin-slot--keyed" data-slot={slot}>
-        {entries.map((entry, i) => {
+        {matched.map((entry, i) => {
           const Comp = entry.component as React.ComponentType<SlotOwnerProps>
           return (
             <div key={String(entry.options.key ?? i)} className="plugin-slot-entry" data-slot={slot}>

@@ -26,7 +26,22 @@ export const demoPluginSource = `return {
         React.createElement('span', { className: 'plugin-demo-dock-sub' }, 'client 半 · 闭包求值 · guard · 附加型槽'),
       ),
     ))
-    // 3) 禁区验证: 注册主机位 → 抛 guard 错误 (下面 try/catch 演示拒绝同时不崩)
+    // 3) 附加型 list 槽: assistant 消息 action 行
+    ctx.slots.inject('conversation.chat.assistant-actions', () => ctx.slots.register(
+      { name: 'conversation.chat.assistant-actions', id: 'zion-copy', order: 5, label: '复制' },
+      () => React.createElement('button', { className: 'plugin-demo-action', type: 'button' }, '复制回答'),
+    ))
+    // 4) 附加型 keyed 槽: settings.plugin.item(右栏)
+    ctx.slots.inject('settings.plugin.item', () => ctx.slots.register(
+      { name: 'settings.plugin.item', key: 'zion-settings-card', label: '插件设置卡' },
+      () => React.createElement('div', { className: 'plugin-demo-settings' }, '🧩 插件设置卡(settings.plugin.item)'),
+    ))
+    // 5) 附加型 keyed 槽: tool.call.toolview(自定义工具名,不抢占已发货 key)
+    ctx.slots.inject('tool.call.toolview', () => ctx.slots.register(
+      { name: 'tool.call.toolview', key: 'zion_tool_demo', label: '自定义工具视图' },
+      () => React.createElement('div', { className: 'plugin-demo-toolview' }, '🛠 zion_tool_demo 专属工具卡'),
+    ))
+    // 6) 禁区验证: 注册主机位 → 抛 guard 错误 (下面 try/catch 演示拒绝同时不崩)
     try {
       ctx.slots.register({ name: 'root' }, () => React.createElement('div', null, 'host seat'))
     } catch (error) {

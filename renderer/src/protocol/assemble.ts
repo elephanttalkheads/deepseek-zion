@@ -38,6 +38,8 @@ export interface AssembledWire {
     onHost?: (e: RpcRequest<HostFrame>) => void
     onConnected?: (d: HostDescription) => void
     onStateChange?: (s: 'connected' | 'reconnecting') => void
+    /** Forwarded host cordis events (`host/remote-event`), verbatim args. */
+    onRemoteEvent?: (event: string, args: unknown[]) => void
   }): { stop(): void }
 }
 
@@ -74,6 +76,9 @@ export function assembleWire(conversation?: ConversationRuntime): AssembledWire 
         onHostEnvelope: (env) => {
           sessions.handleHostEnvelope(env)
           sinks.onHost?.(env)
+          if (env.payload.type === 'host/remote-event') {
+            sinks.onRemoteEvent?.(env.payload.event, env.payload.args)
+          }
         },
         onConnected: (d) => {
           sessions.handleConnected()

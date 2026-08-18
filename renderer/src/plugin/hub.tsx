@@ -7,6 +7,8 @@
 import { createContext, useContext } from 'react'
 import { PluginRuntime, type DynamicPluginLoadResult, type DynamicPluginPackage } from './runtime.ts'
 import { SlotRegistry, type StoredEntry, type SlotSpec } from './slot-registry.ts'
+import { CordisRunOrchestrator, type CordisRunActivity, type CordisRunFailure } from './run-orchestrator.ts'
+import { createCordisRunnerRemote, type CordisDynamicRunRequest } from './remote.ts'
 
 export interface PluginRuntimeHandle {
   /** Load one dynamic client half (源码即闭包). */
@@ -22,17 +24,46 @@ export interface PluginRuntimeHandle {
   /** Subscribe to load/unload changes (anchor re-render). */
   subscribe(fn: () => void): () => void
   reportError(pluginId: string, error: unknown): void
+  /** cordis_run 编排:接入 host/remote-event 帧的入口。 */
+  handleRemoteEvent(event: string, args: unknown[]): void
+  /** 当前在途的 run 审批/编排活动(Plugin-keyed)。 */
+  runActivity(): ReadonlyMap<string, CordisRunActivity>
+  runErrors(): ReadonlyMap<string, CordisRunFailure>
+  subscribeRuns(fn: () => void): () => void
+  approveRun(requestId: string, approveFutureVersions: boolean): Promise<void>
+  declineRun(requestId: string): Promise<void>
 }
 
-let singleton: { runtime: PluginRuntime; registry: SlotRegistry } | undefined
+let singleton: { runtime: PluginRuntime; registry: SlotRegistry; orchestrator: CordisRunOrchestrator } | undefined
 
 function handle(): PluginRuntimeHandle {
   if (singleton === undefined) {
     const registry = new SlotRegistry()
     const runtime = new PluginRuntime({ slots: registry })
-    singleton = { runtime, registry }
+    const remote = createCordisRunnerRemote()
+    const orchestrator = new CordisRunOrchestrator(
+      runtime,
+      {
+        runHostHalf: async (agentId, pluginId, packageId, mode, requestId, approveFutureVersions) => {
+          const answered = await remote.runHostHalf(agentId, pluginId, packageId, mode, requestId, approveFutureVersions)
+          return answered.ok ? answered.value : { ok: false, message: `${answered.error.code}: ${answered.error.message}` }
+        },
+        getClientCode: async (agentId, pluginId, pluginRunId) => {
+          const answered = await remote.getClientCode(agentId, pluginId, pluginRunId)
+          if (!answered.ok) throw new Error(`${answered.error.code}: ${answered.error.message}`)
+          return answered.value
+        },
+        resolveRequestRun: async (requestId, resolution) => {
+          const answered = await remote.resolveRequestRun(requestId, resolution)
+          if (!answered.ok) throw new Error(`${answered.error.code}: ${answered.error.message}`)
+          return answered.value
+        },
+      },
+      async (pkg) => { await runtime.load(pkg) },
+    )
+    singleton = { runtime, registry, orchestrator }
   }
-  const { runtime, registry } = singleton
+  const { runtime, registry, orchestrator } = singleton
   return {
     load: (pkg) => runtime.load(pkg),
     unload: (id) => runtime.unload(id),
@@ -50,7 +81,38 @@ function handle(): PluginRuntimeHandle {
     reportError: (id, error) => {
       console.error(`[plugin:${id}]`, error)
     },
+    handleRemoteEvent: (event, args) => {
+      if (event === 'cordis/request-run') {
+        const request = args[0] as CordisDynamicRunRequest
+        orchestrator.open(request)
+      } else if (event === 'cordis/request-run-resolved') {
+        const resolved = args[0] as { requestId: string }
+        orchestrator.close(resolved.requestId)
+      }
+    },
+    runActivity: () => orchestrator.activeRuns.getSnapshot(),
+    runErrors: () => orchestrator.lastRunError.getSnapshot(),
+    subscribeRuns: (fn) => {
+      const offA = orchestrator.activeRuns.subscribe(fn)
+      const offB = orchestrator.lastRunError.subscribe(fn)
+      return () => { offA(); offB() }
+    },
+    approveRun: (requestId, approveFutureVersions) => orchestrator.approve(requestId, approveFutureVersions),
+    declineRun: (requestId) => orchestrator.decline(requestId),
   }
+}
+
+// Probe hook: lets automated acceptance tests deliver host/remote-event frames
+// exactly as the wire pump would (same handleRemoteEvent code path).
+if (typeof window !== 'undefined') {
+  ;(window as unknown as Record<string, unknown>).__zionProbeHandleRemoteEvent = (event: string, args: unknown[]) => {
+    handle().handleRemoteEvent(event, args)
+  }
+}
+
+/** Non-hook access to the singleton handle (wire event pump, effects, etc.). */
+export function getPluginRuntimeHandle(): PluginRuntimeHandle {
+  return handle()
 }
 
 const PluginContext = createContext<PluginRuntimeHandle | null>(null)

@@ -71,6 +71,16 @@ app.whenReady().then(async () => {
   out(`badge text: ${badgetxt}`)
   out(`dock text: ${docktxt}`)
 
+  out('--- M4 additive anchors (assistant-actions / settings.plugin.item / toolview) ---')
+  const assistantAction = await waitForJS(win, `document.querySelectorAll('.plugin-demo-action').length >= 1`, 6000)
+  out(`conversation.chat.assistant-actions rendered: ${assistantAction}`)
+  const settingsCard = await win.webContents.executeJavaScript(`document.querySelectorAll('.plugin-demo-settings').length`)
+  out(`settings.plugin.item rendered: ${settingsCard > 0}`)
+  const toolview = await win.webContents.executeJavaScript(`document.querySelectorAll('.plugin-demo-toolview').length`)
+  out(`tool.call.toolview rendered: ${toolview > 0}`)
+  const actionText = await win.webContents.executeJavaScript(`[...document.querySelectorAll('.plugin-demo-action')].map(e => e.innerText).join(',')`)
+  out(`action buttons: ${actionText}`)
+
   out('--- load trap probe (2nd additive entry shares dock) ---')
   await clickText(win, '.plugin-host button', '禁区探针')
   await sleep(1000)

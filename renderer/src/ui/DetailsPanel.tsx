@@ -1,8 +1,10 @@
 /**
  * DetailsPanel — right column (M1 placeholder). Full details surface (context
- * meter, trajectory, etc.) lands in later milestones.
+ * meter, trajectory, etc.) lands in later milestones. M4: hosts the
+ * settings.plugin.item additive slot anchor (dynamic plugin settings cards).
  */
 import { useRuntime } from '../app/runtime.tsx'
+import { SlotAnchor } from '../plugin/anchors.tsx'
 
 export function DetailsPanel(): JSX.Element {
   const { selectedSessionId } = useRuntime()
@@ -13,6 +15,9 @@ export function DetailsPanel(): JSX.Element {
       ) : (
         <p className="details-muted">Details — later milestone.</p>
       )}
+      <div className="details-plugins">
+        <SlotAnchor slot="settings.plugin.item" ownerProps={{ sessionId: selectedSessionId }} />
+      </div>
     </div>
   )
 }

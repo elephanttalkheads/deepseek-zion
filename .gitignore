@@ -24,6 +24,8 @@ probe-checklist-out/
 probe-hero-out/
 probe-plugin-out/
 probe-queue-out/
+probe-cordis-out/
+probe-cordis-approval-out/
 
 # logs & smoke
 *.log

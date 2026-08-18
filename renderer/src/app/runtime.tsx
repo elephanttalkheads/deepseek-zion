@@ -18,6 +18,7 @@ import type { SessionListSnapshot } from '../../vendor/client-runtime/client/ses
 import { EMPTY_CHAT_SNAPSHOT, EMPTY_CONVERSATION_VIEWS, type ConversationSnapshot } from '../../vendor/client-runtime/client/sessions/conversation.ts'
 import type { ModelSelection, PromptContentPart, SessionModels, WorkspaceView } from '../../vendor/client-connection/client/api.ts'
 import { getConversationRuntime } from './conversation.ts'
+import { getPluginRuntimeHandle } from '../plugin/hub.tsx'
 
 type SessionId = SessionListSnapshot['items'][number]['sessionId']
 
@@ -123,6 +124,10 @@ export function RuntimeProvider({ children }: { children: ReactNode }): JSX.Elem
     const stop = runtime.wire.start({
       onConnected: () => setConnectionState('connected'),
       onStateChange: (s) => setConnectionState(s === 'reconnecting' ? 'reconnecting' : 'connected'),
+      onRemoteEvent: (event, args) => {
+        // Forwarded host cordis events feed the plugin run orchestrator.
+        getPluginRuntimeHandle().handleRemoteEvent(event, args)
+      },
     })
     return stop.stop
   }, [runtime])

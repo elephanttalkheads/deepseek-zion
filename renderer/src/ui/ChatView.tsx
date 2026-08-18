@@ -10,6 +10,7 @@
 import type { ChatConversationViewNode } from '../../vendor/client-runtime/client/contract/conversation.ts'
 import type { ToolCallBlock } from '../../vendor/client-runtime/client/sessions/conversation.ts'
 import { ToolCallCard } from './ToolCallCard.tsx'
+import { SlotAnchor } from '../plugin/anchors.tsx'
 
 interface BlockLike { type?: string; text?: string }
 
@@ -71,15 +72,29 @@ export function ChatView({ nodes }: { nodes: readonly ChatConversationViewNode[]
       {nodes.map((node) => {
         if (node.kind === 'tool-call') {
           const data = node.data as { root?: ToolCallBlock }
+          const toolName = data.root !== undefined
+            ? (data.root as { name?: string }).name
+            : undefined
           return (
-            <div key={node.key} className="chat-node chat-node--tool-call" data-kind={node.kind}>
+            <div key={node.key} className="chat-node chat-node--tool-call" data-kind={node.kind} data-tool={toolName ?? ''}>
               {data.root !== undefined ? <ToolCallCard block={data.root} /> : <div className="chat-node-body">[tool]</div>}
+              {toolName !== undefined && (
+                <div className="chat-node-toolview" data-tool={toolName}>
+                  <SlotAnchor slot="tool.call.toolview" ownerProps={{ tool: toolName, key: toolName }} />
+                </div>
+              )}
             </div>
           )
         }
+        const isAssistant = node.kind === 'assistant' || node.kind === 'assistant-step'
         return (
           <div key={node.key} className={`chat-node chat-node--${node.kind}`} data-kind={node.kind}>
             <div className="chat-node-body">{nodeBody(node)}</div>
+            {isAssistant && (
+              <div className="chat-node-actions" data-kind={node.kind}>
+                <SlotAnchor slot="conversation.chat.assistant-actions" ownerProps={{ kind: node.kind }} />
+              </div>
+            )}
           </div>
         )
       })}
