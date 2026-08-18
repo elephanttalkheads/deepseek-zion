@@ -6,6 +6,18 @@ dist/
 out/
 release/
 
+# renderer build output
+renderer/dist/
+
+# renderer dev/probe artifacts (not source)
+renderer/m1-*
+renderer/m2-*
+renderer/m3-*
+renderer/official-*
+
+# m3 electron probe output
+probe-m3-out/
+
 # logs & smoke
 *.log
 smoke-*
