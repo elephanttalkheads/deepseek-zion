@@ -50,16 +50,21 @@ _Avoid_: 全量一次铺开
 _Avoid_: 官方 slot 渲染面整体搬入、renderer 即 cordis 应用
 
 **插件运行时（plugin runtime）**：
-复刻 renderer 内并行存在的一个旁路"官方 client 插件"承载层：独立 `new Context()` + Loader + 代码求值器（new Function 包裹 client 源码字符串，React/console/styles/host/harness 作闭包符号）+ guard 代理 ctx + slot 机（createSlotRenderer 渲染）。它只为"社区/创造模式插件"的 client 半服务，复刻 UI 本体不走它。
+复刻 renderer 内并行存在的一个旁路"官方 client 插件"承载层：独立 `new Context()` + 代码求值器（new Function 包裹 client 源码字符串，React/console/styles/host/harness 作闭包符号）+ guard 代理 ctx + slot 机（createSlotRenderer/锚点渲染）。它只为"社区/创造模式插件"的 client 半服务，复刻 UI 本体不走它。**已落地**：`renderer/src/plugin/`（min-ctx / evaluator / guard / runtime / slot-registry / hub / anchors / remote / run-orchestrator / demo），另见 [HANDOFF.md §4A](HANDOFF.md) 的插件开发模板。
 _Avoid_: 复刻组件也注册进 slot、渲染机二合一
 
 **community 插件(client 半)**：
-以 cordis 插件形态编写的扩展，其前端 UI 部分经远程传送的原始 JS 源码字符串（非 HTTP bundle），用 `new Context()` 独立装载。New Context 不需要 window.__DSH_BOOT__/ClientModuleSystem（那只携带官方入口图）。
+以 cordis 插件形态编写的扩展，其前端 UI 部分经远程传送的原始 JS 源码字符串（非 HTTP bundle），用 `new Context()` 独立装载。New Context 不需要 window.__DSH_BOOT__/ClientModuleSystem（那只携带官方入口图）。对应官方 cordis_define/cordis_run 双半插件的 client 半：host 半在真实 dsh 进程跑，client 半经 `host/remote-event(cordis/request-run)` → 复刻审批卡 → 允许 → `dynamicCordisRunner.getClientCode` → 本底座的 `runtime.load` 求值挂槽（链路已实现到 M6，成功渲染需真后端存在已运行插件）。
 _Avoid_: 插件走 /plugins/ HTTP 构建管线
 
 **slot 注入面（plugin 可注册槽）**：
-插件 client 半经 `ctx.slots.inject(key, cb)` + `ctx.slots.register({name,...}, Component)` 注册 UI。本工程向插件开放的槽位策略（Q20A）：只开放"附加型"槽（shell.overlay / conversation.chat.assistant-actions / conversation.input.dock / tool.call.toolview 新 key / settings.plugin.item / sidebar.footer.action 等）；root/conversation/sidebar 主机位由复刻 UI 独占，插件注册到即报错。
+插件 client 半经 `ctx.slots.inject(key, cb)` + `ctx.slots.register({name,...}, Component)` 注册 UI。本工程向插件开放的槽位策略（Q20A）：只开放"附加型"槽；`root/conversation/sidebar` 主机位由复刻 UI 独占，插件注册到即报错。**已落地锚点**：shell.overlay（AppFrame）、sidebar.footer.action（Sidebar）、conversation.input.dock（InputBar）、conversation.chat.assistant-actions（ChatView assistant 行）、settings.plugin.item（DetailsPanel）、tool.call.toolview（ChatView 按工具名 keyed 过滤）；白名单另有 conversation.composer.dock / input.left / input.right / input.overlay / settings.action 等 16 槽待补对应锚点。`SlotAnchor` 组件按槽 kind 渲染（list 升序 / keyed 按 key / single 单一席位）。
 _Avoid_: 插件抢占 root/conversation/sidebar 主体
+
+## 上手与交接
+
+- **新会话 / clone 后先读**:本词表 + `HANDOFF.md`(进度/方向/插件开发/更新/换机)+ `renderer/M1-验收记录.md`(M1–M6 每批交付与遗留)。
+- **改代码前后**:见 `HANDOFF.md` §7 探针索引做验收;踩坑清单在 §5(Renderer 相关)。
 
 ## Rules
 
