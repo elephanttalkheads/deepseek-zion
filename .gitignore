@@ -14,6 +14,7 @@ renderer/m1-*
 renderer/m2-*
 renderer/m3-*
 renderer/official-*
+!renderer/M1-验收记录.md
 
 # m3 electron probe output
 probe-m3-out/
