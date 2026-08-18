@@ -6,6 +6,7 @@
  */
 import { useMemo, useState } from 'react'
 import { useRuntime } from '../app/runtime.tsx'
+import { SlotAnchor } from '../plugin/anchors.tsx'
 import type { SessionListEntry } from '../../vendor/client-runtime/client/sessions/lineage.ts'
 
 /** Relative time in the official style: 刚刚 / N分钟 / N小时 / DD/MM. */
@@ -108,6 +109,7 @@ export function Sidebar({ query, onQueryChange }: { query: string; onQueryChange
           )
         })}
       </nav>
+      <SlotAnchor slot="sidebar.footer.action" ownerProps={{}} />
     </div>
   )
 }

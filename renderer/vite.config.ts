@@ -38,5 +38,34 @@ export default defineConfig({
   server: {
     port: 5173,
     strictPort: false,
+    proxy: proxy3080(),
+  },
+  preview: {
+    port: 5199,
+    strictPort: true,
+    proxy: proxy3080(),
   },
 })
+
+/** Same-origin bridge to the real dsh backend (3080) for parity acceptance:
+ *  the replica page stays on its own origin while /api (unary + mux/host WS)
+ *  and the SSE/download lanes are forwarded to the running dsh web server.
+ *  The forwarding proxy strips Origin, so the backend trust fence
+ *  (api-request-trust: Host loopback + absent Origin) admits the relayed
+ *  request exactly like a browser on the backend origin would. */
+function proxy3080(): Record<string, object> {
+  const stripOrigin = (proxyReq: { removeHeader: (name: string) => void }): void => {
+    proxyReq.removeHeader('origin')
+  }
+  return {
+    '/api': {
+      target: 'http://127.0.0.1:3080',
+      changeOrigin: true,
+      ws: true,
+      configure: (proxy: { on: (event: string, cb: (req: unknown, socket: unknown, head?: unknown) => void) => void }) => {
+        proxy.on('proxyReq', (proxyReq: { removeHeader: (name: string) => void }) => { stripOrigin(proxyReq) })
+        proxy.on('proxyReqWs', (proxyReq: { removeHeader: (name: string) => void }) => { stripOrigin(proxyReq) })
+      },
+    },
+  }
+}

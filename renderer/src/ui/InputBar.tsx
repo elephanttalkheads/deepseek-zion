@@ -6,6 +6,7 @@
  */
 import { useMemo, useRef, useState } from 'react'
 import { useRuntime, type MediaType } from '../app/runtime.tsx'
+import { SlotAnchor } from '../plugin/anchors.tsx'
 import type { PromptContentPart } from '../../vendor/client-connection/client/api.ts'
 
 interface PendingImage {
@@ -81,6 +82,7 @@ export function InputBar(): JSX.Element {
 
   return (
     <div className="input-bar">
+      <SlotAnchor slot="conversation.input.dock" ownerProps={{}} />
       <div className="input-bar-model" title={currentModel === undefined ? '加载模型中…' : `${currentModel.provider}/${currentModel.model}`}>
         <label className="input-bar-model-label" htmlFor="model-select">模型</label>
         <select

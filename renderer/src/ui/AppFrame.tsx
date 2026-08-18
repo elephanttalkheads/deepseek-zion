@@ -9,6 +9,8 @@ import { useState } from 'react'
 import { Sidebar } from './Sidebar.tsx'
 import { ConversationDock } from './ConversationDock.tsx'
 import { DetailsPanel } from './DetailsPanel.tsx'
+import { PluginHost } from './PluginHost.tsx'
+import { SlotAnchor } from '../plugin/anchors.tsx'
 import { useRuntime } from '../app/runtime.tsx'
 
 export function AppFrame(): JSX.Element {
@@ -18,6 +20,7 @@ export function AppFrame(): JSX.Element {
 
   return (
     <div className="app-frame" data-connection={connectionState}>
+      <SlotAnchor slot="shell.overlay" ownerProps={{ connectionState }} />
       <header className="shell-topbar">
         <span className="shell-brand">
           <span className="shell-brand-dot" aria-hidden="true" />
@@ -47,6 +50,7 @@ export function AppFrame(): JSX.Element {
           <DetailsPanel />
         </aside>
       </div>
+      <PluginHost />
     </div>
   )
 }

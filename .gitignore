@@ -17,6 +17,12 @@ renderer/official-*
 
 # m3 electron probe output
 probe-m3-out/
+probe-real-out/
+probe-official-real-out/
+probe-checklist-out/
+probe-hero-out/
+probe-plugin-out/
+probe-queue-out/
 
 # logs & smoke
 *.log
