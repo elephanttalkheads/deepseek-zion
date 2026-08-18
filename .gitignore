@@ -36,6 +36,9 @@ probe-approve-path-out/
 smoke-*
 !smoke-cdp.mjs
 
+# local backup of path-referencing docs (orig + now); do not commit
+backup/
+
 # os
 .DS_Store
 Thumbs.db

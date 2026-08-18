@@ -136,7 +136,7 @@ return {
 
 ### 日常(本机)
 1. 改 `renderer/src/**`;`npx vite build` 出 `renderer/dist`;`npx tsc --noEmit` 自查(过滤 vendor 行)。
-2. 用探针验证(见 §7),证据拷到 `D:\pi-martix-ui\zion-verify\`。
+2. 用探针验证(见 §7)。
 3. 提交:`git add -A` → `git commit` → `git push origin main`。
    - `.gitignore` 已含 `renderer/dist/`、`probe-*-out/`、`renderer/m[N]-*` 探针产物。**注意 `!renderer/M1-验收记录.md` 必须保留**(否则大小写不敏感又把验收记录吞了)。
    - 提交信息带里程碑/批次(历史风格参考)。
@@ -154,7 +154,7 @@ npx vite build --config renderer/vite.config.ts
 换机常见坑:
 - **file: 依赖路径**是你的机器专属,clone 下来会自动指向仓库里的原路径(不存在)→ `npm install` 会失败或装到错地方。做法:改 package.json 的 file: 指向你机器上的对应包,或把这些面包也 vendor。**注意:这些绝对路径是必需的,不能改相对路径**——`D:\deepseek-zion`(D 盘)声明 file: 指向 `C:\Users\zyf\.dsh\...`(C 盘),Windows 相对路径无法跨盘符(`../` 到不了另一块盘);`package.json` 里也没有可移植的写法能同时覆盖两盘。要真正可移植只有两条路:(a) 把工程移到 C 盘与目标同盘(相对路径才合法但依然脆弱),(b) 把这些 `@deepseek-ai/*` 面包包 vendor 进仓库(真正解决换机问题,见 SYNC.md 换机链)。
 - 官方源码 clone 用于查契约/改代码(`D:\github-Clone\deepseek-harness` 本机),换机可另 clone 或只依赖文档/注释。
-- 视觉工具证据目录 `zion-verify` 在 `D:\pi-martix-ui\`,不是仓库内容;换机可自建任意目录,记得把探针输出拷进 allowedDirs 才能被 vision 工具读。
+- 视觉工具证据目录不是仓库内容;换机可自建任意目录,记得把探针输出拷进 allowedDirs 才能被 vision 工具读。
 - **不要改宿主 dsh 组合**(红线):复刻可移植到任何跑着 dsh web(3080)的机器,只要 `/api` proxy 指向它。
 
 ### 开发约定挖坑清单(本会话踩过,别再踩)
@@ -170,7 +170,7 @@ npx vite build --config renderer/vite.config.ts
 
 - 本文件即你(接任 agent)的入口。**先读这个文件,再读 `renderer/M1-验收记录.md` 尾部(M1→M6)与 `CONTEXT.md`**。
 - **若你做 UI 风格改造(换肤/动效/迁移)**:先读 `AGENTS.md` 的 UI 风格铁律 + `ui-change-log/`,再动手;默认动作=改样式保留功能,官方展示内容(如输入框左下 `+` 命令列表入口)不禁删。
-- UI 风格迁移的**源文件**在本机 `D:\pi-martix-ui-dev`(ZION 主工程,不是工作区 `D:\pi-martix-ui`);视觉工具证据目录才在 `D:\pi-martix-ui\zion-verify\`。两处别混。
+- UI 风格迁移的**源文件**在 ZION 主工程仓库 https://github.com/elephanttalkheads/pi-martix-ui (不是工作区 `D:\pi-martix-ui`,也不是本仓库)。
 - 你在哪台机器都行:**主仓库在 GitHub**(`elephanttalkheads/deepseek-zion`,`main` 最新 `356580c`)。clone 即得全部代码和探针。
 - 你的职责延续方向见 §3;第一优先建议做「浅色主题化逼近官方布局」,因为它最能肉眼见效且不碰任何红线。
 - 若你做插件相关:`renderer/src/plugin/` 是全部答案;`CONTEXT.md`「插件运行时/slot 注入面」给设计口径。
@@ -197,7 +197,7 @@ npx vite build --config renderer/vite.config.ts
 | `probe-approve-real.mjs` | approve 全链路(定义真实插件;受环境所限走不完整) | 3080 |
 | `probe-approve-path.mjs` | approve 编排器 + host wire 权威路径(合成 request-run) | 3080 |
 
-探针输出目录 `probe-*-out/` 已 gitignore;验收证据归档在 `D:\pi-martix-ui\zion-verify\`(本机)。
+探针输出目录 `probe-*-out/` 已 gitignore,不提交。
 
 ---
 
