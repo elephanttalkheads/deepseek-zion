@@ -11,7 +11,7 @@
 
 **当前阶段(本会话主线)**:功能接线收尾(已完成)→ **真后端专属项核验(26/26)** → **UI 功能入口差距补齐(进行中)**。目标:`官方 UI 可点的入口在 replica 中全部存在且可用`,每项以官方 3080 为基准、探针验证、真后端可操作。
 
-**进行中的 goal(已恢复,round 5/30)**`:goal-284dc56d`(max 30 轮)。objective:①②③④⑤ 五类差距补齐(见 §3)。已完成的核验/补齐:
+**进行中的 goal(round 8/30,跨机交接后继续)**`:goal-284dc56d`(max 30 轮)。objective:①②③④⑤ 五类差距补齐(见 §3)。已完成的核验/补齐:
 - ① TrajectoryView ✅ real 6/6 + fixture 10/10
 - ② 设置界面(壳+通用+Provider 编辑)✅ real 11/11 + 10/10
 - ③ dynamicCordisRunner 运行编排 UI ✅ real 7/7
@@ -20,6 +20,7 @@
 - P1 **信息层三件套(ContextMeter / StatsLine / TodoDock)** ✅ fixture 6/6 + real 7/7(本轮)
 - P2 **会话行 … 菜单 + 视图选项菜单** ✅ fixture 8/8 + real 8/8(本轮)
 - P2 **拖拽重排 + 溢出展开** ✅ fixture 6/6 + real 6/6(本轮)→ **P2 全清**
+- P3 **QueueDock 行内编辑 + 运行中排队发送** ✅ 3/3(本轮;InputBar 运行中同时显示 停止+发送,补上官方 composer 队列姿态缺口)
 - ⑤(部分) 消息复制/分支 ✅ real 6/6
 - ④ 会话导出按钮 → **已核定为 N/A**(官方 web 客户端无该按钮,`downloads` 是 host-only 通道;见 §3)
 
@@ -28,6 +29,7 @@
 ## 1. 最近提交链(自本会话;`main` 最新行在前)
 
 | 提交 | 内容 |
+| `b7be773` | QueueDock 行内编辑(updateQueue edit)+ InputBar 运行中排队发送;fixture edit 分支真实替换;probe-queue-edit 3/3 |
 |---|---|
 | `6fa73d5` | 拖拽重排 + 溢出展开:组内会话行拖拽(上/下半标记 → insertSessionBefore)、工作区组头拖拽(insertBefore)、host/workspace-* 帧自动刷新账目、溢出折叠 5 行 + 「+N」展开;probe-sidebar-drag fixture 6/6 + real 6/6 |
 | `b193d83` | 会话行 … 菜单(重命名 Modal/fork 省略 atSeq 选中子代/archive)+ 视图选项菜单(groupBy workspace|flat 按 WorkspaceView.sessionIds、orderBy manual|updated);runtime sessionRowActions;fixture archive 补 host/session-removed;probe-workspace-actions fixture 8/8 + real 8/8 |
@@ -80,9 +82,11 @@
 Goal 暂停;恢复时按下列优先级继续补官方可点入口,每项照 §2 的 vendor 流程 + 探针验证:
 
 - **P1(已完成)**:`/permission` Full access 风险确认 + 权限默认行 + composer 权限 chip;Plan chip(`/plan off`)。→ `/permission` 命令的 **popupSelect 装饰**随 P3 MenuView 一并接入(裸行已在命令面板)。
-- **P1**:ContextMeter 上下文环 / TodoPanel / StatsLine(需绑 `useProjection('contextPressure'/'contextBreakdown'/'todos'/'sessionStats')`,参考现有 `useGoal` 绑定)。
-- **P2**:QueueDock **edit 行内编辑**(已有 steer/remove+真后端 queued 验证);工作区视图选项菜单;会话行 … 菜单(重命名/归档)。
-- **P3**:审批/提问 composer 接管式(InteractionDock 现为旁路卡,官方替换 composer);`/` `@` 触发菜单 MenuView + popupSelect;附件 Lightbox/拖放;反馈赞踩+备注;JobListAction。
+- **P3(本轮新 N/A)**:消息赞/踩+备注 → **真后端 3080 无 messageFeedback.* 远程端点(404 已探)**;官方 web 接线但宿主未挂服务 → 标 N/A 不做(若未来宿主补端点,再 vendor ui-message-feedback:controller 已读透,remote 面 list/put/delete + ifVersion CAS)。
+- **P3 待做:JobListAction 作业 badge**(已侦察完毕,实施计划见 §3A)。
+- **P1(已完成)**:ContextMeter / StatsLine / TodoDock(useProjection 通用钩子)。
+- **P2(已完成)**:QueueDock edit 行内编辑(本轮);视图选项菜单;会话行 … 菜单;拖拽重排;溢出展开。→ **P2 全清**。
+- **P3(剩余)**:审批/提问 composer 接管式(InteractionDock 现为旁路卡);`/` `@` 触发菜单 MenuView + popupSelect(含 `/permission` popupSelect 装饰,承上);附件 Lightbox/拖放(`ui-attachment` 的 MessageImage/ImageLightbox/DropOverlay/AttachmentRail,先确认 ChatView 消息图片渲染现状);**JobListAction 作业 badge(计划见 §3A)**。赞踩+备注 → N/A(见上)。
 - **P4**:Agent 预设四表面;Miller 目录浏览弹窗;子代理目录树 + 只读 composer;skill 行;workflow-run/deliverables 面板。
 - **N/A(不必做)**:会话导出按钮(官方无 UI);DetailsPanel(官方未接线);native 目录流(renderless)。
 
@@ -112,6 +116,13 @@ Goal 暂停;恢复时按下列优先级继续补官方可点入口,每项照 §2
 | `probe-workspace-actions.mjs` | 视图选项(分组/排序)/ 行 … 菜单(重命名/fork/archive) | 3080+fixture | 8/8 |
 | `probe-sidebar-drag.mjs` | 拖拽重排(insertSessionBefore 顺序落点)/ 溢出折叠展开 | 3080+fixture | 6/6 |
 
+### 3A. JobListAction 实施计划(已侦察,未动手)
+- 数据:zion manager 已有 jobsBySession(useSessions(s => s.jobsBySession[id]) 读,由 session/jobs mux 帧填充;fixture 不产生 jobs)。
+- vendor 依赖补齐:ui-primitives 缺 StateDot(svg+css)与 useDismissOnOutsidePointer(hook)——官方 packages/client/ui-primitives/src/ 直拷 3 文件(StateDot.tsx/.module.css + use-dismiss-on-outside-pointer.ts),index.ts 增导出。
+- vendor ui-jobs(client:index.ts / JobListAction.tsx / JobListAction.module.css / locales.ts);props = PropsRuntime<"conversation.session.header.actions"> & PropsLocale<"jobs"> → 需在 zion 适配 declare SlotMap "conversation.session.header.actions"(官方 ui-conversation contract/slots.ts 声明,kind list,scope session)+ LocaleNamespaceMap "jobs"。
+- 座位:ConversationDock 会话头加 JobListActionSeat(useSessions=runtime.useSessions;sessionId=selectedId;t=zh 字典;无 jobs 时组件自返 null)。
+- 探针:RuntimeProvider start 时(isFixture 限定)挂 window.__zionProbePushMuxFrame(frame) 直调 runtime.wire.sessions.handleMuxEnvelope({ rpcId: crypto.randomUUID(), payload: frame });探针注入 { type: "session/jobs", sessionId, jobs: [...] } 帧 → 徽标与列表出现;真后端只验证零错误(无 jobs 时隐藏)。
+- 注意:JobView 类型来自 client-runtime(查 manager import 源头);manager.ts 705 行已有 "session/jobs" 帧分支。
 (更早的 M 探针:probe-m3/real/official-real/hero/plugin/queue/cordis-*/hostcall/queue-ops/approve-* 仍在仓库。)
 
 ---
@@ -159,4 +170,4 @@ R1 宿主组合零改动;R2 wire 契约零改动(52 RPC + respond + 双 WS + ses
 
 ---
 
-*本文件由原开发会话持续维护;信息截至 `6fa73d5`(拖拽重排 + 溢出展开)。接手后有重大变化请同步更新 §1/§3 并按 AGENTS.md 记录。*
+*本文件由原开发会话持续维护;信息截至 `b7be773`(QueueDock 行内编辑;跨机交接)。接手后继续 §3 剩余项,按 AGENTS.md 记录。*

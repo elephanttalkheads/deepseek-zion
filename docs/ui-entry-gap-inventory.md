@@ -55,12 +55,12 @@
 |---|---|---|---|
 | ContextMeter / TodoPanel / StatsLine(projection 绑定) | ui-conversation skeleton / chat | 🟢(vendor 接线,useProjection 通用钩子) | — |
 | PermissionSelect(composer 权限 chip) | ui-conversation skeleton | 🟢(见 §1) | — |
-| QueueDock edit 行内编辑 | ui-conversation queue | 🟡 仅 remove/steer | 手写 edit 表单 |
+| QueueDock edit 行内编辑 | ui-conversation queue | 🟢(行内输入 + updateQueue edit 往返;InputBar 运行中排队发送补位) | — |
 | ApprovalPanel composer 接管 / PlanReview 区分 | ui-conversation skeleton / ui-user-questions | 🟡 独立卡 | 布局改造 |
 | `/` `@` 触发菜单 MenuView + popupSelect 命令弹窗 | ui-input-trigger / ui-commands | ❌ | vendor |
 | 图片 Lightbox / 拖放附件覆盖层 | ui-attachment | ❌ | 手写 |
-| 消息赞/踩 + 备注 | ui-message-feedback | ❌ | 桥 RPC + 手写 |
-| JobListAction 作业 badge | ui-jobs | ❌ | 桥 job 帧 + 手写 |
+| 消息赞/踩 + 备注 | ui-message-feedback | N/A(真后端 3080 无 messageFeedback.* 远程端点,404 已探;官方接线但宿主未挂服务) | 若宿主补端点再 vendor |
+| JobListAction 作业 badge | ui-jobs | 🟡 vendor 依赖待补(StateDot/useDismissOnOutsidePointer);jobsBySession 数据已有;计划见 HANDOFF §3A | vendor |
 | ProducedFiles / WorkflowRun 面板 | ui-deliverables / ui-workflow-run | ❌ | vendor 节点定义 |
 
 ### P4 — 管理/浏览面
