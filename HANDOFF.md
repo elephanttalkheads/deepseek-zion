@@ -29,7 +29,7 @@
 
 | 提交 | 内容 |
 |---|---|
-| `<本提交>` | 拖拽重排 + 溢出展开:组内会话行拖拽(上/下半标记 → insertSessionBefore)、工作区组头拖拽(insertBefore)、host/workspace-* 帧自动刷新账目、溢出折叠 5 行 + 「+N」展开;probe-sidebar-drag fixture 6/6 + real 6/6 |
+| `6fa73d5` | 拖拽重排 + 溢出展开:组内会话行拖拽(上/下半标记 → insertSessionBefore)、工作区组头拖拽(insertBefore)、host/workspace-* 帧自动刷新账目、溢出折叠 5 行 + 「+N」展开;probe-sidebar-drag fixture 6/6 + real 6/6 |
 | `b193d83` | 会话行 … 菜单(重命名 Modal/fork 省略 atSeq 选中子代/archive)+ 视图选项菜单(groupBy workspace|flat 按 WorkspaceView.sessionIds、orderBy manual|updated);runtime sessionRowActions;fixture archive 补 host/session-removed;probe-workspace-actions fixture 8/8 + real 8/8 |
 | `346fcad` | 信息层三件套:runtime 通用 useProjection(per-key uSES)+ ContextMeter/StatsLine/TodoDock seat;ts-types 补 token-meter/session-stats/tool-todo 占位;probe-composer-stats fixture 6/6 + real 7/7 |
 | `c2a1467` | 权限三面 + Plan chip:vendor ui-permission-presets/ui-plan/schema-form + ui-primitives 补 Menu/Button/Modal/RiskConfirmation;Settings 权限默认行 + composer 权限 chip(Full access 风险确认)+ PlanSeat;fixture 扩展 permission ns;probe-permission-plan fixture 12/12 + real 12/12 |
@@ -159,4 +159,4 @@ R1 宿主组合零改动;R2 wire 契约零改动(52 RPC + respond + 双 WS + ses
 
 ---
 
-*本文件由原开发会话持续维护;信息截至 `<本提交>`(拖拽重排 + 溢出展开)。接手后有重大变化请同步更新 §1/§3 并按 AGENTS.md 记录。*
+*本文件由原开发会话持续维护;信息截至 `6fa73d5`(拖拽重排 + 溢出展开)。接手后有重大变化请同步更新 §1/§3 并按 AGENTS.md 记录。*
