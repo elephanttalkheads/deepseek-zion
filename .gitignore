@@ -32,6 +32,8 @@ probe-approve-real-out/
 probe-approve-path-out/
 probe-functional-out/
 probe-functional-queue-out/
+probe-backend-only-out/
+probe-mux-debug-out/
 
 # logs & smoke
 *.log
