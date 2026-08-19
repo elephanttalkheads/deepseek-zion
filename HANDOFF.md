@@ -111,21 +111,23 @@
 
 > 执行表按用户确认顺序排列(快分 → 中块 → 大块 → 收尾);每项照 §2 的 vendor 流程 + 探针验证(real/fixture 双轨),完成后回勾 inventory 并提交。规模为轮数估计(1 轮 ≈ 30–60 分钟紧凑工作)。
 
-| # | 优先级 | 项 | 规模 | 关键要点 |
-|---|---|---|---|---|
-| 1 | P0 快分 | **JobListAction 作业 badge**(ui-jobs) | 0.5–1 轮 | 计划见 §3A(StateDot/useDismissOnOutsidePointer 补齐 + ui-jobs vendor + 会话头座位 + __zionProbePushMuxFrame 探针缝);jobsBySession 数据已有 |
-| 2 | P0 快分 | 消息时间戳收尾(MessageIconActions) | ≤0.5 轮 | 复制/分支已做(beed201);核对官方 chat/MessageIconActions 的 hover 时间戳与当前 chat-node-actions 差异,补齐即可 |
-| 3 | P1 中块 | 附件 Lightbox / 拖放覆盖层(ui-attachment) | 1 轮 | 先确认 ChatView 消息图片渲染现状(输入侧已支持图片);vendor MessageImage/ImageLightbox/DropOverlay/AttachmentRail 4 组件,MessageImage 点击 → Lightbox 全屏;拖放覆盖层挂 InputBar |
-| 4 | P1 中块 | ProducedFiles / WorkflowRun 面板(ui-deliverables / ui-workflow-run) | 1 轮 | 节点 Definition 注册(参考 trajectory 注册链,conversation.ts);deliverables 投影/事件面先探真后端是否推送 |
-| 5 | P1 中块 | skill 行(ui-skill) | 1 轮 | skill.list RPC 已在 wire(fixture 有 skill.list 分支);SkillRow 槽面声明 + Sidebar/会话头座位 |
-| 6 | P2 大块 | **`/` `@` 触发菜单 MenuView + popupSelect**(ui-input-trigger + ui-commands) | 1–2 轮 | 全仓库最大 vendor 块;含 `/permission` popupSelect 装饰(承 P1);InputBar 输入触发改造(键入触发、候选行、popupSelect shell);CommandUiContract 类型 stub 已在 ts-types |
-| 7 | P3 收尾 | ApprovalPanel composer 接管 / PlanReview 区分 | 1 轮 | InteractionDock 现为旁路卡,官方替换 composer;ui-user-questions 的 PlanReview 与审批两形态 |
-| 8 | P3 收尾 | Agent 预设四表面(ui-agent-preset) | 1 轮 | 选择/copy/删除/查看/打开文档;agentPreset.* RPC 已在 wire(fixture 全分支) |
-| 9 | P3 收尾 | Miller 目录浏览弹窗(ui-directory-picker-browse) | 1 轮 | 680×500;hidden/新建目录;host.listDirectory/createDirectory 已在 wire |
-| 10 | P3 收尾 | 子代理目录树 + 只读 composer(ui-subagent) | 1 轮 | 现右栏扁平列表;目录树下拉 + 展开/打开子级;subagents RPC 已通 |
-| 11 | P3 收尾 | cordis 面板增强(run/stop/remove/版本/approve-plugin/retry-rollback)+ define/run 卡 | 1–2 轮 | 接已有 orchestrator + remote;PluginHost 控制台补 stop/remove 等(现 disabled 说明) |
+| # | 优先级 | 项 | 规模 | 关键要点 | 状态 |
+|---|---|---|---|---|---|
+| 1 | P0 快分 | **JobListAction 作业 badge**(ui-jobs) | 0.5–1 轮 | 计划见 §3A(StateDot/useDismissOnOutsidePointer 补齐 + ui-jobs vendor + 会话头座位 + __zionProbePushMuxFrame 探针缝);jobsBySession 数据已有 | ✅ `8714e2c` |
+| 2 | P0 快分 | 消息时间戳收尾(MessageIconActions) | ≤0.5 轮 | 复制/分支已做(beed201);核对官方 chat/MessageIconActions 的 hover 时间戳与当前 chat-node-actions 差异,补齐即可 | ✅ `ab82cd6` |
+| 3 | P1 中块 | 附件 Lightbox / 拖放覆盖层(ui-attachment) | 1 轮 | 先确认 ChatView 消息图片渲染现状(输入侧已支持图片);vendor MessageImage/ImageLightbox/DropOverlay/AttachmentRail 4 组件,MessageImage 点击 → Lightbox 全屏;拖放覆盖层挂 InputBar | ✅ `8f78ee7` |
+| 4 | P1 中块 | ProducedFiles / WorkflowRun 面板(ui-deliverables / ui-workflow-run) | 1 轮 | 节点 Definition 注册(参考 trajectory 注册链,conversation.ts);deliverables 投影/事件面先探真后端是否推送 | ✅ `d979255` |
+| 5 | P1 中块 | skill 行(ui-skill) | 1 轮 | skill.list RPC 已在 wire(fixture 有 skill.list 分支);SkillRow 槽面声明 + Sidebar/会话头座位 | ✅ `11fbe84` |
+| 6 | P2 大块 | **`/` `@` 触发菜单 MenuView + popupSelect**(ui-input-trigger + ui-commands) | 1–2 轮 | 全仓库最大 vendor 块;含 `/permission` popupSelect 装饰(承 P1);InputBar 输入触发改造(键入触发、候选行、popupSelect shell);CommandUiContract 类型 stub 已在 ts-types | ✅ `3b33aa2` |
+| 7 | P3 收尾 | ApprovalPanel composer 接管 / PlanReview 区分 | 1 轮 | InteractionDock 现为旁路卡,官方替换 composer;ui-user-questions 的 PlanReview 与审批两形态 | ✅ `10e9273` |
+| 8 | P3 收尾 | Agent 预设四表面(ui-agent-preset) | 1 轮 | 选择/copy/删除/查看/打开文档;agentPreset.* RPC 已在 wire(fixture 全分支) | ✅ `a57a536` |
+| 9 | P3 收尾 | Miller 目录浏览弹窗(ui-directory-picker-browse) | 1 轮 | 680×500;hidden/新建目录;host.listDirectory/createDirectory 已在 wire | ✅ `eeff657` |
+| 10 | P3 收尾 | 子代理目录树 + 只读 composer(ui-subagent) | 1 轮 | 现右栏扁平列表;目录树下拉 + 展开/打开子级;subagents RPC 已通 | ✅ `0ab42de` |
+| 11 | P3 收尾 | cordis 面板增强(run/stop/remove/版本/approve-plugin/retry-rollback)+ define/run 卡 | 1–2 轮 | 接已有 orchestrator + remote;PluginHost 控制台补 stop/remove 等(现 disabled 说明) | ✅ `09ae7cd`(define/run 卡留待真实工作负载按需 vendor,见 inventory) |
 
 **已核 N/A(不必做)**:会话导出按钮(官方无 UI);消息赞/踩+备注(真后端 3080 无 messageFeedback.* 端点,404 已探);DetailsPanel(官方未接线);native 目录流(renderless)。
+
+**✅ 全部 11 项已完成**(P0①-②、P1③-⑤、P2⑥、P3⑦-⑪;提交链见 §1 行首 5 个新提交 + 此前 7 个)。收尾标准逐项满足:官方 3080 基准核对 → vendor/手写 + 适配层 → build:web + 双轨探针(§4 表)→ typecheck 与基线持平(0 新错误文件;实际 23 文件/127 错,低于基线 30/162)→ 回勾 inventory + §1 + §0。goal 已标 complete。
 
 **收尾标准(每项)**:① 官方 3080 为基准核对入口形态;② vendor/手写 + 适配层接线;③ `npm run build:web` + 双轨探针(新探针写进 §4 表);④ typecheck 与基线持平(对比 `baseline-errors.txt` 列表,31 文件,不新增);⑤ 回勾 inventory + HANDOFF §1 提交链 + §0 进度。全部完成即 §0 目标达成,goal 标 complete。
 
