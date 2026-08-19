@@ -5,15 +5,21 @@
  * definitions already turned Session events into these nodes). Kind dispatch is
  * keyed on the node's business kind; content blocks are rendered as text for
  * this milestone. Detailed per-kind surfaces (tool tree, diff, deliberation…)
- * arrive as M2/M3 polish. 消息行动作(官方 MessageIconActions 对齐):复制 / 分支(fork at
- * anchorSeq;经 runtime.forkSession 真后端 fork 并选中子会话)。
+ * arrive as M2/M3 polish. 消息行动作 = 官方 vendored MessageIconActions(复制
+ * 图标 + 分支 + hover 时间戳;user/steering clock=start,assistant clock=end),
+ * 分支 fork at anchorSeq(经 runtime.forkSession 真后端 fork 并选中子会话)。
  */
-import { useState } from 'react'
 import { useRuntime } from '../app/runtime.tsx'
+import { makeT } from '../app/locale-common.ts'
+import { zh as conversationZh } from '../../vendor/client-ui-conversation/client/locales.ts'
+import { MessageIconActions } from '../../vendor/client-ui-conversation/client/chat/MessageIconActions.tsx'
 import type { ChatConversationViewNode } from '../../vendor/client-runtime/client/contract/conversation.ts'
 import type { ToolCallBlock } from '../../vendor/client-runtime/client/sessions/conversation.ts'
 import { ToolCallCard } from './ToolCallCard.tsx'
 import { SlotAnchor } from '../plugin/anchors.tsx'
+
+/** conversation 字典 + common 词表投影翻译器(官方 locale 查链等位)。 */
+const chatT = makeT(conversationZh as Record<string, string>)
 
 interface BlockLike { type?: string; text?: string; name?: string }
 
@@ -80,29 +86,27 @@ function nodeBody(node: ChatConversationViewNode): string {
   }
 }
 
+/** 用户侧消息的可复制正文(content 的 text 块)。 */
+function userText(node: ChatConversationViewNode): string {
+  const data = node.data as { content?: unknown }
+  return renderContentBlocks(data.content).trim()
+}
+
+/** 节点事件时间(host epoch ms);缺失时省略时钟。 */
+function nodeTime(node: ChatConversationViewNode): number | undefined {
+  const data = node.data as { time?: unknown }
+  return typeof data.time === 'number' ? data.time : undefined
+}
+
 export function ChatView({ nodes }: { nodes: readonly ChatConversationViewNode[] }): JSX.Element {
   const { forkSession } = useRuntime()
-  const [note, setNote] = useState<string | null>(null)
 
-  const copyNode = async (node: ChatConversationViewNode): Promise<void> => {
-    const text = assistantText(node).trim()
-    if (text === '') { setNote('无可复制的正文'); return }
-    try {
-      await navigator.clipboard.writeText(text)
-      setNote('已复制')
-    } catch {
-      setNote('复制失败')
-    }
-  }
-
-  const forkNode = async (node: ChatConversationViewNode): Promise<void> => {
-    const ok = await forkSession(node.anchorSeq)
-    setNote(ok ? '已分支到新会话' : '分支失败')
+  const forkNode = (node: ChatConversationViewNode): void => {
+    void forkSession(node.anchorSeq)
   }
 
   return (
     <div className="chat-view">
-      {note !== null && <div className="chat-view-action-note">{note}</div>}
       {nodes.map((node) => {
         if (node.kind === 'tool-call') {
           const data = node.data as { root?: ToolCallBlock }
@@ -121,15 +125,28 @@ export function ChatView({ nodes }: { nodes: readonly ChatConversationViewNode[]
           )
         }
         const isAssistant = node.kind === 'assistant' || node.kind === 'assistant-step'
+        const isUser = node.kind === 'user' || node.kind === 'steering' || node.kind === 'context'
+        const text = isAssistant ? assistantText(node) : userText(node)
         return (
-          <div key={node.key} className={`chat-node chat-node--${node.kind}`} data-kind={node.kind}>
+          <div
+            key={node.key}
+            className={`chat-node chat-node--${node.kind}`}
+            data-kind={node.kind}
+            data-time-hover-root
+          >
             <div className="chat-node-body">{nodeBody(node)}</div>
-            {isAssistant && (
-              <div className="chat-node-actions" data-kind={node.kind}>
-                <button className="chat-node-action" type="button" onClick={() => { void copyNode(node) }}>复制</button>
-                <button className="chat-node-action" type="button" onClick={() => { void forkNode(node) }}>分支</button>
-                <SlotAnchor slot="conversation.chat.assistant-actions" ownerProps={{ kind: node.kind }} />
-              </div>
+            {(isAssistant || isUser) && (
+              <MessageIconActions
+                text={text}
+                time={nodeTime(node)}
+                clock={isAssistant ? 'end' : 'start'}
+                className="chat-node-actions"
+                t={chatT}
+                onBranch={isAssistant ? () => { forkNode(node) } : undefined}
+                extraActions={isAssistant ? (
+                  <SlotAnchor slot="conversation.chat.assistant-actions" ownerProps={{ kind: node.kind }} />
+                ) : undefined}
+              />
             )}
           </div>
         )

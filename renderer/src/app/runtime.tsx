@@ -440,9 +440,19 @@ export function RuntimeProvider({ children }: { children: ReactNode }): JSX.Elem
         const res = await api.sessions.fork({ sessionId: selectedId, atSeq })
         if (!res.result.ok) return false
         const child = res.result.value.sessionId
-        wire.sessions.select(child)
-        setSelectedId(child)
-        return true
+        // The host/session-added frame can land after the RPC response; select
+        // throws on unknown summaries, so retry until the manager knows the child.
+        const deadline = Date.now() + 3000
+        while (true) {
+          try {
+            wire.sessions.select(child)
+            setSelectedId(child)
+            return true
+          } catch {
+            if (Date.now() > deadline) return false
+            await new Promise(r => setTimeout(r, 40))
+          }
+        }
       },
       models,
       selectModel(selection) {

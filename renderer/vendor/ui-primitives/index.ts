@@ -14,6 +14,7 @@ export { Modal } from './Modal.tsx'
 export { RiskConfirmation, type RiskConfirmationProps } from './RiskConfirmation.tsx'
 export { StateDot, type StateDotState } from './StateDot.tsx'
 export { useDismissOnOutsidePointer } from './useDismissOnOutsidePointer.ts'
+export { writeClipboard } from './clipboard.ts'
 export {
   extractMarkdownPlainText,
   type MarkdownPlainTextMode,

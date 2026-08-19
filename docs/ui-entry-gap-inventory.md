@@ -31,6 +31,7 @@
 | **会话行 … 菜单(重命名/分叉/归档)+ 视图选项菜单(分组/排序)** | 侧栏无行操作菜单、无分组/排序 | 手写(官方 ui-workspace 等位):行 … Menu(rename Modal / fork 省略 atSeq=最后完成回合并选中子代 / archive 无确认)+ 视图选项 Menu(groupBy workspace|flat 用 WorkspaceView.sessionIds 账目、orderBy manual|updated) | probe-workspace-actions **fixture 8/8 + real 8/8**(重命名往返、fork 子行出现并选中、archive 行实时消失;真实分组 DEEPSEEK-ZION/DSH-PLUGINS/PI-MARTIX-UI/未分组) |
 | **会话/工作区拖拽重排 + 会话溢出展开** | 无拖拽、无溢出控制 | 手写(官方 DragState 等位):组内会话行拖到目标上/下半 → insertSessionBefore;工作区组头拖拽 → insertBefore;host/workspace-* 帧驱动账目自动刷新;溢出折叠 COLLAPSED_SESSION_LIMIT=5 + 「+N 个更多…」展开 | probe-sidebar-drag **fixture 6/6 + real 6/6**(3 次 fork 后组内 6 行 → 折叠 5+1 → 展开 → 拖拽到最后 → 顺序可见更新;真实分组含 >5 行组溢出按钮) |
 | **JobListAction 会话头作业 badge** | 会话头无后台任务入口 | vendor `ui-jobs`(JobListAction + locales,含 surgical 改:去官方 type-only contract import)+ `ui-primitives` 补 StateDot/useDismissOnOutsidePointer + styles.css 补 4 token + ConversationDock 会话头动作座位 + RuntimeProvider `__zionProbePushMuxFrame` 探针缝(fixture 注入 session/jobs 帧) | probe-jobs **fixture 9/9 + real 10/10**(无 jobs 无控件 → 注入帧徽标出现(计数/StateDot)→ 列表运行中在前+状态点+时长 → 时钟实时走 → 外点/Escape 关闭 → 空帧消失;真后端真实 jobs 数据渲染,零错误) |
+| **消息 MessageIconActions(复制/分支/hover 时间戳)** | 消息行动作是文本按钮、无时间戳;user 节点无动作行 | vendor 完整 `ui-conversation/client/chat/MessageIconActions`(休眠态转激活:补 primitives `writeClipboard` + `locale-common.ts`(官方 common 词表 + makeT)+ common 命名空间 declare;两处 surgical:setTimeout ref 类型本地化、t 类型本地化切断 contract/slots.ts 级联)+ ChatView 接线(user/steering/context clock=start;assistant clock=end + 分支 + extraActions 插件槽)+ `data-time-hover-root`;forkSession 补 select 重试(与行菜单 fork 同款竞态修复) | probe-msg-actions **fixture 8/8 + real 8/8**(图标按钮、时钟文案(real 跨日 "8月17日 19:57")、user 行无分支、fork 选中子会话、零错误) |
 
 ## 2. 待补(按优先级)
 
@@ -46,7 +47,7 @@
 ### P2 — 会话/消息生命周期
 | 入口 | 官方源码 | zion 现状 | 补法 |
 |---|---|---|---|
-| 消息 MessageIconActions(复制/fork/时间戳) | ui-conversation chat/MessageIconActions | ❌ | vendor/手写 |
+| 消息 MessageIconActions(复制/fork/时间戳) | ui-conversation chat/MessageIconActions | 🟢(vendor 接线;见 §1) | — |
 | 会话行 … 菜单(重命名/fork/归档)+ 官方 Modal | ui-workspace Rows/WorkspaceBrowser | 🟢(手写;见 §1) | — |
 | 工作区视图选项菜单(分组/排序)+ 官方 rename/delete Modal | ui-workspace | 🟢(侧栏视图选项两轴;顶栏 rename/delete 已有) | — |
 | 会话/工作区拖拽重排 + 会话溢出展开 | ui-workspace | 🟢(手写;见 §1) | — |

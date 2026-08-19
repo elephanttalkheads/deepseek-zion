@@ -5,10 +5,15 @@ import { useCallback, useEffect, useId, useRef, useState, type ReactNode } from 
 import {
   IconBranchOutline16, IconCheckOutline16, IconCopyOutline16, Tooltip, writeClipboard,
 } from '@deepseek-ai/dsh-client-ui-primitives'
-import type { ChatViewSlotProps } from '../contract/slots.ts'
+// zion patch: 官方 t 类型来自 contract/slots.ts(ChatViewSlotProps['t']),会把
+// 整套休眠 contract 拖进编译面;这里本地化为等价签名(可赋值给 TranslateNS)。
+// import type { ChatViewSlotProps } from '../contract/slots.ts'
 import { formatLatencySeconds, formatMessageClock, formatRunDuration, formatTokensPerSecond } from './message-chrome.ts'
 import { useCalendarDay } from './use-calendar-day.ts'
 import css from './MessageIconActions.module.css'
+
+/** Locale seat signature(zion patch 本地化,等价官方 ChatViewSlotProps['t'])。 */
+export type MessageActionsTranslate = (key: string, params?: Record<string, unknown>) => string
 
 export interface MessageIconActionsProps {
   /** Plain text the copy action writes. */
@@ -35,7 +40,7 @@ export interface MessageIconActionsProps {
    */
   extraActions?: ReactNode
   /** The owning view's locale seat, passed down as a plain prop. */
-  t: ChatViewSlotProps['t']
+  t: MessageActionsTranslate
 }
 
 /**
@@ -53,7 +58,10 @@ export function MessageIconActions({
   // gated so re-clicks during the window neither re-copy nor stack timers.
   const [copied, setCopied] = useState(false)
   const copyPending = useRef(false)
-  const copyTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  // zion patch: `useRef<number | null>`(DOM lib 下 window.setTimeout 返回 number;
+  // 裸 `typeof setTimeout` 在含 @types/node 的程序里解析成 Node Timeout,与
+  // `window.setTimeout(...)` 赋值冲突)。行为零改动。
+  const copyTimer = useRef<number | null>(null)
   const copyEpoch = useRef(0)
   useEffect(() => () => {
     copyEpoch.current += 1
