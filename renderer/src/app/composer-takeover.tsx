@@ -17,6 +17,7 @@ import { QuestionComposer } from '../../vendor/ui-user-questions/client/Question
 import type { QuestionComposerProps } from '../../vendor/ui-user-questions/client/contract/slots.ts'
 import { zh as conversationZh, type ConversationKey } from '../../vendor/client-ui-conversation/client/locales.ts'
 import { zh as questionZh, type QuestionKey } from '../../vendor/ui-user-questions/client/locales.ts'
+import { SubagentReadOnlySeat, subagentReadOnlyMatch } from './subagent.tsx'
 import { InputBar } from '../ui/InputBar.tsx'
 import { useRuntime } from './runtime.tsx'
 import { makeT } from './locale-common.ts'
@@ -58,6 +59,11 @@ export function ComposerSeat(): JSX.Element {
   const { useConversation, useSessions, selectedSessionId } = useRuntime()
   const pending = useConversation(s => s.pending) ?? []
   const elected = elect(pending)
+  // 只读子代理接管判定数据(官方 composer 链 priority -10 条目,挂在默认条之前):
+  // one-shot 寻址子代理 / 父离线未运行的可继续子代理。钩子必须无条件调用。
+  const subagent = useConversation(s => s.subagent)
+  const running = useConversation(s => s.running)
+  const readonly = subagentReadOnlyMatch(subagent, running)
 
   let body: JSX.Element
   if (elected?.kind === 'approval') {
@@ -78,6 +84,8 @@ export function ComposerSeat(): JSX.Element {
       t: questionT,
     } as unknown as QuestionComposerProps
     body = <QuestionComposer {...props} />
+  } else if (readonly !== null) {
+    body = <SubagentReadOnlySeat reason={readonly.reason} />
   } else {
     body = <InputBar />
   }

@@ -2631,7 +2631,30 @@ function createFixtureWorld(options: FixtureOptions): FixtureWorld {
       },
     },
     subagents: {
-      list: request => ok(request, { entries: [], parentAvailable: true }),
+      // zion: 目录树样本 — fx-alpha 下可继续的 Beta(有下级),Beta 下一次性的
+      // Gamma(叶子)。驱动会话头子代理目录树 + 只读 composer(one-shot)。
+      list: (request) => {
+        const parent = request.payload.parentSessionId
+        if (parent === sid('fx-alpha')) {
+          return ok(request, {
+            entries: [{
+              kind: 'child', id: sid('fx-beta'), label: 'Beta 子代理',
+              mode: 'continuable', hasChildren: true, activity: 'inactive',
+            }],
+            parentAvailable: true,
+          })
+        }
+        if (parent === sid('fx-beta')) {
+          return ok(request, {
+            entries: [{
+              kind: 'child', id: sid('fx-gamma'), label: 'Gamma 孙代理',
+              mode: 'one-shot', hasChildren: false, activity: 'inactive',
+            }],
+            parentAvailable: true,
+          })
+        }
+        return ok(request, { entries: [], parentAvailable: true })
+      },
       history: (request) => {
         const log = logs.get(request.payload.childSessionId) ?? []
         return Promise.resolve(ok(

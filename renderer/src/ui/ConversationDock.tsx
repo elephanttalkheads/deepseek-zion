@@ -10,6 +10,7 @@ import { useRuntime } from '../app/runtime.tsx'
 import { TrajectoryPane } from '../app/trajectory-pane.tsx'
 import { JobListActionSeat } from '../app/job-list-action.tsx'
 import { AgentPresetLabelSeat, AgentPresetSeatSeat } from '../app/agent-preset.tsx'
+import { SubagentCatalogActionSeat } from '../app/subagent.tsx'
 import { ComposerSeat } from '../app/composer-takeover.tsx'
 import { ChatView } from './ChatView.tsx'
 import { QueueDock } from './QueueDock.tsx'
@@ -53,9 +54,10 @@ export function ConversationDock(): JSX.Element {
           <div className="conversation-header-title" title={sessionTitle ?? selectedSessionId}>
             {sessionTitle ?? selectedSessionId}
           </div>
-          {/* 会话头动作行(官方 conversation.session.header.actions seat):后台任务 badge + 预设标签。 */}
+          {/* 会话头动作行(官方 conversation.session.header.actions seat):后台任务 badge + 预设标签 + 子代理目录树。 */}
           <div className="conversation-header-actions">
             <AgentPresetLabelSeat />
+            <SubagentCatalogActionSeat />
             <JobListActionSeat />
           </div>
         </div>
