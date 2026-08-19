@@ -34,6 +34,7 @@ probe-functional-out/
 probe-functional-queue-out/
 probe-backend-only-out/
 probe-mux-debug-out/
+probe-trajectory-out/
 
 # logs & smoke
 *.log

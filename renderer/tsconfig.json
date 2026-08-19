@@ -23,7 +23,13 @@
       "@deepseek-ai/dsh-client-runtime": ["vendor/client-runtime/index.ts"],
       "@deepseek-ai/dsh-client-runtime/client": ["vendor/client-runtime/client/index.ts"],
       "@deepseek-ai/dsh-client-connection": ["vendor/client-connection/index.ts"],
-      "@deepseek-ai/dsh-client-connection/client": ["vendor/client-connection/client/index.ts"]
+      "@deepseek-ai/dsh-client-connection/client": ["vendor/client-connection/client/index.ts"],
+      "@deepseek-ai/dsh-client-ui-primitives": ["vendor/ui-primitives/index.ts"],
+      "@deepseek-ai/dsh-client-ui-trajectory": ["vendor/ui-trajectory/index.ts"],
+      "@deepseek-ai/dsh-client-ui-trajectory/client": ["vendor/ui-trajectory/client/index.ts"],
+      "@deepseek-ai/dsh-compaction/types": ["vendor/ts-types/dsh-compaction.d.ts"],
+      "@deepseek-ai/dsh-invariants": ["vendor/ts-types/dsh-invariants.d.ts"],
+      "@deepseek-ai/dsh-client-locale/client": ["vendor/ts-types/dsh-client-locale.d.ts"]
     }
   },
   "include": ["src", "vite.config.ts"],

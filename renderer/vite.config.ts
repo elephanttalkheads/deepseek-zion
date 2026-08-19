@@ -29,6 +29,9 @@ export default defineConfig({
       { find: /^@deepseek-ai\/dsh-client-runtime$/, replacement: here + 'vendor/client-runtime/index.ts' },
       { find: /^@deepseek-ai\/dsh-client-web-react$/, replacement: here + 'vendor/client-web-react/index.ts' },
       { find: /^@deepseek-ai\/dsh-client-ui-slots$/, replacement: here + 'vendor/client-ui-slots/index.ts' },
+      { find: /^@deepseek-ai\/dsh-client-ui-primitives$/, replacement: here + 'vendor/ui-primitives/index.ts' },
+      { find: /^@deepseek-ai\/dsh-client-ui-trajectory\/client$/, replacement: here + 'vendor/ui-trajectory/client/index.ts' },
+      { find: /^@deepseek-ai\/dsh-client-ui-trajectory$/, replacement: here + 'vendor/ui-trajectory/index.ts' },
     ],
   },
   build: {

@@ -16,6 +16,12 @@ import { Context } from '@deepseek-ai/cordis'
 import { ConversationEventRegistry } from '../../vendor/client-runtime/client/conversation/event-registry.ts'
 import { ConversationViewRegistry } from '../../vendor/client-runtime/client/conversation/view-registry.ts'
 import { registerConversationNodes } from '../../vendor/client-ui-conversation/client/conversation-nodes/register.ts'
+import { registerTrajectoryMessageDefinitions } from '../../vendor/ui-trajectory/client/trajectory-message-definitions.ts'
+import { registerTrajectoryRequestHeaderDefinition } from '../../vendor/ui-trajectory/client/trajectory-request-header-definition.ts'
+import { registerTrajectoryAssistantDefinition } from '../../vendor/ui-trajectory/client/trajectory-assistant-definition.ts'
+import { registerTrajectoryToolDefinition } from '../../vendor/ui-trajectory/client/trajectory-tool-definition.ts'
+import { registerTrajectoryCompactionDefinitions } from '../../vendor/ui-trajectory/client/trajectory-compaction-definition.ts'
+import { registerTrajectoryConversationView } from '../../vendor/ui-trajectory/client/trajectory-snapshot-builder.ts'
 import type { ConversationRuntime } from '../../vendor/client-runtime/client/sessions/conversation-assembler.ts'
 
 let singleton: { conversation: ConversationRuntime; ctx: Context } | undefined
@@ -31,6 +37,15 @@ export function getConversationRuntime(): { conversation: ConversationRuntime; c
     views: new ConversationViewRegistry(ctx),
   }
   registerConversationNodes(ctx)
+  // 轨迹视图:ui-trajectory 的各节点 Definition 与 chat 同属一条 conversation
+  // Definitions 注册链(注册到 ctx.conversationViews / conversationEvents),故直接
+  // 复用这里的 UI 逻辑 Context——无需 cordis slot/locale;轨迹渲染由 zion 会话头接管。
+  registerTrajectoryMessageDefinitions(ctx)
+  registerTrajectoryRequestHeaderDefinition(ctx)
+  registerTrajectoryAssistantDefinition(ctx)
+  registerTrajectoryToolDefinition(ctx)
+  registerTrajectoryCompactionDefinitions(ctx)
+  registerTrajectoryConversationView(ctx)
   singleton = { conversation, ctx }
   return singleton
 }
