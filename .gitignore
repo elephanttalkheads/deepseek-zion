@@ -37,6 +37,7 @@ probe-mux-debug-out/
 probe-trajectory-out/
 probe-settings-out/
 probe-model-out/
+probe-cordis-console-out/
 
 # logs & smoke
 *.log

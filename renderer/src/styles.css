@@ -571,3 +571,15 @@ body {
 .settings-model-list { list-style: none; margin: 0 0 8px; padding: 0; }
 .settings-model-row { display: flex; align-items: center; gap: 8px; padding: 4px 2px; border-bottom: 1px solid var(--border, rgba(128,128,128,.1)); font-size: 13px; }
 .settings-model-row .settings-btn { margin-left: auto; }
+
+/* ===== PluginHost 运行控制台(cordis ③) ===== */
+.plugin-console { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.plugin-console-label { font-size: 11px; opacity: .7; font-weight: 600; }
+.plugin-console-rows { display: flex; flex-direction: column; gap: 4px; width: 100%; }
+.plugin-console-empty { font-size: 11px; opacity: .6; }
+.plugin-console-row { display: flex; align-items: center; gap: 6px; }
+.plugin-console-name { font-size: 12px; }
+.plugin-console-id, .plugin-console-pkg { font-size: 10px; opacity: .6; }
+.plugin-console .plugin-console-run, .plugin-console-row button { background: none; border: 1px solid var(--border, rgba(128,128,128,.3)); border-radius: 5px; color: var(--text, #d8d8d8); padding: 1px 7px; font-size: 11px; cursor: pointer; }
+.plugin-console-row button:disabled { opacity: .45; cursor: not-allowed; }
+.plugin-console-result { font-size: 11px; opacity: .8; }

@@ -32,14 +32,19 @@ export interface PluginRuntimeHandle {
   subscribeRuns(fn: () => void): () => void
   approveRun(requestId: string, approveFutureVersions: boolean): Promise<void>
   declineRun(requestId: string): Promise<void>
+  /** 进程级动态插件清单(dynamicCordisRunner.inventory)。 */
+  inventory(): Promise<{ ok: true; value: readonly unknown[] } | { ok: false; error: { code: string; message: string } }>
+  /** 控制台用户触发的 run/update(dynamicCordisRunner.runHostHalf 直发)。 */
+  runRow(agentId: string, pluginId: string, packageId: string, mode: 'run' | 'update'): Promise<{ ok: boolean; errorCode?: string; errorMessage?: string }>
 }
 
 let singleton: { runtime: PluginRuntime; registry: SlotRegistry; orchestrator: CordisRunOrchestrator } | undefined
+let remote: ReturnType<typeof createCordisRunnerRemote> | undefined
 
 function handle(): PluginRuntimeHandle {
   if (singleton === undefined) {
     const registry = new SlotRegistry()
-    const remote = createCordisRunnerRemote()
+    remote = createCordisRunnerRemote()
     const runtime = new PluginRuntime({
       slots: registry,
       invoke: async (pluginId, pluginRunId, method, args) => {
@@ -121,6 +126,18 @@ function handle(): PluginRuntimeHandle {
     },
     approveRun: (requestId, approveFutureVersions) => orchestrator.approve(requestId, approveFutureVersions),
     declineRun: (requestId) => orchestrator.decline(requestId),
+    inventory: async () => {
+      const answered = await remote!.inventory()
+      return answered.ok
+        ? { ok: true, value: answered.value }
+        : { ok: false, error: { code: answered.error.code, message: answered.error.message } }
+    },
+    runRow: async (agentId, pluginId, packageId, mode) => {
+      const answered = await remote!.runHostHalf(agentId, pluginId, packageId, mode, null, false)
+      return answered.ok
+        ? { ok: true }
+        : { ok: false, errorCode: answered.error.code, errorMessage: answered.error.message }
+    },
   }
 }
 

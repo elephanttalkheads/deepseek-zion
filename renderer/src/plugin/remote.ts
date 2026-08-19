@@ -64,6 +64,8 @@ export interface DynamicCordisRunResolution {
 }
 
 export interface CordisRunnerRemote {
+  /** 进程级动态插件清单(inventory 远程方法;每行 = 一个动态插件运行)。 */
+  inventory(): Promise<RemoteResult<readonly unknown[]>>
   runHostHalf(
     agentId: string, pluginId: string, packageId: string, mode: 'run' | 'update',
     requestId: string | null, approveFutureVersions: boolean,
@@ -83,6 +85,7 @@ export function createCordisRunnerRemote(rpc: ClientConnectionRpc = createWebCon
     return { ok: false, error: result.error }
   }
   return {
+    inventory: () => call('inventory', {}),
     runHostHalf: (agentId, pluginId, packageId, mode, requestId, approveFutureVersions) =>
       call('runHostHalf', { agentId, pluginId, packageId, mode, ...(requestId === null ? {} : { requestId }), approveFutureVersions }),
     getClientCode: (agentId, pluginId, pluginRunId) =>
