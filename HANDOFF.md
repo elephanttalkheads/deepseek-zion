@@ -26,7 +26,7 @@
 
 | 提交 | 内容 |
 |---|---|
-| `<本提交>` | 权限三面 + Plan chip:vendor ui-permission-presets/ui-plan/schema-form + ui-primitives 补 Menu/Button/Modal/RiskConfirmation;Settings 权限默认行 + composer 权限 chip(Full access 风险确认)+ PlanSeat;fixture 扩展 permission ns;probe-permission-plan fixture 12/12 + real 12/12 |
+| `c2a1467` | 权限三面 + Plan chip:vendor ui-permission-presets/ui-plan/schema-form + ui-primitives 补 Menu/Button/Modal/RiskConfirmation;Settings 权限默认行 + composer 权限 chip(Full access 风险确认)+ PlanSeat;fixture 扩展 permission ns;probe-permission-plan fixture 12/12 + real 12/12 |
 | `beed201` | 消息行动作:复制 + 分支(fork at anchorSeq),real 6/6 |
 | `396255a` | dynamicCordisRunner 编排 UI:运行控制台(inventory+Run/Update)+ 审批卡「批准并信任」,real 7/7 |
 | `06dc363` | 模型两级菜单:vendor ui-model-selection 替换扁平 select,real+fixture 7/7,回归 24/24 |
@@ -145,4 +145,4 @@ R1 宿主组合零改动;R2 wire 契约零改动(52 RPC + respond + 双 WS + ses
 
 ---
 
-*本文件由原开发会话持续维护;信息截至 `<本提交>`(权限三面 + Plan chip)。接手后有重大变化请同步更新 §1/§3 并按 AGENTS.md 记录。*
+*本文件由原开发会话持续维护;信息截至 `c2a1467`(权限三面 + Plan chip)。接手后有重大变化请同步更新 §1/§3 并按 AGENTS.md 记录。*
