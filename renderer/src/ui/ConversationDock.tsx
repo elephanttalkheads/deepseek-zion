@@ -9,6 +9,7 @@ import { useEffect, useState } from 'react'
 import { useRuntime } from '../app/runtime.tsx'
 import { TrajectoryPane } from '../app/trajectory-pane.tsx'
 import { JobListActionSeat } from '../app/job-list-action.tsx'
+import { AgentPresetLabelSeat, AgentPresetSeatSeat } from '../app/agent-preset.tsx'
 import { ComposerSeat } from '../app/composer-takeover.tsx'
 import { ChatView } from './ChatView.tsx'
 import { QueueDock } from './QueueDock.tsx'
@@ -36,6 +37,10 @@ export function ConversationDock(): JSX.Element {
         <div className="conversation-hero">
           <h1 className="conversation-hero-title">探索未至之境</h1>
           <p className="conversation-hero-sub">预览版</p>
+          {/* 官方 hero 行:工作区 chip + Agent 预设 chip(官方 conversation.hero.agentPreset seat)。 */}
+          <div className="conversation-hero-row">
+            <AgentPresetSeatSeat />
+          </div>
         </div>
       </div>
     )
@@ -48,8 +53,9 @@ export function ConversationDock(): JSX.Element {
           <div className="conversation-header-title" title={sessionTitle ?? selectedSessionId}>
             {sessionTitle ?? selectedSessionId}
           </div>
-          {/* 会话头动作行(官方 conversation.session.header.actions seat):后台任务 badge。 */}
+          {/* 会话头动作行(官方 conversation.session.header.actions seat):后台任务 badge + 预设标签。 */}
           <div className="conversation-header-actions">
+            <AgentPresetLabelSeat />
             <JobListActionSeat />
           </div>
         </div>

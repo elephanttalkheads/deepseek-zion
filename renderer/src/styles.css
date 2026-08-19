@@ -705,16 +705,29 @@ body {
 /* 官方 design-platform.css light 主题补缺令牌 */
 :root {
   --ds-font-family-code: 'SF Mono', 'JetBrains Mono', 'Fira Code', Consolas, 'Liberation Mono', Menlo, Courier, 'PingFang SC', 'Microsoft YaHei';
-  --dsw-alias-bg-overlay: #e9ecf2;
-  --dsw-alias-border-l2-darkmode-thin: rgba(0, 0, 0, 0.1);
-  --dsw-alias-border-l2: rgba(0, 0, 0, 0.1);
-  --dsw-alias-border-l4: rgba(0, 0, 0, 0.16);
-  --dsw-alias-button-info-fill: #4176e6;
-  --dsw-alias-scrollbar-bg-l2: #e5e5e5;
-  --dsw-alias-scrollbar-hover-l2: #d4d4d4;
-  --dsw-alias-state-business-primary: #4176e6;
+  /* zion 深绿调色板补缺令牌(官方 design-platform.css 对应语义;浅色官方值不适用,
+     已有的 border-l2/l4、scrollbar-bg/hover-l2 以根部深色值为准,不重复声明)。 */
+  --dsw-alias-bg-overlay: #1a281a;
+  --dsw-alias-border-l2-darkmode-thin: rgba(255, 255, 255, 0.06);
+  --dsw-alias-button-info-fill: #5686fe;
+  --dsw-alias-state-business-primary: #5686fe;
   --dsw-alias-state-warn-secondary: #f7ad31;
-  --dsw-shadow-lv2: 0 4px 12px 0 rgba(0, 0, 0, 0.02), 0 2px 8px 0 rgba(0, 0, 0, 0.04);
-  --dsw-specific-input-major: #ffffff;
-  --dsw-specific-sidebar-nav-item-active-accent: #e4edfd;
+  --dsw-shadow-lv2: 0 4px 12px 0 rgba(0, 0, 0, 0.18), 0 2px 8px 0 rgba(0, 0, 0, 0.24);
+  --dsw-specific-input-major: #131a13;
+  --dsw-specific-sidebar-nav-item-active-accent: #16211a;
+  /* ui-agent-preset 补缺令牌(深绿等位) */
+  --dsw-alias-label-quaternary: #758575;
+  --dsw-alias-fill-tsp-secondary: rgba(255, 255, 255, 0.07);
+  --dsw-alias-bg-layer-1: #0a0e0a;
+  --dsw-alias-bg-layer-3: #131a13;
+  --dsw-alias-brand-primary: #d7e3d7;
+}
+
+/* ===== Agent 预设(ui-agent-preset 四表面) ===== */
+.conversation-hero-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 14px;
 }

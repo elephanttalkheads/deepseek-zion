@@ -39,6 +39,7 @@
 | **SkillRow 专用工具卡(ui-skill)** | skill 调用渲染为通用卡 | vendor ui-skill(SkillRow;surgical:ToolCallViewProps 本地化)+ ChatView toolName==='skill' 分支(settled 名取自 block.call.name)+ fixture turn 76 skill 样本 | probe-skill **fixture 5/5 + real 5/5**(状态点/标题 Skill/摘要 code-review → 展开说明区 → 收起;真后端无 skill 调用时隐藏) |
 | **`/` 触发菜单 MenuView + popupSelect(ui-input-trigger + ui-commands)** | 输入侧无 `/` 候选菜单、无命令弹窗 | vendor ui-input-trigger(core 纯逻辑 + controller + MenuView;controller surgical:actx bail 面本地化)+ primitives 补 useAnchoredMaxHeight + vendor ui-commands(popup.ts + PopupSelectView)+ zion 管线(trigger-menu.tsx:command/skill 双源、/permission 装饰 → popupSelect 壳、actx shim → draft 落盘、track 去重)+ InputBar 接线(data-composer-card/锚点/仲裁)+ 权限投影 options(Full access 风险确认) | probe-trigger **fixture 9/9 + real 9/9**(/ 菜单命令+技能组 → 过滤 → pick /permission → popup 预设 → 执行+令牌移除;普通命令/技能落文本;Escape 关闭;real 真实命令目录) |
 | **ApprovalPanel composer 接管 + QuestionComposer/PlanReview(ui-conversation skeleton + ui-user-questions)** | 挂起交互渲染为独立 Dock 卡(自研 M3),与官方「接管 composer」语义不符 | vendor ui-user-questions 整包(QuestionComposer + PlanReviewPanel + contract;surgical:去不可解析 merge import)+ 激活 vendored ApprovalPanel(两处 surgical:layout merge import、dsh-brand 本地等位)+ tsconfig paths 把 `@deepseek-ai/dsh-client-ui-conversation/client` 解析到 vendored chat-nodes.ts(官方 ChatNodeDataMap 增强全部真实 merge,9 个基线错误文件清零)+ ui-layout 等位 SlotMap('conversation'/'details')+ 移除旧 `conversation.session.header.actions`/`conversation.chat.node` 重复声明(TS2717)+ ComposerSeat 直编链选举(approval 优先 > question > InputBar)+ ConversationDock 接线 + **移除 M3 InteractionDock 独立卡**(官方语义:挂起交互接管 composer,聊天流内不重复渲染)+ fixture:常驻审批配对在飞 bash 调用(turn 78,命令行仅对 running 调用显示)+ 稳定 question rpcId + 探针缝 rpcId 显式化 | probe-takeover **fixture 8/8 + real 8/8**(审批卡:等待条/理由/配对命令/拒绝+允许一次 → 允许一次 → 三问问题流(单选推进/多选+跳过)→ 结算 InputBar 回归;合成 plan-review 提问 → 决策卡(计划正文+三按钮) → 拒绝回执错误反馈 → resolved 离场;real 空闲回退 InputBar)+ 回归:trigger 9/9+9/9、skill 5/5、msg-actions 8/8、checklist 24/24、jobs 10/10、deliverables 6/6、attachment 8/8、m3/queue-edit 全绿 |
+| **Agent 预设四表面(ui-agent-preset)** | 无 hero 预设 chip、会话头无预设标签、设置无默认预设行与预设管理分区 | vendor ui-agent-preset 整包(4 组件 + 3 控制器 + PresetMenu + locales;label surgical:官方读 byId,由 manager 快照补 ids/byId 等位后恢复官方原样)+ zion 适配(agent-preset.tsx:settings/seat/section 三控制器按官方 apply 装配、bindSnapshotSelector 绑 hook、rosterChanged 联动、list 订阅即席 apply)+ 四座位接线(hero chip/会话头标签/通用区行/设置分区)+ ui-settings 等位 SlotMap(settings.general.item/settings.section,owner 同型)+ fixture:settings.update 补 agent-presets ns、describe 补命名空间 + 深绿调色板补缺令牌(去重并修正上一轮浅色误值) | probe-preset **fixture 10/10 + real 9/9**(hero chip 菜单(标准/极简/my-agent)→ 选极简暂存 → 新建会话自动应用 → 会话头标签;通用区行选 my-agent(settings.update 往返);分区:内置/自定义组+当前使用 → 复制对话框(id 校验+创建→自定义组新卡)→ 只读查看器(组合正文)→ 删除确认;卡设默认徽标迁移;real 真实 roster(标准/PTC/极简/创造/压缩65)+ 分区与行渲染,零错误) |
 
 ## 2. 待补(按优先级)
 
@@ -71,7 +72,7 @@
 ### P4 — 管理/浏览面
 | 入口 | 官方源码 | zion 现状 | 补法 |
 |---|---|---|---|
-| Agent 预设四表面(选择/copy/删除/查看/打开文档) | ui-agent-preset | ❌ | vendor |
+| Agent 预设四表面(选择/copy/删除/查看/打开文档) | ui-agent-preset | 🟢(vendor 整包;见 §1) | — |
 | 680×500 Miller 目录浏览弹窗(含 hidden/新建目录) | ui-directory-picker-browse | ❌ | vendor |
 | 子代理目录树下拉 + 展开/打开子级 + 只读 composer | ui-subagent | 🟡 右栏扁平列表 | 部分 vendor |
 | skill `/` 源 + SkillRow | ui-skill | 🟡 SkillRow 已 vendor 接线(见 §1);`/` 触发源随 P2 MenuView 一并接入 | ⑥ 时 vendor |

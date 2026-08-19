@@ -42,6 +42,12 @@ export interface SessionSearchResultItem {
 /** Immutable session-list snapshot for useSessionList. */
 export interface SessionListSnapshot {
   items: readonly SessionListEntry[]
+  // zion patch: 官方 ISessions service 的 SessionListState 以 `ids`/`byId` 面
+  // 暴露同一列表(vendored 组件的 useSessions 标准道具按该型编译);zion 直拼
+  // manager 快照,补两字段等位,使官方组件(如 AgentPresetLabel 读
+  // byId[id].agentPreset)运行时安全。
+  ids: readonly SessionId[]
+  byId: Readonly<Record<SessionId, SessionListEntry>>
   /** Selected Session id (validated against items; masked to undefined while its session is off the list). */
   current: SessionId | undefined
   state: 'idle' | 'loading' | 'error'
@@ -1072,6 +1078,9 @@ export class SessionManager {
       subagentsByParent: Object.fromEntries(this.catalogs),
       jobsBySession: Object.fromEntries(this.jobsBySession),
       currentAddress: current === undefined ? undefined : this.addresses.get(current),
+      // zion patch: ids/byId 等位(见接口注释;官方 SessionListState 同款派生)。
+      ids: this.itemsCache.map(entry => entry.sessionId),
+      byId: Object.fromEntries(this.itemsCache.map(entry => [entry.sessionId, entry])),
     }
   }
 }

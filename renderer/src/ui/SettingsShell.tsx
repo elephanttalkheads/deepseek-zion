@@ -9,9 +9,10 @@
 import { useCallback, useEffect, useState } from 'react'
 import { useRuntime } from '../app/runtime.tsx'
 import { PermissionSettingsRow } from '../app/permission-ui.tsx'
+import { AgentPresetRowSeat, AgentPresetSectionSeat } from '../app/agent-preset.tsx'
 import type { SettingsNamespaceView, ConfigurableProviderView } from '@deepseek-ai/dsh-host-apiproxy/api'
 
-type SectionId = 'general' | 'models' | 'plugins' | 'inventory'
+type SectionId = 'general' | 'models' | 'agent' | 'plugins' | 'inventory'
 
 const THEME_CHOICES = [
   { id: 'light', label: '浅色' },
@@ -112,6 +113,7 @@ export function SettingsShell({ open, onClose }: { open: boolean; onClose: () =>
             {([
               ['general', '通用'],
               ['models', '模型'],
+              ['agent', 'Agent 预设'],
               ['plugins', '插件'],
               ['inventory', '插件清单'],
             ] as const).map(([id, label]) => (
@@ -165,11 +167,18 @@ export function SettingsShell({ open, onClose }: { open: boolean; onClose: () =>
                   </select>
                 </div>
                 <PermissionSettingsRow wire={wire} />
+                <AgentPresetRowSeat />
                 <p className="settings-hint">偏好经 settings.mutate 写入真后端(revision 栅栏);主题已即时应用到本页。</p>
               </div>
             )}
 
             {section === 'models' && <ModelsSection wire={wire} onError={(m) => setWriteError(m)} />}
+
+            {section === 'agent' && (
+              <div className="settings-section">
+                <AgentPresetSectionSeat onClose={() => { setSection('general') }} />
+              </div>
+            )}
 
             {section === 'plugins' && (
               <div className="settings-section">

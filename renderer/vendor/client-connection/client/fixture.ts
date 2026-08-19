@@ -3042,15 +3042,48 @@ function createFixtureWorld(options: FixtureOptions): FixtureWorld {
             revision: 0,
           },
           permissionNamespaceView(),
+          // zion: agent-presets 命名空间(默认预设 = agentPresets.select 的当前默认,
+          // 供 General 行的 settings.describe 读 writable 与行值回显)。
+          {
+            ns: 'agent-presets',
+            schema: {},
+            value: { default: fixtureDefaultPreset },
+            applies: 'live',
+            secrets: [],
+            revision: 0,
+          } as Extract<RpcResponse<SettingsNamespaceView>['result'], { ok: true }>['value'],
         ],
       }),
       // Native opens are deterministic no-op successes in this fixture, as is host.openPath.
       openDocument: request => ok(request, { opened: true as const }),
-      update: request => err(request, {
-        code: 'settings-rejected',
-        message: 'fixture: the minimal readiness settings descriptor is read-only',
-        details: { ns: request.payload.ns },
-      }),
+      update: (request) => {
+        // zion: 官方 fixture 只读;补 agent-presets 命名空间的 default 写(General
+        // 行 select 走 settings.update,真后端同样语义)。
+        if (request.payload.ns === 'agent-presets') {
+          const next = (request.payload.patch as { default?: unknown } | undefined)?.default
+          if (typeof next === 'string' && fixturePresets.has(next)) {
+            fixtureDefaultPreset = next
+            return ok(request, {
+              ns: 'agent-presets',
+              schema: {},
+              value: { default: next },
+              applies: 'live',
+              secrets: [],
+              revision: 1,
+            } as Extract<RpcResponse<SettingsNamespaceView>['result'], { ok: true }>['value'])
+          }
+          return err(request, {
+            code: 'settings-rejected',
+            message: `fixture: agent-presets default must name an existing preset (got ${String(next)})`,
+            details: { ns: request.payload.ns },
+          })
+        }
+        return err(request, {
+          code: 'settings-rejected',
+          message: 'fixture: the minimal readiness settings descriptor is read-only',
+          details: { ns: request.payload.ns },
+        })
+      },
       replace: request => err(request, {
         code: 'settings-rejected',
         message: 'fixture: the minimal readiness settings descriptor is read-only',

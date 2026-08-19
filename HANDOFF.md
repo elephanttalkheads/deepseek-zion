@@ -28,6 +28,7 @@
 - P1 **SkillRow 专用工具卡(ui-skill)** ✅ probe-skill fixture 5/5 + real 5/5(本轮;vendor SkillRow(toolview 本地化)+ ChatView skill 分支;`/` 触发源随 ⑥ MenuView 一并接入)
 - P2 **`/` 触发菜单 MenuView + popupSelect(ui-input-trigger + ui-commands)** ✅ probe-trigger fixture 9/9 + real 9/9(本轮;vendor input-trigger 核心/controller/MenuView + commands popup 壳;zion 管线:command/skill 双源 + /permission popupSelect 装饰(Full access 风险确认)+ actx shim + track 去重;InputBar 键入触发/仲裁/锚点)
 - P3 **ApprovalPanel composer 接管 + QuestionComposer/PlanReview 区分(ui-conversation skeleton + ui-user-questions)** ✅ probe-takeover fixture 8/8 + real 8/8(本轮;vendor ui-user-questions 整包;激活 vendored ApprovalPanel;tsconfig paths 把 `@deepseek-ai/dsh-client-ui-conversation/client` 解析到 vendored chat-nodes.ts → 官方 ChatNodeDataMap 增强真实 merge(9 个基线错误文件清零);ComposerSeat 链选举(approval>question>InputBar);**移除 M3 InteractionDock 独立卡**(官方语义:挂起交互接管 composer,聊天流不重复渲染);fixture 常驻审批配对在飞 bash 调用(turn 78)+ 稳定 question rpcId;探针缝 rpcId 显式化;回归全绿:trigger/skill/msg-actions/checklist/jobs/deliverables/attachment/m3/queue-edit)
+- P3 **Agent 预设四表面(ui-agent-preset)** ✅ probe-preset fixture 10/10 + real 9/9(本轮;vendor ui-agent-preset 整包(4 组件+3 控制器+PresetMenu);zion 适配三控制器装配 + 四座位(hero chip/会话头标签/通用区行/设置分区);manager 快照补 ids/byId 等位(官方 SessionListState 面);ui-settings 等位 SlotMap;fixture settings.update 补 agent-presets ns;深绿调色板补缺令牌并修正上一轮浅色误值;probe-preset:hero 暂存→新建会话自动应用→会话头标签;通用区行往返;分区复制/查看/删除/设默认全链路;real 真实 roster 渲染)
 - ⑤(部分) 消息复制/分支 ✅ real 6/6
 - ④ 会话导出按钮 → **已核定为 N/A**(官方 web 客户端无该按钮,`downloads` 是 host-only 通道;见 §3)
 
@@ -36,6 +37,7 @@
 ## 1. 最近提交链(自本会话;`main` 最新行在前)
 
 | 提交 | 内容 |
+| `(本轮,见 git log)` | Agent 预设四表面:vendor ui-agent-preset(4 组件+3 控制器+PresetMenu+locales)+ zion 适配(三控制器/四座位/rosterChanged 联动)+ manager 快照补 ids/byId 等位 + ui-settings 等位 SlotMap + fixture settings.update 补 agent-presets ns + 深绿调色板补缺令牌(修上一轮浅色误值);probe-preset fixture 10/10 + real 9/9 |
 | `(本轮,见 git log)` | composer 接管 ⑦:vendor ui-user-questions(QuestionComposer/PlanReviewPanel;去 merge import)+ 激活 vendored ApprovalPanel(两处 surgical)+ tsconfig paths → vendored chat-nodes.ts(官方 ChatNodeDataMap 增强 merge)+ ui-layout 等位 SlotMap + 移除重复 SlotMap 声明(TS2717)+ ComposerSeat 链选举 + 移除 M3 InteractionDock;fixture 常驻审批配对在飞 bash(turn 78)+ 稳定 question rpcId + 探针缝 rpcId;probe-takeover fixture 8/8 + real 8/8 |
 | `(本轮,见 git log)` | 触发菜单 + popupSelect:vendor ui-input-trigger(core/controller/MenuView,controller actx 本地化)+ ui-commands(popup/PopupSelectView)+ primitives useAnchoredMaxHeight;zion 管线(command/skill 源 + /permission 装饰 + actx shim + track 去重)+ InputBar 接线;probe-trigger fixture 9/9 + real 9/9 |
 | `(本轮,见 git log)` | SkillRow 专用工具卡:vendor ui-skill(surgical ToolCallViewProps 本地化)+ ChatView skill 分支(settled 名取自 block.call.name)+ fixture turn 76 skill 样本;probe-skill fixture 5/5 + real 5/5 |
@@ -64,7 +66,7 @@
 ## 2. 架构与运行(不变 + 新增)
 
 ### 架构事实(仓库注释 + 旧 HANDOFF §1 有;摘要)
-- 数据层 = 官方纯类 B 直拼:`renderer/vendor/`(现 **11 包+类型占位**,§4 有清单)由 Vite 直编;装配 `protocol/assemble.ts`;React 侧 `app/runtime.tsx` 用 `bindSnapshotSelector`.
+- 数据层 = 官方纯类 B 直拼:`renderer/vendor/`(现 **12 包+类型占位**,§4 有清单)由 Vite 直编;装配 `protocol/assemble.ts`;React 侧 `app/runtime.tsx` 用 `bindSnapshotSelector`.
 - 对话定义层 = 一个「UI 逻辑面」`new Context()`(`app/conversation.ts`),注册 chat 节点 + **trajectory 6 个节点 Definition**.
 - 插件底座 = `renderer/src/plugin/`(runtime/slot-registry/evaluator/guard/hub/remote/run-orchestrator/anchors).
 - **两条运行线(别混淆)**:复刻线 = `npx vite preview ... --port 5199`(或 `dev:web`)经 `/api` proxy 连 3080,不带 `?fixture` 即真后端;**Electron 壳线是 prototype 遗留**(`npm run dev/start` 加载官方 3080 UI,不是复刻).
@@ -83,7 +85,7 @@
   (`vendor/client-ui-conversation/client/contract/chat-nodes.ts`),增强即真实 merge
   (ChatNodeKind 键源齐全,9 个基线错误文件清零);同法适用于任何「官方 declare module 增强
   某接口」的包,前提是该包名不被其它具名导入消费(消费其它导出会断)。
-- **vendor 包现状**:`client-connection / client-runtime / client-ui-conversation / client-ui-slots / client-web-react / ui-primitives(最小面:icons 全表 + Tooltip + JsonTree/MarkdownText/Toast/plain-text + Menu/Button/Modal/RiskConfirmation/pointer-grace)/ ui-trajectory(完整)/ ui-model-selection(完整)/ ui-plan(完整)/ ui-permission-presets(完整)/ schema-form(完整)+ ts-types`.alias 与 paths 均已配好,后续 vendor 新包照抄;npm 依赖另加 `@deepseek-ai/schemastery`(file: 官方链,schema-form 需要).
+- **vendor 包现状**:`client-connection / client-runtime / client-ui-conversation / client-ui-slots / client-web-react / ui-primitives(最小面:icons 全表 + Tooltip + JsonTree/MarkdownText/Toast/plain-text + Menu/Button/Modal/RiskConfirmation/pointer-grace)/ ui-trajectory(完整)/ ui-model-selection(完整)/ ui-plan(完整)/ ui-permission-presets(完整)/ ui-user-questions(完整)/ ui-agent-preset(完整)/ schema-form(完整)+ ts-types`.alias 与 paths 均已配好,后续 vendor 新包照抄;npm 依赖另加 `@deepseek-ai/schemastery`(file: 官方链,schema-form 需要).
 - **ui-primitives 是「最小等位面」**:icons 全表 + 官方 Tooltip + 自写 JsonTree/MarkdownText/Toast(plain-text 投影),刻意不拉整棵 micromark;整包 vendor 时整体替换。
 - **workspace 账目自动刷新**(本轮,runtime.tsx):zion 不跑官方 WorkspaceRuntime,workspaces 状态此前只靠显式 reload;现接 host/workspace-changed|removed|added 帧自动 reloadWorkspaces(分组/手动排序/拖拽落点跟着变;fixture fork 时子会话因此正确入组而非落「未分组」)。
 - **拖拽合成事件**(本轮,probe):dragstart/dragover/drop 需在事件间 sleep(React 状态提交是异步的,同步派发时拖拽源尚未就位);真实拖拽天然间隔足够。
@@ -153,8 +155,10 @@
 | `probe-skill.mjs` | skill 专用工具卡(状态/标题/摘要 + 展开说明区/收起) | 3080+fixture | 5/5 + 5/5 |
 | `probe-trigger.mjs` | 触发菜单(`/` 命令+技能组/过滤/pick 落文本/Escape)+ popupSelect(/permission 预设/执行/令牌移除) | 3080+fixture | 9/9 + 9/9 |
 | `probe-takeover.mjs` | composer 接管(ApprovalPanel 审批卡+配对命令/允许一次 → QuestionComposer 三问 → 结算 InputBar 回归;合成 plan-review → PlanReviewPanel 决策卡+拒绝回执+结算离场;real 空闲回退) | 3080+fixture | 8/8 + 8/8 |
+| `probe-preset.mjs` | Agent 预设四表面(hero chip 暂存→新建会话自动应用→会话头标签;通用区默认行往返;分区:复制对话框/只读查看器/删除确认/设默认;real 真实 roster 只读) | 3080+fixture | 10/10 + 9/9 |
 
 > ⚠️ `probe-backend-only` 现为 **24/26**:A1/A6 断言的默认/会话模型期望 `opencode-go/deepseek-v4-flash`,而真后端 3080 当前选中为 `deepseek-official/deepseek-v4-flash`(后端侧模型选择漂移,与本次改动无关;待后端选回后恢复 26/26)。
+> ⚠️ `probe-permission-plan` 现为 **10/12**:P3/P7 断言的权限默认值期望 `Full access`,真后端当前为 `workspace-write`(后端侧权限默认漂移,机械断言全过;恢复 12/12 需后端默认回 Full access)。
 
 ### 3A. JobListAction 实施记录(✅ 已执行,commit 见 §1 行首)
 - 数据:zion manager 已有 jobsBySession(useSessions(s => s.jobsBySession[id]) 读,由 session/jobs mux 帧填充;fixture 不产生 jobs)。
