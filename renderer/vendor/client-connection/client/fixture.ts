@@ -34,7 +34,7 @@ import { deriveEventMessage, foldSurface } from '@deepseek-ai/dsh-session/surfac
 import type {
   ApiProxy, ClientRequest, ClientResponse, HistoryEntry, HostFrame, MuxFrame, RpcReceipt,
   ModelProviderGroup, ModelSelection, RpcRequest, RpcResponse, RpcResult, ServerRequest, ServerResponse, SessionSummary,
-  ToolCallView, ToolEventView, ToolResultView, WorkspaceId, WorkspaceView,
+  SettingsNamespaceView, ToolCallView, ToolEventView, ToolResultView, WorkspaceId, WorkspaceView,
 } from './api.ts'
 import type { RequestPayload, ResponseValue, RpcMethodMap } from '@deepseek-ai/dsh-host-apiproxy/api'
 import { AbstractApiClient, RpcId, SESSION_SEARCH_RESULT_LIMIT } from './api.ts'
@@ -1547,6 +1547,27 @@ function createFixtureWorld(options: FixtureOptions): FixtureWorld {
     ['my-agent', { trust: 'user', content: "- id: tool-read\n  name: '@deepseek-ai/dsh-tool-read'\n" }],
   ])
   let fixtureDefaultPreset = 'standard'
+  /** Permission default-preset state (the settings row + Full access gate surface). */
+  let fixturePermissionPreset = 'workspace-write'
+  let fixturePermissionRevision = 0
+  /** Schemastery envelope for the permission defaultPreset schema (host PermissionPresetService shape, mirroring PERMISSION_PRESETS). */
+  const permissionSchemaEnvelope = {
+    uid: 700,
+    refs: {
+      '702': { type: 'const', meta: {}, value: 'workspace-write' },
+      '703': { type: 'const', meta: {}, value: 'danger-full-access' },
+      '705': { type: 'union', meta: { required: true }, list: [702, 703] },
+      '700': { type: 'object', meta: { default: {} }, dict: { defaultPreset: 705 } },
+    },
+  }
+  const permissionNamespaceView = (): SettingsNamespaceView => ({
+    ns: 'permission',
+    schema: permissionSchemaEnvelope,
+    value: { defaultPreset: fixturePermissionPreset },
+    applies: 'live',
+    secrets: [],
+    revision: fixturePermissionRevision,
+  })
   const nextTurn = new Map<SessionId, number>([[sid('fx-alpha'), 75]])
   let nextSession = 1
   let nextRpc = 1
@@ -2945,14 +2966,17 @@ function createFixtureWorld(options: FixtureOptions): FixtureWorld {
       describe: request => ok(request, {
         writable: true,
         hasDocument: true,
-        namespaces: [{
-          ns: 'llm-deepseek',
-          schema: {},
-          value: { apiKeyEnv: 'DEEPSEEK_API_KEY' },
-          applies: 'live',
-          secrets: [{ path: ['apiKey'], set: false }],
-          revision: 0,
-        }],
+        namespaces: [
+          {
+            ns: 'llm-deepseek',
+            schema: {},
+            value: { apiKeyEnv: 'DEEPSEEK_API_KEY' },
+            applies: 'live',
+            secrets: [{ path: ['apiKey'], set: false }],
+            revision: 0,
+          },
+          permissionNamespaceView(),
+        ],
       }),
       // Native opens are deterministic no-op successes in this fixture, as is host.openPath.
       openDocument: request => ok(request, { opened: true as const }),
@@ -2966,11 +2990,26 @@ function createFixtureWorld(options: FixtureOptions): FixtureWorld {
         message: 'fixture: the minimal readiness settings descriptor is read-only',
         details: { ns: request.payload.ns },
       }),
-      mutate: request => err(request, {
-        code: 'settings-rejected',
-        message: 'fixture: no settings namespaces are registered',
-        details: { ns: request.payload.ns },
-      }),
+      mutate: (request): Promise<RpcResponse<SettingsNamespaceView>> => {
+        if (request.payload.ns === 'permission') {
+          const op = request.payload.ops[0]
+          if (op?.op !== 'set' || op.path.join('.') !== 'defaultPreset' || typeof op.value !== 'string') {
+            return err(request, {
+              code: 'settings-rejected',
+              message: 'fixture: permission mutate only accepts set defaultPreset',
+              details: { ns: request.payload.ns },
+            })
+          }
+          fixturePermissionPreset = op.value
+          fixturePermissionRevision += 1
+          return ok(request, permissionNamespaceView())
+        }
+        return err(request, {
+          code: 'settings-rejected',
+          message: 'fixture: no settings namespaces are registered',
+          details: { ns: request.payload.ns },
+        })
+      },
     },
     credentials: {
       describe: request => ok(request, {

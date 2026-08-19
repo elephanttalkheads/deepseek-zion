@@ -10,6 +10,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useRuntime, type MediaType } from '../app/runtime.tsx'
 import { ModelSelectAdapter } from '../app/model-select.tsx'
+import { PermissionChip } from '../app/permission-ui.tsx'
+import { PlanSeat } from '../app/plan-seat.tsx'
 import { SlotAnchor } from '../plugin/anchors.tsx'
 import { GoalBar } from './GoalBar.tsx'
 import type { PromptContentPart } from '../../vendor/client-connection/client/api.ts'
@@ -124,6 +126,11 @@ export function InputBar(): JSX.Element {
     <div className="input-bar">
       <SlotAnchor slot="conversation.input.dock" ownerProps={{}} />
       <GoalBar />
+      <div className="input-bar-modes">
+        <PermissionChip />
+        <PlanSeat />
+      </div>
+
       <div className="input-bar-model">
         {selectedSessionId === undefined ? (
           <span className="input-bar-model-fallback">模型</span>

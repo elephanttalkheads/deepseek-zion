@@ -11,9 +11,12 @@
 - **会话导出/下载按钮:官方 web UI 不存在**(全 client 树 `session.export` 仅出现在
   `connection/fixture.ts` 契约注释;host-only 下载通道,官方无按钮)→ 该项标 **N/A**,
   不再是差距(除非作为 zion 增值,另行评估)。
-- zion `renderer/vendor` 现为 **7 包 + 类型占位**:client-connection / client-runtime /
-  client-ui-conversation / client-ui-slots / client-web-react / **ui-primitives(最小面)** /
-  **ui-trajectory(完整)** + `vendor/ts-types`(type-only 占位)。
+- zion `renderer/vendor` 现为 **10 包 + 类型占位**:client-connection / client-runtime /
+  client-ui-conversation / client-ui-slots / client-web-react / **ui-primitives(最小面,
+  含 Menu/Button/Modal/RiskConfirmation)** / **ui-trajectory(完整)** / **ui-plan(完整)** /
+  **ui-permission-presets(完整)** / **schema-form(完整)** + `vendor/ts-types`
+  (type-only 占位:locale / compaction / invariants / permission-presets / plan-mode /
+  ui-commands)。npm 依赖新增 `@deepseek-ai/schemastery`(file: 官方链)。
 - vendored ui-conversation 大量官方组件(Chat/skeleton)处于休眠态:zion 只消费了它的
   conversation-node 注册表与 contract;实际渲染是 zion 自研 M2/M3 组件。
 
@@ -22,17 +25,19 @@
 | 差距 | 现象 | 补法 | 证据/提交 |
 |---|---|---|---|
 | **① TrajectoryView 轨迹视图** | 会话头无 tabs、无轨迹 | vendor `ui-trajectory`(36 源文件)+ `ui-primitives` 最小面(icons 全表 / Tooltip / JsonTree / MarkdownText / plain-text)+ 注册 6 个轨迹 Definition + 会话头 tabs + TrajectoryPane 适配 | probe-trajectory **10/10**(fixture),probe-trajectory-real **6/6**(真后端,实时回合轨迹账本渲染,零错误) |
+| **Full access 风险确认 + 权限预设行(设置)+ composer 权限 chip** | 设置无「权限」行;composer 无访问模式 chip | vendor `ui-permission-presets`(PermissionRow + settings-store + presentation + locales)+ `ui-primitives` 补 Menu/Button/Modal/RiskConfirmation/pointer-grace + PermissionSettingsRow/SettingsShell 接线 + composer vendored `PermissionSelect` chip(usePermissions 投影绑定) | probe-permission-plan **fixture 12/12 + real 12/12**(风险确认勾选门、settings.mutate 往返、`/permission` 提交后投影刷新) |
+| **Plan chip(`/plan off`)** | composer 无 plan mode 状态 chip | vendor `ui-plan`(PlanChip)+ PlanSeat 适配(`plan` 投影绑定,`pending ? !active : active`,点击 `/plan off`) | 同上探针 P8–P10(fixture:未激活不渲染 → `/plan` 激活 chip 出现 → 点击消失;real:投影存在未激活 → 不渲染) |
 
 ## 2. 待补(按优先级)
 
 ### P1 — 高频/安全与首启
 | 入口 | 官方源码 | zion 现状 | 补法 |
 |---|---|---|---|
-| 设置触发 + Settings 弹窗壳 + 分区导航(General/Models/Plugins/PluginInventory) | ui-settings-general SettingsRoot | ❌ 整组缺 | vendor ui-settings* + 手写壳 |
-| 外观三 cube(浅/深/系统)/ 语言下拉 | ui-theme AppearanceRow / locale LanguageRow | ❌ 缺主题/语言 runtime | vendor(+ theme/locale settings.mutate) |
-| 模型 Model/Effort 两级菜单(替换 `<select>`) | ui-model-selection ModelSelect | 🟡 自研 select | vendor |
-| Full access 风险确认 + `/permission` 预设下拉 | ui-permission-presets | ❌ | vendor |
-| Plan chip(`/plan off`) | ui-plan PlanModeControl | ❌ | vendor |
+| 设置触发 + Settings 弹窗壳 + 分区导航(General/Models/Plugins/PluginInventory) | ui-settings-general SettingsRoot | 🟢(shell 自研;分区齐全) | — |
+| 外观三 cube(浅/深/系统)/ 语言下拉 | ui-theme AppearanceRow / locale LanguageRow | 🟢(settings.mutate 往返) | — |
+| 模型 Model/Effort 两级菜单(替换 `<select>`) | ui-model-selection ModelSelect | 🟢(vendor 完整) | — |
+| Full access 风险确认 + 权限默认行 + composer 权限 chip | ui-permission-presets / ui-conversation PermissionSelect | 🟢(vendor;见 §1) | `/permission` 命令的 **popupSelect 装饰**随 P3 MenuView 一并接入(裸行已在命令面板) |
+| Plan chip(`/plan off`) | ui-plan PlanModeControl | 🟢(vendor;见 §1) | — |
 
 ### P2 — 会话/消息生命周期
 | 入口 | 官方源码 | zion 现状 | 补法 |

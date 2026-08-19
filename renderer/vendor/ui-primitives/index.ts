@@ -8,6 +8,10 @@ export { Tooltip, type TooltipSide } from './Tooltip.tsx'
 export { JsonTree, type JsonTreeProps } from './json-tree.tsx'
 export { MarkdownText, type MarkdownTextProps } from './markdown-text.tsx'
 export { Toast, type ToastProps } from './toast.tsx'
+export { Menu, type MenuEntry, type MenuItem, type MenuSeparator, type MenuLabel } from './Menu.tsx'
+export { Button, type ButtonVariant } from './Button.tsx'
+export { Modal } from './Modal.tsx'
+export { RiskConfirmation, type RiskConfirmationProps } from './RiskConfirmation.tsx'
 export {
   extractMarkdownPlainText,
   type MarkdownPlainTextMode,

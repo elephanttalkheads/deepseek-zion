@@ -2,6 +2,38 @@
    spacing, typography) lands after the first vision pixel diff. */
 
 :root {
+  /* ---- dsw alias tokens(vendored ui css modules 引用;映射到 zion 调色板) ---- */
+  --dsw-alias-bg-layer-2: #101710;
+  --dsw-alias-bg-mask-1: rgba(3, 8, 4, 0.55);
+  --dsw-alias-bg-module-platform: #0e130e;
+  --dsw-alias-border-inverted: #d7e3d7;
+  --dsw-alias-border-l1: #1f2a1f;
+  --dsw-alias-border-l2: #26332a;
+  --dsw-alias-border-l3: #2e3f30;
+  --dsw-alias-border-l4: #3a4f3c;
+  --dsw-alias-button-primary-fill: #2f9e57;
+  --dsw-alias-button-primary-hover: #3ab868;
+  --dsw-alias-button-tool-bar-fill: transparent;
+  --dsw-alias-button-tool-bar-hover: #1c2a1c;
+  --dsw-alias-interactive-bg-active: #1a281a;
+  --dsw-alias-interactive-bg-hover: #16211a;
+  --dsw-alias-interactive-bg-hover-danger: rgba(255, 107, 107, 0.14);
+  --dsw-alias-label-caption: #7f8f7f;
+  --dsw-alias-label-dimmed: #6a7a6a;
+  --dsw-alias-label-primary: #d7e3d7;
+  --dsw-alias-label-primary-foreground: #050b06;
+  --dsw-alias-label-secondary: #a9bda9;
+  --dsw-alias-label-tertiary: #8fa08f;
+  --dsw-alias-scrollbar-bg-l2: #1a241c;
+  --dsw-alias-scrollbar-hover-l2: #243326;
+  --dsw-alias-state-error-primary: #ff6b6b;
+  --dsw-alias-state-warn-label: #ffb000;
+  --dsw-alias-state-warn-primary: #ffb000;
+  --dsw-alias-state-warn-tertiary: rgba(255, 176, 0, 0.16);
+  --dsw-mask-blur: blur(6px);
+  --dsw-shadow-lv3: 0 8px 28px rgba(0, 0, 0, 0.45);
+  --dsw-specific-menu: #131a13;
+
   --bg: #0a0e0a;
   --bg-panel: #0e130e;
   --bg-raised: #131a13;
@@ -186,6 +218,7 @@ body {
 /* ---- composer / input bar ---- */
 .input-bar { margin-top: auto; border-top: 1px solid var(--border); padding: 10px; background: var(--bg-panel); }
 .input-bar-model { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+.input-bar-modes { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; flex-wrap: wrap; }
 .input-bar-model-label { color: var(--fg-muted); font-size: 12px; flex-shrink: 0; }
 .input-bar-model-select {
   flex: 1; min-width: 0; background: var(--bg-raised); color: var(--fg);

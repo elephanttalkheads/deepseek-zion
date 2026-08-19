@@ -101,6 +101,13 @@ export interface AppRuntime {
   /** uSES bridge bound to the SELECTED session's `goal` projection (undefined
    *  when no goal / capability absent). Call as useGoal(g => g?.goal). */
   useGoal: SnapshotSelectorHook<GoalProjectionValue | null | undefined>
+  /** uSES bridge bound to the SELECTED session's plan projection (undefined
+   * when plan mode is not composed). Call as usePlanProjection(p => p). */
+  usePlanProjection: SnapshotSelectorHook<import('@deepseek-ai/dsh-plan-mode/client').PlanProjection | null | undefined>
+  /** uSES bridge bound to the SELECTED session's permissions projection
+   * (undefined when the permission service is not composed). Call as
+   * usePermissions(p => p). */
+  usePermissions: SnapshotSelectorHook<import('@deepseek-ai/dsh-permission-presets/client').PermissionSelect | null | undefined>
   /** Goal lifecycle verbs over the goal.* contract (create/edit/pause/resume/complete/clear). */
   goalActions: GoalActions
   /** Cancel the selected session's active turn. */
@@ -248,7 +255,7 @@ export function RuntimeProvider({ children }: { children: ReactNode }): JSX.Elem
   // pushes whole values via the history baseline + session/projection frames).
   const useGoal = useMemo<SnapshotSelectorHook<GoalProjectionValue | null | undefined>>(() => {
     const source = (() => {
-      if (selectedId === undefined) return noSessionSource as Parameters<typeof bindSnapshotSelector<GoalProjectionValue | null | undefined>>[0]
+      if (selectedId === undefined) return noSessionSource as unknown as Parameters<typeof bindSnapshotSelector<GoalProjectionValue | null | undefined>>[0]
       const session = runtime.wire.sessions.get(selectedId)
       const face = session.projections.faceOf('goal') as {
         getSnapshot: () => unknown
@@ -260,6 +267,38 @@ export function RuntimeProvider({ children }: { children: ReactNode }): JSX.Elem
       } as Parameters<typeof bindSnapshotSelector<GoalProjectionValue | null | undefined>>[0]
     })()
     return bindSnapshotSelector<GoalProjectionValue | null | undefined>(source)
+  }, [runtime, selectedId])
+
+  // Same projection-bound hook for the plan key (ui-plan PlanChip seat) and
+  // the permissions key (composer PermissionSelect + /permission picker).
+  const usePlanProjection = useMemo<SnapshotSelectorHook<import('@deepseek-ai/dsh-plan-mode/client').PlanProjection | null | undefined>>(() => {
+    const source = (() => {
+      if (selectedId === undefined) return noSessionSource as unknown as Parameters<typeof bindSnapshotSelector<import('@deepseek-ai/dsh-plan-mode/client').PlanProjection | null | undefined>>[0]
+      const face = runtime.wire.sessions.get(selectedId).projections.faceOf('plan') as {
+        getSnapshot: () => unknown
+        subscribe: (l: () => void) => () => void
+      }
+      return {
+        getSnapshot: () => face.getSnapshot() as import('@deepseek-ai/dsh-plan-mode/client').PlanProjection | null | undefined,
+        subscribe: face.subscribe,
+      } as Parameters<typeof bindSnapshotSelector<import('@deepseek-ai/dsh-plan-mode/client').PlanProjection | null | undefined>>[0]
+    })()
+    return bindSnapshotSelector<import('@deepseek-ai/dsh-plan-mode/client').PlanProjection | null | undefined>(source)
+  }, [runtime, selectedId])
+
+  const usePermissions = useMemo<SnapshotSelectorHook<import('@deepseek-ai/dsh-permission-presets/client').PermissionSelect | null | undefined>>(() => {
+    const source = (() => {
+      if (selectedId === undefined) return noSessionSource as unknown as Parameters<typeof bindSnapshotSelector<import('@deepseek-ai/dsh-permission-presets/client').PermissionSelect | null | undefined>>[0]
+      const face = runtime.wire.sessions.get(selectedId).projections.faceOf('permissions') as {
+        getSnapshot: () => unknown
+        subscribe: (l: () => void) => () => void
+      }
+      return {
+        getSnapshot: () => face.getSnapshot() as import('@deepseek-ai/dsh-permission-presets/client').PermissionSelect | null | undefined,
+        subscribe: face.subscribe,
+      } as Parameters<typeof bindSnapshotSelector<import('@deepseek-ai/dsh-permission-presets/client').PermissionSelect | null | undefined>>[0]
+    })()
+    return bindSnapshotSelector<import('@deepseek-ai/dsh-permission-presets/client').PermissionSelect | null | undefined>(source)
   }, [runtime, selectedId])
 
   const value = useMemo<AppRuntime>(() => {
@@ -276,6 +315,8 @@ export function RuntimeProvider({ children }: { children: ReactNode }): JSX.Elem
       },
       useConversation,
       useGoal,
+      usePlanProjection,
+      usePermissions,
       goalActions: {
         create: (objective, maxGoalRounds) => {
           if (selectedId === undefined) return Promise.resolve(false)
@@ -400,7 +441,7 @@ export function RuntimeProvider({ children }: { children: ReactNode }): JSX.Elem
         },
       },
     }
-  }, [runtime, useSessions, useConversation, useGoal, connectionState, selectedId, models, workspaces, reloadWorkspaces])
+  }, [runtime, useSessions, useConversation, useGoal, usePlanProjection, usePermissions, connectionState, selectedId, models, workspaces, reloadWorkspaces])
 
   return <RuntimeContext.Provider value={value}>{children}</RuntimeContext.Provider>
 }

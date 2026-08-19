@@ -54,3 +54,4 @@ backup/
 # os
 .DS_Store
 Thumbs.db
+probe-permission-plan-out/

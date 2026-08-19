@@ -4,7 +4,10 @@ import clsx from 'clsx'
 import type { PermissionSelect as PermissionSelectValue } from '@deepseek-ai/dsh-permission-presets/client'
 import { IconChevronDownOutline14, Menu, RiskConfirmation } from '@deepseek-ai/dsh-client-ui-primitives'
 import type { MenuEntry } from '@deepseek-ai/dsh-client-ui-primitives'
-import type { ComposerBarProps } from '../contract/slots.ts'
+// Zion patch: contract/slots.ts stays out of the compiled program (it drags the
+// full ui-conversation slot surface); the only member needed here is the bar's
+// locale seat type, declared locally.
+type ComposerBarT = (key: string, params?: Record<string, unknown>) => string
 import css from './PermissionSelect.module.css'
 
 const FULL_ACCESS = 'danger-full-access'
@@ -66,7 +69,7 @@ export interface PermissionSelectProps {
   locked: boolean
   command: (line: string) => Promise<boolean>
   /** The owning bar's locale seat, passed down as a plain prop. */
-  t: ComposerBarProps['t']
+  t: ComposerBarT
 }
 
 export function PermissionSelect({ value, locked, command, t }: PermissionSelectProps) {

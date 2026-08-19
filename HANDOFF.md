@@ -11,11 +11,12 @@
 
 **当前阶段(本会话主线)**:功能接线收尾(已完成)→ **真后端专属项核验(26/26)** → **UI 功能入口差距补齐(进行中)**。目标:`官方 UI 可点的入口在 replica 中全部存在且可用`,每项以官方 3080 为基准、探针验证、真后端可操作。
 
-**进行中的 goal(已暂停)**`:goal-284dc56d`(max 30 轮,已跑 4 轮)。objective:①②③④⑤ 五类差距补齐(见 §3)。暂停前的完成情况:
+**进行中的 goal(已恢复,round 5/30)**`:goal-284dc56d`(max 30 轮)。objective:①②③④⑤ 五类差距补齐(见 §3)。已完成的核验/补齐:
 - ① TrajectoryView ✅ real 6/6 + fixture 10/10
 - ② 设置界面(壳+通用+Provider 编辑)✅ real 11/11 + 10/10
 - ③ dynamicCordisRunner 运行编排 UI ✅ real 7/7
 - P1 模型两级菜单 ✅ real + fixture 7/7
+- P1 **权限三面 + Plan chip** ✅ fixture 12/12 + real 12/12(本轮)
 - ⑤(部分) 消息复制/分支 ✅ real 6/6
 - ④ 会话导出按钮 → **已核定为 N/A**(官方 web 客户端无该按钮,`downloads` 是 host-only 通道;见 §3)
 
@@ -25,6 +26,7 @@
 
 | 提交 | 内容 |
 |---|---|
+| `<本提交>` | 权限三面 + Plan chip:vendor ui-permission-presets/ui-plan/schema-form + ui-primitives 补 Menu/Button/Modal/RiskConfirmation;Settings 权限默认行 + composer 权限 chip(Full access 风险确认)+ PlanSeat;fixture 扩展 permission ns;probe-permission-plan fixture 12/12 + real 12/12 |
 | `beed201` | 消息行动作:复制 + 分支(fork at anchorSeq),real 6/6 |
 | `396255a` | dynamicCordisRunner 编排 UI:运行控制台(inventory+Run/Update)+ 审批卡「批准并信任」,real 7/7 |
 | `06dc363` | 模型两级菜单:vendor ui-model-selection 替换扁平 select,real+fixture 7/7,回归 24/24 |
@@ -40,7 +42,7 @@
 ## 2. 架构与运行(不变 + 新增)
 
 ### 架构事实(仓库注释 + 旧 HANDOFF §1 有;摘要)
-- 数据层 = 官方纯类 B 直拼:`renderer/vendor/`(现 **9 包+类型占位**)由 Vite 直编;装配 `protocol/assemble.ts`;React 侧 `app/runtime.tsx` 用 `bindSnapshotSelector`.
+- 数据层 = 官方纯类 B 直拼:`renderer/vendor/`(现 **10 包+类型占位**)由 Vite 直编;装配 `protocol/assemble.ts`;React 侧 `app/runtime.tsx` 用 `bindSnapshotSelector`.
 - 对话定义层 = 一个「UI 逻辑面」`new Context()`(`app/conversation.ts`),注册 chat 节点 + **trajectory 6 个节点 Definition**.
 - 插件底座 = `renderer/src/plugin/`(runtime/slot-registry/evaluator/guard/hub/remote/run-orchestrator/anchors).
 - **两条运行线(别混淆)**:复刻线 = `npx vite preview ... --port 5199`(或 `dev:web`)经 `/api` proxy 连 3080,不带 `?fixture` 即真后端;**Electron 壳线是 prototype 遗留**(`npm run dev/start` 加载官方 3080 UI,不是复刻).
@@ -53,8 +55,13 @@
   3. 依赖入 `package.json`(本轮已加 `@tanstack/react-virtual`、`diff`、`clsx`).
   4. **适配层**:官方组件经 cordis 槽注入面;zion 手写 adapter 补齐注入(参考 `src/app/trajectory-pane.tsx`、`src/app/model-select.tsx`).
   5. `npm run build:web` + 探针(real/fixture 双轨)+ tsc(`src/` 0 新错;vendor 的 cordis 类型噪音是既有预期).
-- **vendor 包现状**:`client-connection / client-runtime / client-ui-conversation / client-ui-slots / client-web-react / ui-primitives(最小面:icons 全表 + Tooltip + JsonTree/MarkdownText/Toast/plain-text)/ ui-trajectory(完整)/ ui-model-selection(完整)+ ts-types`.alias 与 paths 均已配好,后续 vendor 新包照抄.
+- **vendor 包现状**:`client-connection / client-runtime / client-ui-conversation / client-ui-slots / client-web-react / ui-primitives(最小面:icons 全表 + Tooltip + JsonTree/MarkdownText/Toast/plain-text + Menu/Button/Modal/RiskConfirmation/pointer-grace)/ ui-trajectory(完整)/ ui-model-selection(完整)/ ui-plan(完整)/ ui-permission-presets(完整)/ schema-form(完整)+ ts-types`.alias 与 paths 均已配好,后续 vendor 新包照抄;npm 依赖另加 `@deepseek-ai/schemastery`(file: 官方链,schema-form 需要).
 - **ui-primitives 是「最小等位面」**:icons 全表 + 官方 Tooltip + 自写 JsonTree/MarkdownText/Toast(plain-text 投影),刻意不拉整棵 micromark;整包 vendor 时整体替换。
+- **本轮 vendor 注意点**:
+  - `ui-permission-presets` 的 settings-store 依赖 `@deepseek-ai/dsh-client-schema-form`(runtime)→ vendor schema-form(3 文件)+ schemastery npm 依赖;真后端 `permission` ns 的 schema 是 schemastery toJSON(refs/uid 引用表),`new Schema(envelope)` 直接可解析。
+  - `PermissionRow`/`PlanChip` 需要的 SlotMap/LocaleNamespaceMap merge(`settings.general.item`、`conversation.input.plan`、`plan`)由 zion 适配文件 `declare module` 等位补齐(官方声明在未编译的 ui-settings/ui-conversation contract 里)。
+  - 两个官方文件被微补丁(留注释标记):`skeleton/PermissionSelect.tsx` 的 `t` 类型本地化(不拉 contract/slots.ts);`ui-plan/client/PlanModeControl.tsx` 的 `PlanChipInjected` 本地化(不拉 cordis apply 的 index.ts)——都是避免把整套槽面拖进编译面的 surgical 修改,行为零改动。
+  - fixture 的 `settings.describe` 扩展出 `permission` ns(schemastery envelope + mutate 往返),供探针走 Full access 风险确认全流程。
 
 ---
 
@@ -62,7 +69,7 @@
 
 Goal 暂停;恢复时按下列优先级继续补官方可点入口,每项照 §2 的 vendor 流程 + 探针验证:
 
-- **P1**:`/permission` Full access 风险确认 + 权限预设下拉(安全门禁,官方专有);Plan chip(`/plan off` 退出;进入经 `/plan` 命令)。
+- **P1(已完成)**:`/permission` Full access 风险确认 + 权限默认行 + composer 权限 chip;Plan chip(`/plan off`)。→ `/permission` 命令的 **popupSelect 装饰**随 P3 MenuView 一并接入(裸行已在命令面板)。
 - **P1**:ContextMeter 上下文环 / TodoPanel / StatsLine(需绑 `useProjection('contextPressure'/'contextBreakdown'/'todos'/'sessionStats')`,参考现有 `useGoal` 绑定)。
 - **P2**:QueueDock **edit 行内编辑**(已有 steer/remove+真后端 queued 验证);工作区视图选项菜单;会话行 … 菜单(重命名/归档)。
 - **P3**:审批/提问 composer 接管式(InteractionDock 现为旁路卡,官方替换 composer);`/` `@` 触发菜单 MenuView + popupSelect;附件 Lightbox/拖放;反馈赞踩+备注;JobListAction。
@@ -90,6 +97,7 @@ Goal 暂停;恢复时按下列优先级继续补官方可点入口,每项照 §2
 | `probe-model.mjs` | 模型两级菜单(根/模型/Effort/选择/锁定) | 3080+fixture | 7/7 |
 | `probe-cordis-console.mjs` | cordis 运行控制台 + 批准并信任 | 3080 | 7/7 |
 | `probe-msg-actions.mjs` | 消息复制/分支(fork+选切子会话) | 3080 | 6/6 |
+| `probe-permission-plan.mjs` | 权限行(Full access 风险确认往返)/ composer 权限 chip / Plan chip(激活→关闭) | 3080+fixture | 12/12 |
 
 (更早的 M 探针:probe-m3/real/official-real/hero/plugin/queue/cordis-*/hostcall/queue-ops/approve-* 仍在仓库。)
 
@@ -102,6 +110,9 @@ Goal 暂停;恢复时按下列优先级继续补官方可点入口,每项照 §2
 - 探针用 React 受控输入:必须原生 value setter(`Object.getOwnPropertyDescriptor(proto,'value').set.call(el,v)` + dispatchEvent('input'))。
 - tsc 只查 `src/`:vendor 的 cordis/Fiber/ctx 类型噪音是既有预期,`grep -v vendor` 过滤看新错。
 - 探针可用 `window.__zionProbeHandleRemoteEvent(...)` 注入 `cordis/request-run` 帧测审批。
+- 探针 JS 字符串经外层模板字面量转发:`split('\n')` 会被外层转义成真换行导致页面 SyntaxError——用 `split(String.fromCharCode(10))`。
+- `npm run typecheck` 基线本就有 200 行错/31 文件(模型 select 的 t prop、runtime 投影 cast、vendor cordis 噪音等,历史遗留);验收口径 = **对比基线不新增错误文件**(Compare-Object 两份 error 文件列表)。
+- 设置/菜单按钮的 `aria-haspopup` 全页面多个(工作区/模型/权限),探针选择器要限定作用域(`.settings-shell button[aria-haspopup="menu"]`)。
 
 ---
 
@@ -112,7 +123,7 @@ Goal 暂停;恢复时按下列优先级继续补官方可点入口,每项照 §2
 - 官方源码 clone:`D:\github-Clone\deepseek-harness`(HEAD `dsh-v0.1.0-rc.7`;vendor 源、契约查证都看它)。
 - 常用命令:`npm run build:web`(= vite build -c renderer/vite.config.ts)、`npx tsc --noEmit -p renderer/tsconfig.json`、`npx vite preview --config renderer/vite.config.ts --port 5199 --strictPort`。
 - ⚠️ `npm run dev/start` 是 Electron 壳(proto 遗留,加载官方 3080 UI,非复刻);看复刻走 5199/`dev:web`。
-- 换机:`npm install`;`file:` 依赖是机器绝对路径(C 盘 profile / dsh 内嵌),换机改路径或 vendor 面包(SYNC.md 换机链);vendor 已含 9 包不额外装。
+- 换机:`npm install`;`file:` 依赖是机器绝对路径(C 盘 profile / dsh 内嵌),换机改路径或 vendor 面包(SYNC.md 换机链);vendor 已含 10 包不额外装。
 
 ---
 
@@ -134,4 +145,4 @@ R1 宿主组合零改动;R2 wire 契约零改动(52 RPC + respond + 双 WS + ses
 
 ---
 
-*本文件由原开发会话持续维护;信息截至 `beed201`(消息行动作)。接手后有重大变化请同步更新 §1/§3 并按 AGENTS.md 记录。*
+*本文件由原开发会话持续维护;信息截至 `<本提交>`(权限三面 + Plan chip)。接手后有重大变化请同步更新 §1/§3 并按 AGENTS.md 记录。*

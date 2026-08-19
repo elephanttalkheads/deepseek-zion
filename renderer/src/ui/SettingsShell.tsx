@@ -8,6 +8,7 @@
  */
 import { useCallback, useEffect, useState } from 'react'
 import { useRuntime } from '../app/runtime.tsx'
+import { PermissionSettingsRow } from '../app/permission-ui.tsx'
 import type { SettingsNamespaceView, ConfigurableProviderView } from '@deepseek-ai/dsh-host-apiproxy/api'
 
 type SectionId = 'general' | 'models' | 'plugins' | 'inventory'
@@ -163,6 +164,7 @@ export function SettingsShell({ open, onClose }: { open: boolean; onClose: () =>
                     <option value="en">English</option>
                   </select>
                 </div>
+                <PermissionSettingsRow wire={wire} />
                 <p className="settings-hint">偏好经 settings.mutate 写入真后端(revision 栅栏);主题已即时应用到本页。</p>
               </div>
             )}
