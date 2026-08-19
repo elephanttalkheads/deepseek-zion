@@ -29,6 +29,7 @@
 | **Plan chip(`/plan off`)** | composer 无 plan mode 状态 chip | vendor `ui-plan`(PlanChip)+ PlanSeat 适配(`plan` 投影绑定,`pending ? !active : active`,点击 `/plan off`) | 同上探针 P8–P10(fixture:未激活不渲染 → `/plan` 激活 chip 出现 → 点击消失;real:投影存在未激活 → 不渲染) |
 | **ContextMeter / StatsLine / TodoDock(projection 绑定)** | composer 缺上下文环/统计条/plan strip | runtime 增通用 `useProjection`(per-key uSES 绑定)+ 适配层三 seat(vendor 组件直接接线)+ ts-types 补 token-meter/session-stats/tool-todo 占位(含 SessionProjectionMap merge) | probe-composer-stats **fixture 6/6 + real 7/7**(真实投影:8 轮 · 25 步、缓存命中 89%、上下文已用 5%;todos=null 正确隐藏) |
 | **会话行 … 菜单(重命名/分叉/归档)+ 视图选项菜单(分组/排序)** | 侧栏无行操作菜单、无分组/排序 | 手写(官方 ui-workspace 等位):行 … Menu(rename Modal / fork 省略 atSeq=最后完成回合并选中子代 / archive 无确认)+ 视图选项 Menu(groupBy workspace|flat 用 WorkspaceView.sessionIds 账目、orderBy manual|updated) | probe-workspace-actions **fixture 8/8 + real 8/8**(重命名往返、fork 子行出现并选中、archive 行实时消失;真实分组 DEEPSEEK-ZION/DSH-PLUGINS/PI-MARTIX-UI/未分组) |
+| **会话/工作区拖拽重排 + 会话溢出展开** | 无拖拽、无溢出控制 | 手写(官方 DragState 等位):组内会话行拖到目标上/下半 → insertSessionBefore;工作区组头拖拽 → insertBefore;host/workspace-* 帧驱动账目自动刷新;溢出折叠 COLLAPSED_SESSION_LIMIT=5 + 「+N 个更多…」展开 | probe-sidebar-drag **fixture 6/6 + real 6/6**(3 次 fork 后组内 6 行 → 折叠 5+1 → 展开 → 拖拽到最后 → 顺序可见更新;真实分组含 >5 行组溢出按钮) |
 
 ## 2. 待补(按优先级)
 
@@ -47,7 +48,7 @@
 | 消息 MessageIconActions(复制/fork/时间戳) | ui-conversation chat/MessageIconActions | ❌ | vendor/手写 |
 | 会话行 … 菜单(重命名/fork/归档)+ 官方 Modal | ui-workspace Rows/WorkspaceBrowser | 🟢(手写;见 §1) | — |
 | 工作区视图选项菜单(分组/排序)+ 官方 rename/delete Modal | ui-workspace | 🟢(侧栏视图选项两轴;顶栏 rename/delete 已有) | — |
-| 会话/工作区拖拽重排 + 会话溢出展开 | ui-workspace | ❌ | 手写 |
+| 会话/工作区拖拽重排 + 会话溢出展开 | ui-workspace | 🟢(手写;见 §1) | — |
 
 ### P3 — 输入/信息层
 | 入口 | 官方源码 | zion 现状 | 补法 |

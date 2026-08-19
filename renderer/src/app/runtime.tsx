@@ -134,6 +134,10 @@ export interface AppRuntime {
     rename(workspaceId: WorkspaceId, title: string): Promise<boolean>
     delete(workspaceId: WorkspaceId): Promise<boolean>
     refresh(): Promise<void>
+    /** Move a workspace in the registry display order (DOM-insertBefore-like). */
+    insertBefore(workspaceId: WorkspaceId, beforeWorkspaceId?: WorkspaceId): Promise<boolean>
+    /** Move an accounted session within its workspace's manual order. */
+    insertSessionBefore(workspaceId: WorkspaceId, sessionId: string, beforeSessionId?: string): Promise<boolean>
   }
   /** Selected session's direct-child subagent catalogs; read via
    *  `useSessions(s => s.subagentsByParent)` on the full list snapshot. */
@@ -200,17 +204,35 @@ export function RuntimeProvider({ children }: { children: ReactNode }): JSX.Elem
   const [models, setModels] = useState<SessionModels | null>(null)
   const [workspaces, setWorkspaces] = useState<readonly WorkspaceView[]>([])
 
+  // Workspace rows (top-bar selector + 侧栏分组账目);host 帧与显式动作后刷新。
+  const reloadWorkspaces = useCallback(() => {
+    const api = runtime.wire.api
+    void api.workspace.list({}).then((res) => {
+      setWorkspaces(res.result.ok ? res.result.value.items : [])
+    })
+  }, [runtime])
+  useEffect(() => {
+    reloadWorkspaces()
+  }, [reloadWorkspaces])
+
   useEffect(() => {
     const stop = runtime.wire.start({
       onConnected: () => setConnectionState('connected'),
       onStateChange: (s) => setConnectionState(s === 'reconnecting' ? 'reconnecting' : 'connected'),
+      // 宿主工作区变更帧(建/改/删/归档)驱动账目刷新:分组与手动排序跟着变。
+      onHost: (env) => {
+        const type = env.payload.type
+        if (type === 'host/workspace-changed' || type === 'host/workspace-removed' || type === 'host/workspace-added') {
+          reloadWorkspaces()
+        }
+      },
       onRemoteEvent: (event, args) => {
         // Forwarded host cordis events feed the plugin run orchestrator.
         getPluginRuntimeHandle().handleRemoteEvent(event, args)
       },
     })
     return stop.stop
-  }, [runtime])
+  }, [runtime, reloadWorkspaces])
 
   // Model catalog + current selection follows the selected session.
   useEffect(() => {
@@ -224,16 +246,7 @@ export function RuntimeProvider({ children }: { children: ReactNode }): JSX.Elem
     return () => { cancelled = true }
   }, [runtime, selectedId])
 
-  // Workspace rows (top-bar selector); fixtures serve a single workspace.
-  const reloadWorkspaces = useCallback(() => {
-    const api = runtime.wire.api
-    void api.workspace.list({}).then((res) => {
-      setWorkspaces(res.result.ok ? res.result.value.items : [])
-    })
-  }, [runtime])
-  useEffect(() => {
-    reloadWorkspaces()
-  }, [reloadWorkspaces])
+
 
   const useSessions = useMemo(
     () => bindSnapshotSelector<SessionListSnapshot>({
@@ -450,6 +463,23 @@ export function RuntimeProvider({ children }: { children: ReactNode }): JSX.Elem
           return res.result.ok
         },
         refresh: () => reloadWorkspaces(),
+        insertBefore: async (workspaceId, beforeWorkspaceId) => {
+          const res = await wire.api.workspace.insertBefore({
+            workspaceId,
+            ...(beforeWorkspaceId === undefined ? {} : { beforeWorkspaceId }),
+          })
+          if (res.result.ok) await reloadWorkspaces()
+          return res.result.ok
+        },
+        insertSessionBefore: async (workspaceId, sessionId, beforeSessionId) => {
+          const res = await wire.api.workspace.insertSessionBefore({
+            workspaceId,
+            sessionId,
+            ...(beforeSessionId === undefined ? {} : { beforeSessionId }),
+          })
+          if (res.result.ok) await reloadWorkspaces()
+          return res.result.ok
+        },
       },
       subagentActions: {
         refresh: () => {
