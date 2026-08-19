@@ -17,6 +17,7 @@
 - ③ dynamicCordisRunner 运行编排 UI ✅ real 7/7
 - P1 模型两级菜单 ✅ real + fixture 7/7
 - P1 **权限三面 + Plan chip** ✅ fixture 12/12 + real 12/12(本轮)
+- P1 **信息层三件套(ContextMeter / StatsLine / TodoDock)** ✅ fixture 6/6 + real 7/7(本轮)
 - ⑤(部分) 消息复制/分支 ✅ real 6/6
 - ④ 会话导出按钮 → **已核定为 N/A**(官方 web 客户端无该按钮,`downloads` 是 host-only 通道;见 §3)
 
@@ -26,6 +27,7 @@
 
 | 提交 | 内容 |
 |---|---|
+| `<本提交>` | 信息层三件套:runtime 通用 useProjection(per-key uSES)+ ContextMeter/StatsLine/TodoDock seat;ts-types 补 token-meter/session-stats/tool-todo 占位;probe-composer-stats fixture 6/6 + real 7/7 |
 | `c2a1467` | 权限三面 + Plan chip:vendor ui-permission-presets/ui-plan/schema-form + ui-primitives 补 Menu/Button/Modal/RiskConfirmation;Settings 权限默认行 + composer 权限 chip(Full access 风险确认)+ PlanSeat;fixture 扩展 permission ns;probe-permission-plan fixture 12/12 + real 12/12 |
 | `beed201` | 消息行动作:复制 + 分支(fork at anchorSeq),real 6/6 |
 | `396255a` | dynamicCordisRunner 编排 UI:运行控制台(inventory+Run/Update)+ 审批卡「批准并信任」,real 7/7 |
@@ -57,6 +59,7 @@
   5. `npm run build:web` + 探针(real/fixture 双轨)+ tsc(`src/` 0 新错;vendor 的 cordis 类型噪音是既有预期).
 - **vendor 包现状**:`client-connection / client-runtime / client-ui-conversation / client-ui-slots / client-web-react / ui-primitives(最小面:icons 全表 + Tooltip + JsonTree/MarkdownText/Toast/plain-text + Menu/Button/Modal/RiskConfirmation/pointer-grace)/ ui-trajectory(完整)/ ui-model-selection(完整)/ ui-plan(完整)/ ui-permission-presets(完整)/ schema-form(完整)+ ts-types`.alias 与 paths 均已配好,后续 vendor 新包照抄;npm 依赖另加 `@deepseek-ai/schemastery`(file: 官方链,schema-form 需要).
 - **ui-primitives 是「最小等位面」**:icons 全表 + 官方 Tooltip + 自写 JsonTree/MarkdownText/Toast(plain-text 投影),刻意不拉整棵 micromark;整包 vendor 时整体替换。
+- **useProjection 通用钩子**(本轮,runtime.tsx):per-key uSES 绑定选中会话 ProjectionValueStore,`undefined` = 能力缺失;官方第五框架席位。ContextMeter/StatsLine/TodoDock/PermissionSelect/PlanChip 全部经它读投影(useGoal/usePlanProjection/usePermissions 保持专用绑定不动)。
 - **本轮 vendor 注意点**:
   - `ui-permission-presets` 的 settings-store 依赖 `@deepseek-ai/dsh-client-schema-form`(runtime)→ vendor schema-form(3 文件)+ schemastery npm 依赖;真后端 `permission` ns 的 schema 是 schemastery toJSON(refs/uid 引用表),`new Schema(envelope)` 直接可解析。
   - `PermissionRow`/`PlanChip` 需要的 SlotMap/LocaleNamespaceMap merge(`settings.general.item`、`conversation.input.plan`、`plan`)由 zion 适配文件 `declare module` 等位补齐(官方声明在未编译的 ui-settings/ui-conversation contract 里)。
@@ -98,6 +101,7 @@ Goal 暂停;恢复时按下列优先级继续补官方可点入口,每项照 §2
 | `probe-cordis-console.mjs` | cordis 运行控制台 + 批准并信任 | 3080 | 7/7 |
 | `probe-msg-actions.mjs` | 消息复制/分支(fork+选切子会话) | 3080 | 6/6 |
 | `probe-permission-plan.mjs` | 权限行(Full access 风险确认往返)/ composer 权限 chip / Plan chip(激活→关闭) | 3080+fixture | 12/12 |
+| `probe-composer-stats.mjs` | ContextMeter 环+组成面板 / StatsLine 统计条 / TodoDock plan strip | 3080+fixture | 7/7 |
 
 (更早的 M 探针:probe-m3/real/official-real/hero/plugin/queue/cordis-*/hostcall/queue-ops/approve-* 仍在仓库。)
 
@@ -113,6 +117,7 @@ Goal 暂停;恢复时按下列优先级继续补官方可点入口,每项照 §2
 - 探针 JS 字符串经外层模板字面量转发:`split('\n')` 会被外层转义成真换行导致页面 SyntaxError——用 `split(String.fromCharCode(10))`。
 - `npm run typecheck` 基线本就有 200 行错/31 文件(模型 select 的 t prop、runtime 投影 cast、vendor cordis 噪音等,历史遗留);验收口径 = **对比基线不新增错误文件**(Compare-Object 两份 error 文件列表)。
 - 设置/菜单按钮的 `aria-haspopup` 全页面多个(工作区/模型/权限),探针选择器要限定作用域(`.settings-shell button[aria-haspopup="menu"]`)。
+- 探针模板字面量里引用的循环变量必须 `${i}` 插值(直接写 `i` 会 ReferenceError);跨行匹配用 `split(String.fromCharCode(10))` 而非正则 `\n`(外层模板会把它转义成真换行)。
 
 ---
 
@@ -145,4 +150,4 @@ R1 宿主组合零改动;R2 wire 契约零改动(52 RPC + respond + 双 WS + ses
 
 ---
 
-*本文件由原开发会话持续维护;信息截至 `c2a1467`(权限三面 + Plan chip)。接手后有重大变化请同步更新 §1/§3 并按 AGENTS.md 记录。*
+*本文件由原开发会话持续维护;信息截至 `<本提交>`(信息层三件套)。接手后有重大变化请同步更新 §1/§3 并按 AGENTS.md 记录。*

@@ -9,7 +9,9 @@ import type { UseProjection } from '@deepseek-ai/dsh-client-runtime/client'
 // Type-only: the `contextPressure` / `contextBreakdown` projection key merges.
 import type {} from '@deepseek-ai/dsh-token-meter/client'
 import { Tooltip } from '@deepseek-ai/dsh-client-ui-primitives'
-import type { ComposerBarProps } from '../contract/slots.ts'
+// Zion patch: contract/slots.ts stays out of the compiled program; the bar's
+// locale seat type is declared locally (same shape as PermissionSelect patch).
+type ComposerBarT = (key: string, params?: Record<string, unknown>) => string
 import { contextOccupancy, formatTokens } from '../chat/StatsLine.tsx'
 import css from './ContextMeter.module.css'
 
@@ -34,7 +36,7 @@ const ROWS = [
 export interface ContextMeterProps {
   useProjection: UseProjection
   /** The owning bar's locale seat, passed down as a plain prop. */
-  t: ComposerBarProps['t']
+  t: ComposerBarT
 }
 
 export function ContextMeter({ useProjection, t }: ContextMeterProps) {

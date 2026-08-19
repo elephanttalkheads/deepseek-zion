@@ -12,6 +12,7 @@ import { useRuntime, type MediaType } from '../app/runtime.tsx'
 import { ModelSelectAdapter } from '../app/model-select.tsx'
 import { PermissionChip } from '../app/permission-ui.tsx'
 import { PlanSeat } from '../app/plan-seat.tsx'
+import { ContextMeterSeat, StatsLineSeat, TodoDockSeat } from '../app/composer-stats.tsx'
 import { SlotAnchor } from '../plugin/anchors.tsx'
 import { GoalBar } from './GoalBar.tsx'
 import type { PromptContentPart } from '../../vendor/client-connection/client/api.ts'
@@ -125,6 +126,7 @@ export function InputBar(): JSX.Element {
   return (
     <div className="input-bar">
       <SlotAnchor slot="conversation.input.dock" ownerProps={{}} />
+      <TodoDockSeat />
       <GoalBar />
       <div className="input-bar-modes">
         <PermissionChip />
@@ -188,6 +190,8 @@ export function InputBar(): JSX.Element {
         <div className="input-bar-error">{imageLimitError ?? intakeError}</div>
       )}
 
+      <StatsLineSeat />
+
       <textarea
         ref={textareaRef}
         className="input-bar-textarea"
@@ -218,6 +222,7 @@ export function InputBar(): JSX.Element {
           hidden
           onChange={(e) => { readFiles(e.target.files); e.target.value = '' }}
         />
+        <ContextMeterSeat />
         {running ? (
           <button className="input-bar-stop" type="button" onClick={() => stop()}>停止</button>
         ) : (

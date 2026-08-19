@@ -10,7 +10,7 @@
  * the manager, opens its history window, and binds its ConversationSnapshot
  * into a useConversation selector hook.
  */
-import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
+import { createContext, useCallback, useContext, useEffect, useMemo, useState, useSyncExternalStore, type ReactNode } from 'react'
 import { bindSnapshotSelector } from '@deepseek-ai/dsh-client-web-react'
 import type { SnapshotSelectorHook } from '@deepseek-ai/dsh-client-ui-slots'
 import { assembleWire, type AssembledWire } from '../protocol/assemble.ts'
@@ -108,6 +108,9 @@ export interface AppRuntime {
    * (undefined when the permission service is not composed). Call as
    * usePermissions(p => p). */
   usePermissions: SnapshotSelectorHook<import('@deepseek-ai/dsh-permission-presets/client').PermissionSelect | null | undefined>
+  /** Key-addressed projection reader bound to the SELECTED session(官方第五框架席位:
+   *  undefined = 能力缺失)。Call as useProjection('contextPressure') 等。 */
+  useProjection: import('../../vendor/client-runtime/client/index.ts').UseProjection
   /** Goal lifecycle verbs over the goal.* contract (create/edit/pause/resume/complete/clear). */
   goalActions: GoalActions
   /** Cancel the selected session's active turn. */
@@ -301,6 +304,24 @@ export function RuntimeProvider({ children }: { children: ReactNode }): JSX.Elem
     return bindSnapshotSelector<import('@deepseek-ai/dsh-permission-presets/client').PermissionSelect | null | undefined>(source)
   }, [runtime, selectedId])
 
+  // Generic key-addressed projection reader(官方 UseProjection 语义):per-key
+  // uSES 绑定到选中会话的 ProjectionValueStore;无会话或键缺失 → undefined。
+  const useProjection = useMemo<import('../../vendor/client-runtime/client/index.ts').UseProjection>(() => {
+    const fn = (key: string): unknown => {
+      return useSyncExternalStore(
+        (onChange) => {
+          if (selectedId === undefined) return () => {}
+          return runtime.wire.sessions.get(selectedId).projections.faceOf(key).subscribe(onChange)
+        },
+        () => {
+          if (selectedId === undefined) return undefined
+          return runtime.wire.sessions.get(selectedId).projections.faceOf(key).getSnapshot()
+        },
+      )
+    }
+    return fn as unknown as import('../../vendor/client-runtime/client/index.ts').UseProjection
+  }, [runtime, selectedId])
+
   const value = useMemo<AppRuntime>(() => {
     const wire = runtime.wire
     return {
@@ -317,6 +338,7 @@ export function RuntimeProvider({ children }: { children: ReactNode }): JSX.Elem
       useGoal,
       usePlanProjection,
       usePermissions,
+      useProjection,
       goalActions: {
         create: (objective, maxGoalRounds) => {
           if (selectedId === undefined) return Promise.resolve(false)
@@ -441,7 +463,7 @@ export function RuntimeProvider({ children }: { children: ReactNode }): JSX.Elem
         },
       },
     }
-  }, [runtime, useSessions, useConversation, useGoal, usePlanProjection, usePermissions, connectionState, selectedId, models, workspaces, reloadWorkspaces])
+  }, [runtime, useSessions, useConversation, useGoal, usePlanProjection, usePermissions, useProjection, connectionState, selectedId, models, workspaces, reloadWorkspaces])
 
   return <RuntimeContext.Provider value={value}>{children}</RuntimeContext.Provider>
 }

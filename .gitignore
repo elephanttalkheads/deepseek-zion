@@ -55,3 +55,4 @@ backup/
 .DS_Store
 Thumbs.db
 probe-permission-plan-out/
+probe-composer-stats-out/

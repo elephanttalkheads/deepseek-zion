@@ -9,7 +9,9 @@ import type { SnapshotSelectorHook } from '@deepseek-ai/dsh-client-ui-slots'
 // Type-only: merges the sessionStats key into SessionProjectionMap for useProjection.
 import type {} from '@deepseek-ai/dsh-session-stats/client'
 import type { ContextPressureProjection, TokenUsageProjection } from '@deepseek-ai/dsh-token-meter/client'
-import type { ComposerBarProps } from '../contract/slots.ts'
+// Zion patch: contract/slots.ts stays out of the compiled program; the dock's
+// locale seat type is declared locally (same shape as PermissionSelect patch).
+type ComposerBarT = (key: string, params?: Record<string, unknown>) => string
 import { formatTokensPerSecond } from './message-chrome.ts'
 import { assistantStepReading } from './turn-metrics.ts'
 import css from './StatsLine.module.css'
@@ -157,7 +159,7 @@ export interface StatsLineProps {
   useSession: SnapshotSelectorHook<ConversationSnapshot>
   useProjection: UseProjection
   /** The owning dock's locale seat. */
-  t: ComposerBarProps['t']
+  t: ComposerBarT
 }
 
 export const StatsLine = memo(function StatsLine({ useSession, useProjection, t }: StatsLineProps) {

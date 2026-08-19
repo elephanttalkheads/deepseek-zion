@@ -37,6 +37,9 @@
       "@deepseek-ai/dsh-permission-presets/client": ["vendor/ts-types/dsh-permission-presets.d.ts"],
       "@deepseek-ai/dsh-plan-mode/client": ["vendor/ts-types/dsh-plan-mode.d.ts"],
       "@deepseek-ai/dsh-client-ui-commands/client": ["vendor/ts-types/dsh-client-ui-commands.d.ts"],
+      "@deepseek-ai/dsh-token-meter/client": ["vendor/ts-types/dsh-token-meter.d.ts"],
+      "@deepseek-ai/dsh-session-stats/client": ["vendor/ts-types/dsh-session-stats.d.ts"],
+      "@deepseek-ai/dsh-tool-todo/client": ["vendor/ts-types/dsh-tool-todo.d.ts"],
       "@deepseek-ai/dsh-compaction/types": ["vendor/ts-types/dsh-compaction.d.ts"],
       "@deepseek-ai/dsh-invariants": ["vendor/ts-types/dsh-invariants.d.ts"],
       "@deepseek-ai/dsh-client-locale/client": ["vendor/ts-types/dsh-client-locale.d.ts"]

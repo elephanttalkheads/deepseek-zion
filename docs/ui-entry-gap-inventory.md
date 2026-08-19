@@ -27,6 +27,7 @@
 | **① TrajectoryView 轨迹视图** | 会话头无 tabs、无轨迹 | vendor `ui-trajectory`(36 源文件)+ `ui-primitives` 最小面(icons 全表 / Tooltip / JsonTree / MarkdownText / plain-text)+ 注册 6 个轨迹 Definition + 会话头 tabs + TrajectoryPane 适配 | probe-trajectory **10/10**(fixture),probe-trajectory-real **6/6**(真后端,实时回合轨迹账本渲染,零错误) |
 | **Full access 风险确认 + 权限预设行(设置)+ composer 权限 chip** | 设置无「权限」行;composer 无访问模式 chip | vendor `ui-permission-presets`(PermissionRow + settings-store + presentation + locales)+ `ui-primitives` 补 Menu/Button/Modal/RiskConfirmation/pointer-grace + PermissionSettingsRow/SettingsShell 接线 + composer vendored `PermissionSelect` chip(usePermissions 投影绑定) | probe-permission-plan **fixture 12/12 + real 12/12**(风险确认勾选门、settings.mutate 往返、`/permission` 提交后投影刷新) |
 | **Plan chip(`/plan off`)** | composer 无 plan mode 状态 chip | vendor `ui-plan`(PlanChip)+ PlanSeat 适配(`plan` 投影绑定,`pending ? !active : active`,点击 `/plan off`) | 同上探针 P8–P10(fixture:未激活不渲染 → `/plan` 激活 chip 出现 → 点击消失;real:投影存在未激活 → 不渲染) |
+| **ContextMeter / StatsLine / TodoDock(projection 绑定)** | composer 缺上下文环/统计条/plan strip | runtime 增通用 `useProjection`(per-key uSES 绑定)+ 适配层三 seat(vendor 组件直接接线)+ ts-types 补 token-meter/session-stats/tool-todo 占位(含 SessionProjectionMap merge) | probe-composer-stats **fixture 6/6 + real 7/7**(真实投影:8 轮 · 25 步、缓存命中 89%、上下文已用 5%;todos=null 正确隐藏) |
 
 ## 2. 待补(按优先级)
 
@@ -50,8 +51,8 @@
 ### P3 — 输入/信息层
 | 入口 | 官方源码 | zion 现状 | 补法 |
 |---|---|---|---|
-| ContextMeter / TodoPanel / StatsLine(projection 绑定) | ui-conversation skeleton | ❌ | 绑 useProjection + 手写 |
-| PermissionSelect(composer 权限 chip) | ui-conversation skeleton | ❌ | 手写 |
+| ContextMeter / TodoPanel / StatsLine(projection 绑定) | ui-conversation skeleton / chat | 🟢(vendor 接线,useProjection 通用钩子) | — |
+| PermissionSelect(composer 权限 chip) | ui-conversation skeleton | 🟢(见 §1) | — |
 | QueueDock edit 行内编辑 | ui-conversation queue | 🟡 仅 remove/steer | 手写 edit 表单 |
 | ApprovalPanel composer 接管 / PlanReview 区分 | ui-conversation skeleton / ui-user-questions | 🟡 独立卡 | 布局改造 |
 | `/` `@` 触发菜单 MenuView + popupSelect 命令弹窗 | ui-input-trigger / ui-commands | ❌ | vendor |
