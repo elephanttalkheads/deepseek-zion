@@ -575,6 +575,8 @@ body {
 .conversation { padding: 40px; height: 100%; display: flex; flex-direction: column; }
 .conversation-header-title-row { display: flex; align-items: center; gap: 8px; }
 .conversation-header-actions { display: inline-flex; align-items: center; }
+/* 触发菜单锚点:composer 顶缘零高条带;MenuView/PopupSelectView 自行上浮。 */
+.trigger-overlay-anchor { position: relative; height: 0; z-index: 200; }
 .conversation-hero { margin: auto; text-align: center; }
 .conversation-hero-title { font-size: 28px; font-weight: 600; }
 .conversation-hero-sub { color: var(--fg-muted); }

@@ -36,6 +36,7 @@
 | **ProducedFiles 产物行(ui-deliverables)** | turn 结束无产物行 | vendor ui-deliverables(deliverablesDefinition 累积 + ProducedFiles 行,两处 surgical:TurnTailOwnerProps 本地化)+ conversation.ts 注册 + ChatView turn-tail 渲染(timeline turn 数据 `deliverables`)+ openFile=host.openPath + primitives 补 MarkdownFileMentions 类型 + fixture diff 卡补 locations | probe-deliverables **fixture 6/6 + real 6/6**(turns 61–64 四行产物 chip + 点击 openPath;真后端派生逻辑同源) |
 | **WorkflowRun 面板(ui-workflow-run)** | workflow 运行无面板 | vendor ui-workflow-run(workflowRunDefinition + WorkflowRunPanel;deps 加 dsh-tool-workflow/dsh-workflow;两处 surgical:data cast + navigableMembers 容错 manager 快照)+ primitives 补 DisclosureRow + conversation.ts 注册 + ChatView keyed 渲染 + fixture 补 tool-workflow 事件族 | 同上探针 D4/D5(run 头 → 展开阶段 → 成员状态;真后端无事件时隐藏) |
 | **SkillRow 专用工具卡(ui-skill)** | skill 调用渲染为通用卡 | vendor ui-skill(SkillRow;surgical:ToolCallViewProps 本地化)+ ChatView toolName==='skill' 分支(settled 名取自 block.call.name)+ fixture turn 76 skill 样本 | probe-skill **fixture 5/5 + real 5/5**(状态点/标题 Skill/摘要 code-review → 展开说明区 → 收起;真后端无 skill 调用时隐藏) |
+| **`/` 触发菜单 MenuView + popupSelect(ui-input-trigger + ui-commands)** | 输入侧无 `/` 候选菜单、无命令弹窗 | vendor ui-input-trigger(core 纯逻辑 + controller + MenuView;controller surgical:actx bail 面本地化)+ primitives 补 useAnchoredMaxHeight + vendor ui-commands(popup.ts + PopupSelectView)+ zion 管线(trigger-menu.tsx:command/skill 双源、/permission 装饰 → popupSelect 壳、actx shim → draft 落盘、track 去重)+ InputBar 接线(data-composer-card/锚点/仲裁)+ 权限投影 options(Full access 风险确认) | probe-trigger **fixture 9/9 + real 9/9**(/ 菜单命令+技能组 → 过滤 → pick /permission → popup 预设 → 执行+令牌移除;普通命令/技能落文本;Escape 关闭;real 真实命令目录) |
 
 ## 2. 待补(按优先级)
 
@@ -63,7 +64,6 @@
 | PermissionSelect(composer 权限 chip) | ui-conversation skeleton | 🟢(见 §1) | — |
 | QueueDock edit 行内编辑 | ui-conversation queue | 🟢(行内输入 + updateQueue edit 往返;InputBar 运行中排队发送补位) | — |
 | ApprovalPanel composer 接管 / PlanReview 区分 | ui-conversation skeleton / ui-user-questions | 🟡 独立卡 | 布局改造 |
-| `/` `@` 触发菜单 MenuView + popupSelect 命令弹窗 | ui-input-trigger / ui-commands | ❌ | vendor |
 | 消息赞/踩 + 备注 | ui-message-feedback | N/A(真后端 3080 无 messageFeedback.* 远程端点,404 已探;官方接线但宿主未挂服务) | 若宿主补端点再 vendor |
 
 ### P4 — 管理/浏览面

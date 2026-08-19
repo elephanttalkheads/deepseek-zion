@@ -26,6 +26,7 @@
 - P1 **附件 Lightbox / 拖放覆盖层(ui-attachment)** ✅ probe-attachment fixture 8/8 + real 8/8(本轮;消息图片 ImageGallery/MessageImage → Lightbox,loader=session.readAttachment;InputBar AttachmentRail + document 拖放 + DropOverlay)
 - P1 **ProducedFiles 产物行(ui-deliverables)+ WorkflowRun 面板(ui-workflow-run)** ✅ probe-deliverables fixture 6/6 + real 6/6(本轮;deliverablesDefinition 累积(tool locations 派生)+ turn-tail 产物行(host.openPath);workflowRunDefinition + WorkflowRunPanel(DisclosureRow 补 vendor);fixture 补 locations 与 tool-workflow 事件族)
 - P1 **SkillRow 专用工具卡(ui-skill)** ✅ probe-skill fixture 5/5 + real 5/5(本轮;vendor SkillRow(toolview 本地化)+ ChatView skill 分支;`/` 触发源随 ⑥ MenuView 一并接入)
+- P2 **`/` 触发菜单 MenuView + popupSelect(ui-input-trigger + ui-commands)** ✅ probe-trigger fixture 9/9 + real 9/9(本轮;vendor input-trigger 核心/controller/MenuView + commands popup 壳;zion 管线:command/skill 双源 + /permission popupSelect 装饰(Full access 风险确认)+ actx shim + track 去重;InputBar 键入触发/仲裁/锚点)
 - ⑤(部分) 消息复制/分支 ✅ real 6/6
 - ④ 会话导出按钮 → **已核定为 N/A**(官方 web 客户端无该按钮,`downloads` 是 host-only 通道;见 §3)
 
@@ -34,6 +35,7 @@
 ## 1. 最近提交链(自本会话;`main` 最新行在前)
 
 | 提交 | 内容 |
+| `(本轮,见 git log)` | 触发菜单 + popupSelect:vendor ui-input-trigger(core/controller/MenuView,controller actx 本地化)+ ui-commands(popup/PopupSelectView)+ primitives useAnchoredMaxHeight;zion 管线(command/skill 源 + /permission 装饰 + actx shim + track 去重)+ InputBar 接线;probe-trigger fixture 9/9 + real 9/9 |
 | `(本轮,见 git log)` | SkillRow 专用工具卡:vendor ui-skill(surgical ToolCallViewProps 本地化)+ ChatView skill 分支(settled 名取自 block.call.name)+ fixture turn 76 skill 样本;probe-skill fixture 5/5 + real 5/5 |
 | `(本轮,见 git log)` | 产物行 + WorkflowRun 面板:vendor ui-deliverables/ui-workflow-run(+primitives DisclosureRow/MarkdownFileMentions;deps dsh-tool-workflow/dsh-workflow)+ 注册两个 Definition + ChatView turn-tail 产物行/keyed 面板 + fixture locations/tool-workflow 样本;probe-deliverables fixture 6/6 + real 6/6 |
 | `(本轮,见 git log)` | 附件 Lightbox/拖放覆盖层:vendor ui-attachment 整包(4 组件零 cordis)+ ChatView 消息图片(ImageGallery,loader=readAttachment)+ InputBar AttachmentRail/DropOverlay/Lightbox + document 拖放监听;probe-attachment fixture 8/8 + real 8/8 |
@@ -141,6 +143,7 @@
 | `probe-attachment.mjs` | 附件(消息图片缩略图/Lightbox/Escape;合成拖拽 DropOverlay → AttachmentRail → 移除) | 3080+fixture | 8/8 + 8/8 |
 | `probe-deliverables.mjs` | 产物行(edit/write locations 派生 + chip 点击 openPath)+ workflow-run 面板(run 头/阶段展开/成员状态) | 3080+fixture | 6/6 + 6/6 |
 | `probe-skill.mjs` | skill 专用工具卡(状态/标题/摘要 + 展开说明区/收起) | 3080+fixture | 5/5 + 5/5 |
+| `probe-trigger.mjs` | 触发菜单(`/` 命令+技能组/过滤/pick 落文本/Escape)+ popupSelect(/permission 预设/执行/令牌移除) | 3080+fixture | 9/9 + 9/9 |
 
 ### 3A. JobListAction 实施记录(✅ 已执行,commit 见 §1 行首)
 - 数据:zion manager 已有 jobsBySession(useSessions(s => s.jobsBySession[id]) 读,由 session/jobs mux 帧填充;fixture 不产生 jobs)。

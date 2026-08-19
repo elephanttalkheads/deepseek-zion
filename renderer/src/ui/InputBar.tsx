@@ -22,6 +22,8 @@ import { ModelSelectAdapter } from '../app/model-select.tsx'
 import { PermissionChip } from '../app/permission-ui.tsx'
 import { PlanSeat } from '../app/plan-seat.tsx'
 import { ContextMeterSeat, StatsLineSeat, TodoDockSeat } from '../app/composer-stats.tsx'
+import { useTriggerPipeline } from '../app/trigger-menu.tsx'
+import type { PickOutcome, TokenSpan } from '../../vendor/ui-input-trigger/client/index.ts'
 import { SlotAnchor } from '../plugin/anchors.tsx'
 import { GoalBar } from './GoalBar.tsx'
 import type { PromptContentPart } from '../../vendor/client-connection/client/api.ts'
@@ -57,6 +59,33 @@ export function InputBar(): JSX.Element {
   const dragDepthRef = useRef(0)
   const fileRef = useRef<HTMLInputElement | null>(null)
   const textareaRef = useRef<HTMLTextAreaElement | null>(null)
+
+  // 触发菜单管线(`/` 命令/技能 + /permission popupSelect):draft 修订号供
+  // pick 的 span CAS(官方输入机 draftRev 语义)。
+  const draftRevRef = useRef(0)
+  const applyOutcome = (outcome: PickOutcome, span: TokenSpan): void => {
+    if (span.draftRev !== draftRevRef.current) return
+    if (typeof outcome === 'object' && outcome !== null && 'text' in outcome) {
+      draftRevRef.current += 1
+      setDraft(prev => `${prev.slice(0, span.start)}${outcome.text}${prev.slice(span.end)}`)
+    }
+  }
+  // popupSelect 结算后移除开壳令牌段(如 /permission)。
+  const consumeToken = (span: TokenSpan): void => {
+    if (span.draftRev !== draftRevRef.current) return
+    draftRevRef.current += 1
+    setDraft(prev => `${prev.slice(0, span.start)}${prev.slice(span.end)}`)
+  }
+  const trigger = useTriggerPipeline(applyOutcome, consumeToken)
+  // track 去重:keyup 与 onChange 常带相同 draft/caret(Escape/方向键的 keyup
+  // 会把刚关掉的菜单重新触发打开),相同快照跳过。
+  const lastTrackRef = useRef<{ draft: string; caret: number } | null>(null)
+  const trackNow = (draft: string, caret: number): void => {
+    const prev = lastTrackRef.current
+    if (prev !== null && prev.draft === draft && prev.caret === caret) return
+    lastTrackRef.current = { draft, caret }
+    trigger.track(draft, caret, draftRevRef.current)
+  }
 
   const imageLimitError = useMemo(() => {
     if (images.length === 0) return null
@@ -190,7 +219,8 @@ export function InputBar(): JSX.Element {
   }
 
   return (
-    <div className="input-bar">
+    <div className="input-bar" data-composer-card>
+      {trigger.render()}
       <SlotAnchor slot="conversation.input.dock" ownerProps={{}} />
       <TodoDockSeat />
       <GoalBar />
@@ -287,8 +317,31 @@ export function InputBar(): JSX.Element {
         placeholder="输入消息…"
         rows={1}
         value={draft}
-        onChange={(e) => setDraft(e.target.value)}
+        onChange={(e) => {
+          const value = e.target.value
+          draftRevRef.current += 1
+          setDraft(value)
+          trackNow(value, e.target.selectionStart ?? value.length)
+        }}
+        onKeyUp={(e) => {
+          // 光标移动(不改 draft)也要刷新触发检测;相同快照由 trackNow 去重。
+          const el = e.currentTarget
+          trackNow(el.value, el.selectionStart ?? el.value.length)
+        }}
         onKeyDown={(e) => {
+          // 触发菜单打开时先仲裁(↑/↓/Enter/Escape)。
+          const key = e.key === 'ArrowUp' ? 'up'
+            : e.key === 'ArrowDown' ? 'down'
+              : e.key === 'Enter' ? 'enter'
+                : e.key === 'Escape' ? 'escape'
+                  : null
+          if (key !== null) {
+            const outcome = trigger.arbitrate(key, e.nativeEvent.isComposing)
+            if (outcome === 'consumed' || outcome === 'pick-highlighted') {
+              e.preventDefault()
+              return
+            }
+          }
           if (e.key === 'Enter' && !e.shiftKey) {
             // 运行中也允许发送:提示进入队列模式(queue),官方 composer 同姿态。
             e.preventDefault()
