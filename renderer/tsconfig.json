@@ -33,6 +33,7 @@
       "@deepseek-ai/dsh-client-ui-plan/client": ["vendor/ui-plan/client/index.ts"],
       "@deepseek-ai/dsh-client-ui-permission-presets": ["vendor/ui-permission-presets/index.ts"],
       "@deepseek-ai/dsh-client-ui-permission-presets/client": ["vendor/ui-permission-presets/client/index.ts"],
+      "@deepseek-ai/dsh-client-ui-attachment": ["vendor/ui-attachment/index.ts"],
       "@deepseek-ai/dsh-client-schema-form": ["vendor/schema-form/index.ts"],
       "@deepseek-ai/dsh-permission-presets/client": ["vendor/ts-types/dsh-permission-presets.d.ts"],
       "@deepseek-ai/dsh-plan-mode/client": ["vendor/ts-types/dsh-plan-mode.d.ts"],

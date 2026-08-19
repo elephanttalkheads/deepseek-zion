@@ -23,6 +23,7 @@
 - P3 **QueueDock 行内编辑 + 运行中排队发送** ✅ 3/3(本轮;InputBar 运行中同时显示 停止+发送,补上官方 composer 队列姿态缺口)
 - P0 **JobListAction 作业 badge** ✅ probe-jobs fixture 9/9 + real 10/10(本轮;见 §3A 已执行)
 - P0 **消息时间戳收尾(MessageIconActions)** ✅ probe-msg-actions fixture 8/8 + real 8/8(本轮;vendor 激活 MessageIconActions:复制/分支图标 + hover 时间戳 + user 行 clock=start;forkSession 补 select 重试)
+- P1 **附件 Lightbox / 拖放覆盖层(ui-attachment)** ✅ probe-attachment fixture 8/8 + real 8/8(本轮;消息图片 ImageGallery/MessageImage → Lightbox,loader=session.readAttachment;InputBar AttachmentRail + document 拖放 + DropOverlay)
 - ⑤(部分) 消息复制/分支 ✅ real 6/6
 - ④ 会话导出按钮 → **已核定为 N/A**(官方 web 客户端无该按钮,`downloads` 是 host-only 通道;见 §3)
 
@@ -31,6 +32,7 @@
 ## 1. 最近提交链(自本会话;`main` 最新行在前)
 
 | 提交 | 内容 |
+| `(本轮,见 git log)` | 附件 Lightbox/拖放覆盖层:vendor ui-attachment 整包(4 组件零 cordis)+ ChatView 消息图片(ImageGallery,loader=readAttachment)+ InputBar AttachmentRail/DropOverlay/Lightbox + document 拖放监听;probe-attachment fixture 8/8 + real 8/8 |
 | `(本轮,见 git log)` | 消息时间戳收尾:激活 vendored MessageIconActions(图标复制/分支 + hover 时钟 + user 行动作),补 primitives writeClipboard / locale-common(common 词表)/ forkSession select 重试;probe-msg-actions fixture 8/8 + real 8/8 |
 | `(本轮,见 git log)` | JobListAction 会话头作业 badge:vendor ui-jobs + ui-primitives 补 StateDot/useDismissOnOutsidePointer + 会话头座位 + __zionProbePushMuxFrame 探针缝;probe-jobs fixture 9/9 + real 10/10 |
 | `b7be773` | QueueDock 行内编辑(updateQueue edit)+ InputBar 运行中排队发送;fixture edit 分支真实替换;probe-queue-edit 3/3 |
@@ -132,6 +134,7 @@
 | `probe-sidebar-drag.mjs` | 拖拽重排(insertSessionBefore 顺序落点)/ 溢出折叠展开 | 3080+fixture | 6/6 |
 | `probe-jobs.mjs` | JobListAction 会话头作业 badge(注入帧徽标/列表排序/时钟实时走/外点+Escape 关闭/空帧消失;real 真实 jobs 数据) | 3080+fixture | 9/9 + 10/10 |
 | `probe-msg-actions.mjs` | 消息行动作(图标复制/分支/hover 时钟/user 行/fork 选中子会话) | 3080+fixture | 8/8 + 8/8 |
+| `probe-attachment.mjs` | 附件(消息图片缩略图/Lightbox/Escape;合成拖拽 DropOverlay → AttachmentRail → 移除) | 3080+fixture | 8/8 + 8/8 |
 
 ### 3A. JobListAction 实施记录(✅ 已执行,commit 见 §1 行首)
 - 数据:zion manager 已有 jobsBySession(useSessions(s => s.jobsBySession[id]) 读,由 session/jobs mux 帧填充;fixture 不产生 jobs)。

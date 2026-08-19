@@ -25,6 +25,7 @@ export default defineConfig({
       { find: /^@deepseek-ai\/dsh-client-ui-plan$/, replacement: here + 'vendor/ui-plan/index.ts' },
       { find: /^@deepseek-ai\/dsh-client-ui-permission-presets\/client$/, replacement: here + 'vendor/ui-permission-presets/client/index.ts' },
       { find: /^@deepseek-ai\/dsh-client-ui-permission-presets$/, replacement: here + 'vendor/ui-permission-presets/index.ts' },
+      { find: /^@deepseek-ai\/dsh-client-ui-attachment$/, replacement: here + 'vendor/ui-attachment/index.ts' },
       { find: /^@deepseek-ai\/dsh-client-schema-form$/, replacement: here + 'vendor/schema-form/index.ts' },
     ],
   },

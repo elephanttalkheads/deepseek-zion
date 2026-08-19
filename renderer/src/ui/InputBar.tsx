@@ -9,6 +9,15 @@
  */
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useRuntime, type MediaType } from '../app/runtime.tsx'
+import { makeT } from '../app/locale-common.ts'
+import { zh as conversationZh } from '../../vendor/client-ui-conversation/client/locales.ts'
+import {
+  attachmentRailLabels, dropOverlayLabels, lightboxLabels, imageSizeText,
+} from '../../vendor/client-ui-conversation/client/image-labels.ts'
+import {
+  AttachmentRail, DropOverlay, ImageLightbox,
+  type AttachmentRailItem,
+} from '../../vendor/ui-attachment/index.ts'
 import { ModelSelectAdapter } from '../app/model-select.tsx'
 import { PermissionChip } from '../app/permission-ui.tsx'
 import { PlanSeat } from '../app/plan-seat.tsx'
@@ -23,6 +32,9 @@ interface PendingImage {
   data: string // base64 (no data: prefix)
   name?: string
 }
+
+/** conversation 字典 + common 词表投影翻译器(官方 locale 查链等位)。 */
+const chatT = makeT(conversationZh as Record<string, string>)
 
 function formatBytes(n: number): string {
   if (n < 1024) return `${n}B`
@@ -40,6 +52,9 @@ export function InputBar(): JSX.Element {
   const [menuOpen, setMenuOpen] = useState(false)
   const [commands, setCommands] = useState<readonly CommandDescriptor[]>([])
   const [commandsError, setCommandsError] = useState<string | null>(null)
+  const [dragActive, setDragActive] = useState(false)
+  const [lightbox, setLightbox] = useState<{ src: string; alt: string } | null>(null)
+  const dragDepthRef = useRef(0)
   const fileRef = useRef<HTMLInputElement | null>(null)
   const textareaRef = useRef<HTMLTextAreaElement | null>(null)
 
@@ -101,6 +116,57 @@ export function InputBar(): JSX.Element {
     reader.onerror = () => setIntakeError('读取图片失败')
     reader.readAsDataURL(file)
   }
+
+  // 整页文件拖放摄入(官方 DeepSeek Chat 行为等位):document 级监听,拖放任意处
+  // 落图;文本拖拽无 'Files' 类型直接放行(保留原生拖文本进 textarea)。覆盖层
+  // pointer-inert,不干扰 enter/leave 计数。
+  const canAcceptDrop = selectedSessionId !== undefined
+  useEffect(() => {
+    const hasFiles = (event: globalThis.DragEvent): boolean =>
+      event.dataTransfer?.types.includes('Files') ?? false
+    const reset = (): void => {
+      dragDepthRef.current = 0
+      setDragActive(false)
+    }
+    const onDragEnter = (event: globalThis.DragEvent): void => {
+      if (!hasFiles(event)) return
+      event.preventDefault()
+      dragDepthRef.current += 1
+      setDragActive(true)
+    }
+    const onDragOver = (event: globalThis.DragEvent): void => {
+      if (!hasFiles(event) || event.dataTransfer === null) return
+      event.preventDefault()
+      event.dataTransfer.dropEffect = canAcceptDrop ? 'copy' : 'none'
+    }
+    const onDragLeave = (event: globalThis.DragEvent): void => {
+      if (!hasFiles(event)) return
+      dragDepthRef.current = Math.max(0, dragDepthRef.current - 1)
+      if (dragDepthRef.current === 0) setDragActive(false)
+      const leavingViewport = event.clientX <= 0 || event.clientY <= 0
+        || event.clientX >= window.innerWidth || event.clientY >= window.innerHeight
+      if ((event.target === document.documentElement || event.target === document.body) && leavingViewport) reset()
+    }
+    const onDrop = (event: globalThis.DragEvent): void => {
+      if (!hasFiles(event)) return
+      event.preventDefault()
+      reset()
+      if (!canAcceptDrop) return
+      readFiles(event.dataTransfer?.files ?? null)
+    }
+    document.addEventListener('dragenter', onDragEnter)
+    document.addEventListener('dragover', onDragOver)
+    document.addEventListener('dragleave', onDragLeave)
+    document.addEventListener('drop', onDrop)
+    window.addEventListener('dragend', reset)
+    return () => {
+      document.removeEventListener('dragenter', onDragEnter)
+      document.removeEventListener('dragover', onDragOver)
+      document.removeEventListener('dragleave', onDragLeave)
+      document.removeEventListener('drop', onDrop)
+      window.removeEventListener('dragend', reset)
+    }
+  }, [canAcceptDrop, selectedSessionId])
 
   const submit = (): void => {
     const text = draft.trim()
@@ -175,16 +241,39 @@ export function InputBar(): JSX.Element {
         )}
       </div>
 
+      {dragActive && (
+        <DropOverlay
+          disabled={!canAcceptDrop}
+          labels={dropOverlayLabels(chatT, canAcceptDrop, {
+            count: imageLimits.maxImagesPerMessage,
+            size: imageSizeText(imageLimits.maxImageBytes),
+          })}
+        />
+      )}
+      {lightbox !== null && (
+        <ImageLightbox
+          src={lightbox.src}
+          alt={lightbox.alt}
+          labels={lightboxLabels(chatT)}
+          onClose={() => setLightbox(null)}
+        />
+      )}
+
       {images.length > 0 && (
-        <div className="input-bar-images" data-count={images.length}>
-          {images.map((img, idx) => (
-            <span key={`${img.name ?? idx}-${img.data.slice(0, 8)}`} className="input-bar-image-chip" title={img.name}>
-              <img src={`data:${img.mediaType};base64,${img.data}`} alt={img.name ?? 'attachment'} className="input-bar-image-thumb" />
-              <span className="input-bar-image-name">{img.name ?? `${idx + 1}`}</span>
-              <button type="button" className="input-bar-image-remove" aria-label="移除图片" onClick={() => setImages(prev => prev.filter((_, i) => i !== idx))}>×</button>
-            </span>
-          ))}
-        </div>
+        <AttachmentRail<AttachmentRailItem>
+          items={images.map((img, idx) => ({
+            id: `img-${idx}`,
+            previewUrl: `data:${img.mediaType};base64,${img.data}`,
+            alt: img.name ?? String(idx + 1),
+            removeLabel: `移除图片 ${img.name ?? String(idx + 1)}`,
+          }))}
+          labels={attachmentRailLabels(chatT)}
+          onOpen={(item) => setLightbox({ src: item.previewUrl, alt: item.alt })}
+          onRemove={(item) => {
+            const idx = images.findIndex((_, i) => `img-${i}` === item.id)
+            if (idx >= 0) setImages(prev => prev.filter((_, i) => i !== idx))
+          }}
+        />
       )}
       {(imageLimitError !== null || intakeError !== null) && (
         <div className="input-bar-error">{imageLimitError ?? intakeError}</div>

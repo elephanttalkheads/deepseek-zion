@@ -8,12 +8,21 @@
  * arrive as M2/M3 polish. 消息行动作 = 官方 vendored MessageIconActions(复制
  * 图标 + 分支 + hover 时间戳;user/steering clock=start,assistant clock=end),
  * 分支 fork at anchorSeq(经 runtime.forkSession 真后端 fork 并选中子会话)。
+ * 消息图片 = 官方 vendored ui-attachment(ImageGallery → 点击 MessageImage →
+ * ImageLightbox 原图预览;loader 走 session.readAttachment,同官方 resolveImage)。
  */
+import { useMemo } from 'react'
+import type { ImageLoader } from '../../vendor/ui-attachment/index.ts'
+import { ImageGallery } from '../../vendor/ui-attachment/index.ts'
+import type { ImageAttachmentRef } from '@deepseek-ai/dsh-attachment'
+import { messageImageLabels } from '../../vendor/client-ui-conversation/client/image-labels.ts'
 import { useRuntime } from '../app/runtime.tsx'
+import type { AssembledWire } from '../protocol/assemble.ts'
 import { makeT } from '../app/locale-common.ts'
 import { zh as conversationZh } from '../../vendor/client-ui-conversation/client/locales.ts'
 import { MessageIconActions } from '../../vendor/client-ui-conversation/client/chat/MessageIconActions.tsx'
 import type { ChatConversationViewNode } from '../../vendor/client-runtime/client/contract/conversation.ts'
+import type { SessionId } from '../../vendor/client-connection/client/api.ts'
 import type { ToolCallBlock } from '../../vendor/client-runtime/client/sessions/conversation.ts'
 import { ToolCallCard } from './ToolCallCard.tsx'
 import { SlotAnchor } from '../plugin/anchors.tsx'
@@ -33,6 +42,21 @@ function renderContentBlocks(content: unknown): string {
       default: return b.text ?? ''
     }
   }).filter(Boolean).join('\n')
+}
+
+/** 消息里的图片块({ type: 'image', attachment })。 */
+function nodeImages(node: ChatConversationViewNode): { attachment: ImageAttachmentRef }[] {
+  const data = node.data as Record<string, unknown>
+  const blocks = node.kind === 'user' || node.kind === 'steering' || node.kind === 'context'
+    ? data.content
+    : data.blocks
+  if (!Array.isArray(blocks)) return []
+  const out: { attachment: ImageAttachmentRef }[] = []
+  for (const block of blocks) {
+    const b = block as { type?: string; attachment?: ImageAttachmentRef }
+    if (b.type === 'image' && b.attachment !== undefined) out.push({ attachment: b.attachment })
+  }
+  return out
 }
 
 /** 助手消息的可复制正文:仅 text 块(不含 reasoning/tool-call 标记)。 */
@@ -98,12 +122,31 @@ function nodeTime(node: ChatConversationViewNode): number | undefined {
   return typeof data.time === 'number' ? data.time : undefined
 }
 
-export function ChatView({ nodes }: { nodes: readonly ChatConversationViewNode[] }): JSX.Element {
+export function ChatView({ nodes, sessionId, wire }: {
+  nodes: readonly ChatConversationViewNode[]
+  sessionId: SessionId
+  wire: AssembledWire
+}): JSX.Element {
   const { forkSession } = useRuntime()
 
   const forkNode = (node: ChatConversationViewNode): void => {
     void forkSession(node.anchorSeq)
   }
+
+  // 历史图片 loader(官方 resolveImage 等位):session.readAttachment →
+  // Blob URL(缺 createObjectURL 时回退 data URL)。
+  const loadImage = useMemo<ImageLoader>(() => (attachment) => {
+    const session = wire.sessions.get(sessionId)
+    if (session === undefined) return Promise.reject(new Error(`unknown session ${sessionId}`))
+    return session.readAttachment(attachment.attachmentId).then((result) => {
+      if (!result.ok) throw new Error(`${result.error.code}: ${result.error.message}`)
+      if (typeof URL.createObjectURL !== 'function') {
+        return `data:${result.value.attachment.mediaType};base64,${bytesToBase64(result.value.data)}`
+      }
+      return URL.createObjectURL(new Blob([result.value.data.buffer], { type: result.value.attachment.mediaType }))
+    })
+  }, [wire, sessionId])
+  const imageLabels = useMemo(() => messageImageLabels(chatT), [])
 
   return (
     <div className="chat-view">
@@ -127,6 +170,10 @@ export function ChatView({ nodes }: { nodes: readonly ChatConversationViewNode[]
         const isAssistant = node.kind === 'assistant' || node.kind === 'assistant-step'
         const isUser = node.kind === 'user' || node.kind === 'steering' || node.kind === 'context'
         const text = isAssistant ? assistantText(node) : userText(node)
+        const images = nodeImages(node)
+        const gallery = images.length > 0
+          ? <ImageGallery images={images} load={loadImage} align={isAssistant ? 'start' : 'end'} labels={imageLabels} />
+          : null
         return (
           <div
             key={node.key}
@@ -134,7 +181,9 @@ export function ChatView({ nodes }: { nodes: readonly ChatConversationViewNode[]
             data-kind={node.kind}
             data-time-hover-root
           >
+            {isUser ? gallery : null}
             <div className="chat-node-body">{nodeBody(node)}</div>
+            {isAssistant ? gallery : null}
             {(isAssistant || isUser) && (
               <MessageIconActions
                 text={text}
@@ -153,4 +202,14 @@ export function ChatView({ nodes }: { nodes: readonly ChatConversationViewNode[]
       })}
     </div>
   )
+}
+
+/** Uint8Array → base64(无 createObjectURL 环境的 data URL 回退)。 */
+function bytesToBase64(bytes: Uint8Array): string {
+  let binary = ''
+  const chunk = 0x8000
+  for (let i = 0; i < bytes.length; i += chunk) {
+    binary += String.fromCharCode(...bytes.subarray(i, i + chunk))
+  }
+  return btoa(binary)
 }
