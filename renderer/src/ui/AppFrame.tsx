@@ -10,13 +10,16 @@ import { Sidebar } from './Sidebar.tsx'
 import { ConversationDock } from './ConversationDock.tsx'
 import { DetailsPanel } from './DetailsPanel.tsx'
 import { PluginHost } from './PluginHost.tsx'
+import { WorkspaceMenu } from './WorkspaceMenu.tsx'
 import { SlotAnchor } from '../plugin/anchors.tsx'
 import { useRuntime } from '../app/runtime.tsx'
 
 export function AppFrame(): JSX.Element {
-  const { connectionState, isFixture, workspaces } = useRuntime()
+  const { connectionState, isFixture, workspaces, createSession } = useRuntime()
   const [query, setQuery] = useState('')
-  const workspaceName = workspaces.length > 0 ? (workspaces[0]?.title ?? 'fixture') : 'fixture'
+  const [workspaceMenuOpen, setWorkspaceMenuOpen] = useState(false)
+  const current = workspaces.length > 0 ? workspaces[0] : undefined
+  const workspaceName = current?.title ?? 'fixture'
 
   return (
     <div className="app-frame" data-connection={connectionState}>
@@ -26,14 +29,16 @@ export function AppFrame(): JSX.Element {
           <span className="shell-brand-dot" aria-hidden="true" />
           DeepSeek Harness
         </span>
-        <button className="shell-new" type="button" title="New session" onClick={() => { /* M2: sessions.create */ }}>
+        <button className="shell-new" type="button" title="New session" onClick={() => void createSession()}>
           新会话
         </button>
         <span className="shell-right">
-          <button className="shell-workspace" type="button" title="Switch workspace">
-            工作区
-            <span className="shell-workspace-name">{workspaceName}</span>
-          </button>
+          <WorkspaceMenu
+            current={current}
+            open={workspaceMenuOpen}
+            onToggle={() => setWorkspaceMenuOpen(prev => !prev)}
+            onClose={() => setWorkspaceMenuOpen(false)}
+          />
           <span className="shell-badge" data-fixture={isFixture}>
             {isFixture ? 'fixture' : connectionState}
           </span>

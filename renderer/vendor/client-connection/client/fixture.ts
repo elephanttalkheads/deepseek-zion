@@ -1438,6 +1438,10 @@ export interface FixtureOptions {
   dropSessionCreateResponse?: boolean
   /** Order of the two successful create frames. */
   createFrameOrder?: 'session-first' | 'workspace-first'
+  /** Route every accepted prompt through a transient `session/queue` inbox
+   *  instead of starting a turn, so `session.updateQueue` (remove/steer) is
+   *  exercisable against a live queue snapshot (functional-wiring scenario). */
+  queued?: boolean
 }
 
 /** Inbox pump shared by both stream generators (FrameQueue pattern: ONE abort listener hung
@@ -1563,6 +1567,14 @@ function createFixtureWorld(options: FixtureOptions): FixtureWorld {
   // Registry-global archive set mirroring the host: archived sessions keep
   // their workspace accounting slot and only grouping surfaces hide them.
   const archivedSessionIds: SessionId[] = []
+
+  // Functional-wiring queue inbox: when `options.queued` routes accepted prompts
+  // through a transient `session/queue` snapshot (host parallel: the session
+  // queue mirror), rows live here until removed / steered by updateQueue.
+  const queueItems = new Map<SessionId, Extract<MuxFrame, { type: 'session/queue' }>['items']>()
+  const publishQueue = (id: SessionId): void => {
+    emitMux({ type: 'session/queue', sessionId: id, items: queueItems.get(id) ?? [] })
+  }
 
   // In-memory browse tree behind the fixture's `browse` picker capability —
   // deterministic content mirroring the design mock so assembled Web tests
@@ -2434,6 +2446,16 @@ function createFixtureWorld(options: FixtureOptions): FixtureWorld {
           append(id, { type: 'user/message', surfaceOp: 'append', data: userMessage(durable) })
           return ok(request, { accepted: true as const })
         }
+        // Functional-wiring queue scenario: park the accepted prompt in the
+        // transient inbox (session/queue snapshot) instead of opening a turn,
+        // so the queue mutations below have real rows to act on.
+        if (options.queued) {
+          const message = userMessage(durable)
+          const row = { id: message.id, placement: 'queued' as const, message }
+          queueItems.set(id, [...(queueItems.get(id) ?? []), row])
+          publishQueue(id)
+          return ok(request, { accepted: true as const })
+        }
         const turn = nextTurn.get(id) ?? 0
         nextTurn.set(id, turn + 1)
         setRunning(id, true)
@@ -2491,11 +2513,35 @@ function createFixtureWorld(options: FixtureOptions): FixtureWorld {
         }
         return ok(request, stored)
       },
-      updateQueue: request => err(request, {
-        code: 'queue-item-not-found',
-        message: 'fixture has no pending queue item',
-        details: { itemId: request.payload.itemId },
-      }),
+      updateQueue: (request) => {
+        const { sessionId: id, itemId, action } = request.payload
+        const pending = queueItems.get(id) ?? []
+        const index = pending.findIndex(item => item.id === itemId)
+        if (index === -1) {
+          return err(request, {
+            code: 'queue-item-not-found',
+            message: 'fixture has no such queued item',
+            details: { itemId: request.payload.itemId },
+          })
+        }
+        if (action?.kind === 'remove') {
+          queueItems.set(id, pending.filter(item => item.id !== itemId))
+          publishQueue(id)
+          return ok(request, { accepted: true as const })
+        }
+        if (action?.kind === 'steer') {
+          const source = pending[index]
+          queueItems.set(id, pending.map(item =>
+            item.id === itemId ? { ...item, placement: 'steering' as const } : item))
+          publishQueue(id)
+          // Host parallel: the steered prompt commits as a durable user/message.
+          append(id, { type: 'user/message', surfaceOp: 'append', data: userMessage(source.message.content) })
+          return ok(request, { accepted: true as const })
+        }
+        // edit unsupported by the fixture — accept as a no-op to keep the
+        // mutation path live without faking content parsing.
+        return ok(request, { accepted: true as const })
+      },
       cancel: (request) => {
         const replay = replays.get(request.payload.sessionId)
         if (replay !== undefined) {
@@ -3184,5 +3230,6 @@ function fixtureOptionsFromLocation(): FixtureOptions {
     failWorkspaceAttach: query.get('fixtureAttach') === 'fail',
     dropSessionCreateResponse: query.get('fixtureSessionCreate') === 'drop-response',
     createFrameOrder: query.get('fixtureFrames') === 'workspace-first' ? 'workspace-first' : 'session-first',
+    queued: query.get('fixtureQueue') === '1',
   }
 }

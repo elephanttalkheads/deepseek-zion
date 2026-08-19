@@ -30,6 +30,8 @@ probe-hostcall-out/
 probe-queue-ops-out/
 probe-approve-real-out/
 probe-approve-path-out/
+probe-functional-out/
+probe-functional-queue-out/
 
 # logs & smoke
 *.log

@@ -5,6 +5,7 @@
  */
 import { useRuntime } from '../app/runtime.tsx'
 import { SlotAnchor } from '../plugin/anchors.tsx'
+import { SubagentPanel } from './SubagentPanel.tsx'
 
 export function DetailsPanel(): JSX.Element {
   const { selectedSessionId } = useRuntime()
@@ -13,7 +14,7 @@ export function DetailsPanel(): JSX.Element {
       {selectedSessionId === undefined ? (
         <p className="details-muted">No selection</p>
       ) : (
-        <p className="details-muted">Details — later milestone.</p>
+        <SubagentPanel />
       )}
       <div className="details-plugins">
         <SlotAnchor slot="settings.plugin.item" ownerProps={{ sessionId: selectedSessionId }} />

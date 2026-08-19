@@ -32,7 +32,7 @@ function rowKey(entry: SessionListEntry) {
 }
 
 export function Sidebar({ query, onQueryChange }: { query: string; onQueryChange: (q: string) => void }): JSX.Element {
-  const { useSessions, selectSession, selectedSessionId } = useRuntime()
+  const { useSessions, selectSession, selectedSessionId, createSession } = useRuntime()
   const items = useSessions(s => s.items)
   const listState = useSessions(s => s.state)
   const [expanded, setExpanded] = useState<Record<string, boolean>>({})
@@ -58,7 +58,7 @@ export function Sidebar({ query, onQueryChange }: { query: string; onQueryChange
           onChange={(e) => onQueryChange(e.target.value)}
           aria-label="Search sessions"
         />
-        <button className="sidebar-new" type="button" title="New session" onClick={() => { /* M2 */ }}>
+        <button className="sidebar-new" type="button" title="New session" onClick={() => void createSession()}>
           +
         </button>
       </div>

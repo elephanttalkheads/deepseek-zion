@@ -10,13 +10,13 @@
  * the manager, opens its history window, and binds its ConversationSnapshot
  * into a useConversation selector hook.
  */
-import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
+import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
 import { bindSnapshotSelector } from '@deepseek-ai/dsh-client-web-react'
 import type { SnapshotSelectorHook } from '@deepseek-ai/dsh-client-ui-slots'
 import { assembleWire, type AssembledWire } from '../protocol/assemble.ts'
 import type { SessionListSnapshot } from '../../vendor/client-runtime/client/sessions/manager.ts'
 import { EMPTY_CHAT_SNAPSHOT, EMPTY_CONVERSATION_VIEWS, type ConversationSnapshot } from '../../vendor/client-runtime/client/sessions/conversation.ts'
-import type { ModelSelection, PromptContentPart, SessionModels, WorkspaceView } from '../../vendor/client-connection/client/api.ts'
+import type { ModelSelection, PromptContentPart, SessionModels, WorkspaceId, WorkspaceView } from '../../vendor/client-connection/client/api.ts'
 import { getConversationRuntime } from './conversation.ts'
 import { getPluginRuntimeHandle } from '../plugin/hub.tsx'
 
@@ -41,10 +41,48 @@ export const FIXTURE_IMAGE_LIMITS: ImageLimits = {
   mediaTypes: ['image/png', 'image/jpeg', 'image/webp', 'image/gif'],
 }
 
+/** Shape of the `goal` session projection (the GoalService unit's whole value;
+ *  mirrors the host FxGoalProjection the fixture emits under key `goal`; the
+ *  real backend pushes the same structure via the `session/projection` frame). */
+export interface GoalProjectionValue {
+  goal: {
+    id: string
+    revision: number
+    objective: string
+    phase: 'active' | 'paused' | 'blocked' | 'complete'
+    maxGoalRounds?: number
+  }
+  roundsStarted?: number
+  createdAt?: number
+  updatedAt?: number
+}
+
+/** Goal lifecycle verbs (one create + CAS-mutate per goal.* contract). */
+export interface GoalActions {
+  create(objective: string, maxGoalRounds?: number): Promise<boolean>
+  edit(ref: { id: string; revision: number }, update: { objective?: string; maxGoalRounds?: number }): Promise<boolean>
+  pause(ref: { id: string; revision: number }): Promise<boolean>
+  resume(ref: { id: string; revision: number }): Promise<boolean>
+  complete(ref: { id: string; revision: number }): Promise<boolean>
+  clear(ref: { id: string; revision: number }): Promise<boolean>
+}
+
+/** Subagent verbs over the subagents.* contract (list via manager, prompt/interrupt). */
+export interface SubagentActions {
+  /** Refresh the selected session's direct-child catalog (subagents.list). */
+  refresh(): Promise<void>
+  /** Deliver human content to a continuable child. */
+  prompt(address: { parentSessionId: string; childSessionId: string }, text: string): Promise<boolean>
+  /** Interrupt a live continuable child's current turn. */
+  interrupt(address: { parentSessionId: string; childSessionId: string; mode: 'continuable' }): Promise<boolean>
+}
+
 export interface AppRuntime {
   wire: AssembledWire
   /** Official uSES bridge bound to sessions.list. Call as useSessions(s => s.items). */
   useSessions: SnapshotSelectorHook<SessionListSnapshot>
+  /** Contract session.create; on success selects the new session. */
+  createSession: () => Promise<void>
   /** uSES bridge bound to the SELECTED session's conversation snapshot. When no
    *  session is selected it remains stable and reports the untouched snapshot.
    *  Call as useConversation(s => s.chat.nodes.values()). */
@@ -56,6 +94,15 @@ export interface AppRuntime {
   selectedSessionId: SessionId | undefined
   /** Send prompt content (text + optional image parts) to the selected session (queue mode). */
   sendPrompt: (parts: PromptContentPart[]) => void
+  /** Dispatch a slash-command line (leading /) to the selected session's agent. */
+  runCommand: (line: string) => Promise<void>
+  /** List the selected session's slash commands (drives the composer + menu). */
+  listCommands: () => Promise<readonly import('@deepseek-ai/dsh-commands/types').CommandDescriptor[]>
+  /** uSES bridge bound to the SELECTED session's `goal` projection (undefined
+   *  when no goal / capability absent). Call as useGoal(g => g?.goal). */
+  useGoal: SnapshotSelectorHook<GoalProjectionValue | null | undefined>
+  /** Goal lifecycle verbs over the goal.* contract (create/edit/pause/resume/complete/clear). */
+  goalActions: GoalActions
   /** Cancel the selected session's active turn. */
   stop: () => void
   /** Apply one mutation to a still-pending queue item (remove / steer / edit). */
@@ -68,6 +115,17 @@ export interface AppRuntime {
   imageLimits: ImageLimits
   /** Workspace rows (top-bar selector); empty until loaded. */
   workspaces: readonly WorkspaceView[]
+  /** Workspace management verbs (create = host.pickDirectory → workspace.create; rename/delete). */
+  workspaceActions: {
+    /** Open the native directory picker, then workspace.create(path); returns the workspace or null. */
+    create(): Promise<WorkspaceView | null>
+    rename(workspaceId: WorkspaceId, title: string): Promise<boolean>
+    delete(workspaceId: WorkspaceId): Promise<boolean>
+    refresh(): Promise<void>
+  }
+  /** Selected session's direct-child subagent catalogs; read via
+   *  `useSessions(s => s.subagentsByParent)` on the full list snapshot. */
+  subagentActions: SubagentActions
 }
 
 const RuntimeContext = createContext<AppRuntime | null>(null)
@@ -147,14 +205,15 @@ export function RuntimeProvider({ children }: { children: ReactNode }): JSX.Elem
   }, [runtime, selectedId])
 
   // Workspace rows (top-bar selector); fixtures serve a single workspace.
-  useEffect(() => {
-    let cancelled = false
-    void runtime.wire.api.workspace.list({}).then((res) => {
-      if (cancelled) return
+  const reloadWorkspaces = useCallback(() => {
+    const api = runtime.wire.api
+    void api.workspace.list({}).then((res) => {
       setWorkspaces(res.result.ok ? res.result.value.items : [])
     })
-    return () => { cancelled = true }
   }, [runtime])
+  useEffect(() => {
+    reloadWorkspaces()
+  }, [reloadWorkspaces])
 
   const useSessions = useMemo(
     () => bindSnapshotSelector<SessionListSnapshot>({
@@ -182,45 +241,154 @@ export function RuntimeProvider({ children }: { children: ReactNode }): JSX.Elem
     return bindSnapshotSelector<ConversationSnapshot>(source)
   }, [runtime, selectedId])
 
-  const value = useMemo<AppRuntime>(() => ({
-    wire: runtime.wire,
-    useSessions,
-    useConversation,
-    connectionState,
-    isFixture: runtime.isFixture,
-    selectSession(sessionId) {
-      runtime.wire.sessions.select(sessionId)
-      setSelectedId(sessionId)
-    },
-    selectedSessionId: selectedId,
-    sendPrompt(parts) {
-      if (selectedId === undefined) return
+  // Goal projection follows the selected session the same way: bind the
+  // projection store's `goal` key face (typed-unknown on the wire; the host
+  // pushes whole values via the history baseline + session/projection frames).
+  const useGoal = useMemo<SnapshotSelectorHook<GoalProjectionValue | null | undefined>>(() => {
+    const source = (() => {
+      if (selectedId === undefined) return noSessionSource as Parameters<typeof bindSnapshotSelector<GoalProjectionValue | null | undefined>>[0]
       const session = runtime.wire.sessions.get(selectedId)
-      void session.prompt(parts, 'queue')
-    },
-    stop() {
-      if (selectedId === undefined) return
-      const session = runtime.wire.sessions.get(selectedId)
-      void session.cancel()
-    },
-    async updateQueue(itemId, action) {
-      if (selectedId === undefined) return
-      const session = runtime.wire.sessions.get(selectedId)
-      await session.updateQueue(itemId as never, action as never)
-    },
-    models,
-    selectModel(selection) {
-      if (selectedId === undefined) return
-      const api = runtime.wire.api
-      void api.sessions.selectModel({ sessionId: selectedId, ...selection }).then(async (res) => {
-        if (!res.result.ok) return
-        const fresh = await api.sessions.models({ sessionId: selectedId })
-        if (fresh.result.ok) setModels(fresh.result.value)
-      })
-    },
-    imageLimits: FIXTURE_IMAGE_LIMITS,
-    workspaces,
-  }), [runtime, useSessions, useConversation, connectionState, selectedId, models, workspaces])
+      const face = session.projections.faceOf('goal') as {
+        getSnapshot: () => unknown
+        subscribe: (l: () => void) => () => void
+      }
+      return {
+        getSnapshot: () => face.getSnapshot() as GoalProjectionValue | null | undefined,
+        subscribe: face.subscribe,
+      } as Parameters<typeof bindSnapshotSelector<GoalProjectionValue | null | undefined>>[0]
+    })()
+    return bindSnapshotSelector<GoalProjectionValue | null | undefined>(source)
+  }, [runtime, selectedId])
+
+  const value = useMemo<AppRuntime>(() => {
+    const wire = runtime.wire
+    return {
+      wire,
+      useSessions,
+      async createSession() {
+        const res = await wire.sessions.create()
+        if (res.ok) {
+          wire.sessions.select(res.value.sessionId)
+          setSelectedId(res.value.sessionId)
+        }
+      },
+      useConversation,
+      useGoal,
+      goalActions: {
+        create: (objective, maxGoalRounds) => {
+          if (selectedId === undefined) return Promise.resolve(false)
+          return wire.api.goals.create({ sessionId: selectedId, objective, ...(maxGoalRounds === undefined ? {} : { maxGoalRounds }) })
+            .then(res => res.result.ok)
+        },
+        edit: (ref, update) => {
+          if (selectedId === undefined) return Promise.resolve(false)
+          return wire.api.goals.edit({ sessionId: selectedId, ref, ...update }).then(res => res.result.ok)
+        },
+        pause: (ref) => {
+          if (selectedId === undefined) return Promise.resolve(false)
+          return wire.api.goals.pause({ sessionId: selectedId, ref }).then(res => res.result.ok)
+        },
+        resume: (ref) => {
+          if (selectedId === undefined) return Promise.resolve(false)
+          return wire.api.goals.resume({ sessionId: selectedId, ref }).then(res => res.result.ok)
+        },
+        complete: (ref) => {
+          if (selectedId === undefined) return Promise.resolve(false)
+          return wire.api.goals.complete({ sessionId: selectedId, ref }).then(res => res.result.ok)
+        },
+        clear: (ref) => {
+          if (selectedId === undefined) return Promise.resolve(false)
+          return wire.api.goals.clear({ sessionId: selectedId, ref }).then(res => res.result.ok)
+        },
+      },
+      connectionState,
+      isFixture: runtime.isFixture,
+      selectSession(sessionId) {
+        wire.sessions.select(sessionId)
+        setSelectedId(sessionId)
+      },
+      selectedSessionId: selectedId,
+      sendPrompt(parts) {
+        if (selectedId === undefined) return
+        const session = wire.sessions.get(selectedId)
+        void session.prompt(parts, 'queue')
+      },
+      async runCommand(line) {
+        if (selectedId === undefined) return
+        const session = wire.sessions.get(selectedId)
+        await session.command(line)
+      },
+      async listCommands() {
+        if (selectedId === undefined) return []
+        const result = await wire.rpc.call('/api', 'commands/list', { args: { agentId: selectedId } })
+        if (!result.ok) return []
+        return result.value as readonly import('@deepseek-ai/dsh-commands/types').CommandDescriptor[]
+      },
+      stop() {
+        if (selectedId === undefined) return
+        const session = wire.sessions.get(selectedId)
+        void session.cancel()
+      },
+      async updateQueue(itemId, action) {
+        if (selectedId === undefined) return
+        const session = wire.sessions.get(selectedId)
+        await session.updateQueue(itemId as never, action as never)
+      },
+      models,
+      selectModel(selection) {
+        if (selectedId === undefined) return
+        const api = wire.api
+        void api.sessions.selectModel({ sessionId: selectedId, ...selection }).then(async (res) => {
+          if (!res.result.ok) return
+          const fresh = await api.sessions.models({ sessionId: selectedId })
+          if (fresh.result.ok) setModels(fresh.result.value)
+        })
+      },
+      imageLimits: FIXTURE_IMAGE_LIMITS,
+      workspaces,
+      workspaceActions: {
+        create: async () => {
+          const picked = await wire.api.host.pickDirectory({}, new AbortController().signal)
+          if (!picked.result.ok) return null
+          const path = picked.result.value.path
+          const created = await wire.api.workspace.create({ path })
+          if (!created.result.ok) return null
+          await reloadWorkspaces()
+          return created.result.value.workspace
+        },
+        rename: async (workspaceId, title) => {
+          const res = await wire.api.workspace.rename({ workspaceId, title })
+          if (res.result.ok) await reloadWorkspaces()
+          return res.result.ok
+        },
+        delete: async (workspaceId) => {
+          const res = await wire.api.workspace.delete({ workspaceId })
+          if (res.result.ok) await reloadWorkspaces()
+          return res.result.ok
+        },
+        refresh: () => reloadWorkspaces(),
+      },
+      subagentActions: {
+        refresh: () => {
+          if (selectedId === undefined) return Promise.resolve()
+          return wire.sessions.refreshSubagents(selectedId)
+        },
+        prompt: (address, text) => {
+          if (selectedId === undefined) return Promise.resolve(false)
+          return wire.api.subagents.prompt({
+            parentSessionId: address.parentSessionId,
+            childSessionId: address.childSessionId,
+            mode: 'continuable',
+            content: [{ type: 'text', text }],
+          }, new AbortController().signal).then(res => res.result.ok)
+        },
+        interrupt: (address) => {
+          if (selectedId === undefined) return Promise.resolve(false)
+          return wire.api.subagents.interrupt({ ...address, mode: 'continuable' }).then(res => res.result.ok)
+        },
+      },
+    }
+  }, [runtime, useSessions, useConversation, useGoal, connectionState, selectedId, models, workspaces, reloadWorkspaces])
 
   return <RuntimeContext.Provider value={value}>{children}</RuntimeContext.Provider>
 }

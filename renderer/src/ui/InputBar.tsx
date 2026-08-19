@@ -1,13 +1,18 @@
 /**
  * M3 — composer input bar (Q19A self-authored). textarea + Send/Stop,
  * a model selector (catalog from session.models, selection via selectModel),
- * and image attachment intake guarded by the deployment imageLimits.
+ * image attachment intake guarded by the deployment imageLimits, and — since
+ * functional wiring — a «+» button opening the slash-command list
+ * (commands.list) whose selection fills the draft, with leading-«/» submit
+ * dispatched to session.command (commands.execute) instead of a prompt.
  * Enter sends (queue mode); Shift+Enter for newline.
  */
-import { useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useRuntime, type MediaType } from '../app/runtime.tsx'
 import { SlotAnchor } from '../plugin/anchors.tsx'
+import { GoalBar } from './GoalBar.tsx'
 import type { PromptContentPart } from '../../vendor/client-connection/client/api.ts'
+import type { CommandDescriptor } from '@deepseek-ai/dsh-commands/types'
 
 interface PendingImage {
   mediaType: MediaType
@@ -22,13 +27,17 @@ function formatBytes(n: number): string {
 }
 
 export function InputBar(): JSX.Element {
-  const { sendPrompt, stop, useConversation, models, selectModel, imageLimits } = useRuntime()
+  const { sendPrompt, stop, useConversation, models, selectModel, imageLimits, runCommand, listCommands } = useRuntime()
   const running = useConversation(s => s.running)
   const promptError = useConversation(s => s.promptError)
   const [draft, setDraft] = useState('')
   const [images, setImages] = useState<PendingImage[]>([])
   const [intakeError, setIntakeError] = useState<string | null>(null)
+  const [menuOpen, setMenuOpen] = useState(false)
+  const [commands, setCommands] = useState<readonly CommandDescriptor[]>([])
+  const [commandsError, setCommandsError] = useState<string | null>(null)
   const fileRef = useRef<HTMLInputElement | null>(null)
+  const textareaRef = useRef<HTMLTextAreaElement | null>(null)
 
   const imageLimitError = useMemo(() => {
     if (images.length === 0) return null
@@ -38,6 +47,34 @@ export function InputBar(): JSX.Element {
     if (total > imageLimits.maxMessageImageBytes) warnings.push(`总大小超限（${formatBytes(imageLimits.maxMessageImageBytes)}）`)
     return warnings.length > 0 ? warnings.join('；') : null
   }, [images, imageLimits])
+
+  // Fetch the slash-command list when the «+» menu is first opened.
+  useEffect(() => {
+    if (!menuOpen || commands.length > 0 || commandsError !== null) return
+    let cancelled = false
+    void listCommands().then((items) => {
+      if (cancelled) return
+      setCommands(items)
+    }).catch((error: unknown) => {
+      if (cancelled) return
+      setCommandsError(error instanceof Error ? error.message : String(error))
+    })
+    return () => { cancelled = true }
+  }, [menuOpen, commands.length, commandsError, listCommands])
+
+  const toggleMenu = (): void => setMenuOpen(prev => !prev)
+
+  /** Insert the chosen command into the draft (trailing space when it takes input). */
+  const pickCommand = (command: CommandDescriptor): void => {
+    const token = `/${command.name}`
+    setDraft(prev => {
+      const base = prev.trim()
+      const suffix = command.input === undefined ? '' : ' '
+      return (base === '' ? token : `${base} ${token}`) + suffix
+    })
+    setMenuOpen(false)
+    requestAnimationFrame(() => { textareaRef.current?.focus() })
+  }
 
   const readFiles = (files: FileList | null): void => {
     if (files === null || files.length === 0) return
@@ -63,16 +100,21 @@ export function InputBar(): JSX.Element {
 
   const submit = (): void => {
     const text = draft.trim()
+    // Slash-command line: dispatch to session.command, never as a prompt.
+    if (text.startsWith('/')) {
+      void runCommand(text)
+      setDraft('')
+      setImages([])
+      return
+    }
     const hasContent = text !== '' || images.length > 0
     if (!hasContent || imageLimitError !== null) return
-    if (text !== '' && images.length > 0) {
-      setIntakeError(null)
-    }
     const parts: PromptContentPart[] = []
     if (text !== '') parts.push({ type: 'text', text })
     for (const img of images) {
       parts.push({ type: 'image', mediaType: img.mediaType, data: img.data, ...(img.name === undefined ? {} : { name: img.name }) })
-    }    sendPrompt(parts)
+    }
+    sendPrompt(parts)
     setDraft('')
     setImages([])
   }
@@ -83,6 +125,7 @@ export function InputBar(): JSX.Element {
   return (
     <div className="input-bar">
       <SlotAnchor slot="conversation.input.dock" ownerProps={{}} />
+      <GoalBar />
       <div className="input-bar-model" title={currentModel === undefined ? '加载模型中…' : `${currentModel.provider}/${currentModel.model}`}>
         <label className="input-bar-model-label" htmlFor="model-select">模型</label>
         <select
@@ -109,6 +152,40 @@ export function InputBar(): JSX.Element {
         </select>
       </div>
 
+      <div className="input-bar-command" data-open={menuOpen || undefined}>
+        <button
+          type="button"
+          className="input-bar-add"
+          title="命令"
+          aria-label="命令"
+          aria-haspopup="listbox"
+          aria-expanded={menuOpen}
+          onClick={toggleMenu}
+        >
+          +
+        </button>
+        {menuOpen && (
+          <div className="command-panel" role="listbox" aria-label="命令列表">
+            {commandsError !== null && <div className="command-panel-error">{commandsError}</div>}
+            {(commandsError === null && commands.length === 0) && (
+              <div className="command-panel-hint">加载命令…</div>
+            )}
+            {commands.map(command => (
+              <button
+                key={command.name}
+                type="button"
+                className="command-panel-item"
+                role="option"
+                onClick={() => pickCommand(command)}
+              >
+                <span className="command-panel-name">/{command.name}</span>
+                <span className="command-panel-desc">{command.description}</span>
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+
       {images.length > 0 && (
         <div className="input-bar-images" data-count={images.length}>
           {images.map((img, idx) => (
@@ -125,6 +202,7 @@ export function InputBar(): JSX.Element {
       )}
 
       <textarea
+        ref={textareaRef}
         className="input-bar-textarea"
         placeholder="输入消息…"
         rows={1}
@@ -135,6 +213,7 @@ export function InputBar(): JSX.Element {
             e.preventDefault()
             if (!running) submit()
           }
+          if (e.key === 'Escape' && menuOpen) setMenuOpen(false)
         }}
         onPaste={(e) => { readFiles(e.clipboardData?.files ?? null) }}
         aria-label="Message input"
