@@ -204,6 +204,7 @@
 - 常用命令:`npm run build:web`(= vite build -c renderer/vite.config.ts)、`npx tsc --noEmit -p renderer/tsconfig.json`、`npx vite preview --config renderer/vite.config.ts --port 5199 --strictPort`。
 - ⚠️ `npm run dev/start` 是 Electron 壳(proto 遗留,加载官方 3080 UI,非复刻);看复刻走 5199/`dev:web`,或 `npm run start:replica`(Electron 窗口加载复刻界面,自动 ensure 3080 + 缺 dist 先 build + 起 5199 preview,main.mjs `--replica` 分支)。
 - 换机:`npm install`;`file:` 依赖是机器绝对路径(C 盘 profile / dsh 内嵌),换机改路径或 vendor 面包(SYNC.md 换机链);vendor 已含 10 包不额外装。
+- ⚠️ **2026-08-20 dsh 更新注意事项**:全局 CLI 已 `npm install -g @deepseek-ai/dsh@0.1.0-rc.7`(registry latest;next=rc.8)。结构:profile 的 `@deepseek-ai/*` 全是 junction → nvm 全局 `dsh\node_modules\@deepseek-ai\*`(同一份,两层)。CLI 依赖范围 `^0.1.0-rc.x` 按 semver 取最新满足者 → **更新后依赖树整体漂到 rc.8(185/194 包)**,CLI 本体 rc.7;这是正常解析结果,全局无 lockfile 锁不住,接受即可。① **下次重启 3080 后端后必须跑 real 轨探针回归**(rc.8 装配契约可能微漂,漂移项记 §4 表);② zion 重新 `build:web` 时 `file:` 依赖解析 rc.8 文件,与 vendor(官方 clone rc.7 tag)源码可能有契约差,build/探针出异样优先怀疑此处;③ profile 里 `dsh-client-*`(schema-form/ui-primitives/ui-slots/web/web-react)5 个 junction 成死链(rc.8 树已移除这些包)——无影响(zion 15 个 file: 依赖不含 client-*;UI 层走 vendor 源码直编),留待复活或清理;④ npm 11 `allow-scripts` 默认拦 install 脚本,但 koffi/node-pty 预构建随包分发(require 实测 OK),无需 approve;若日后真依赖脚本的包装不上,用 `npm approve-scripts <pkg>`。
 
 ---
 
