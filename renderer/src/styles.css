@@ -558,3 +558,16 @@ body {
 .settings-provider-state { font-size: 11px; padding: 1px 6px; border-radius: 10px; background: rgba(128,128,128,.18); }
 .settings-provider-active { background: rgba(46,160,67,.25); color: #3fb950; }
 .settings-provider-edit { margin-left: auto; background: none; border: 1px solid var(--border, rgba(128,128,128,.3)); border-radius: 6px; color: var(--text, #d8d8d8); padding: 2px 8px; cursor: not-allowed; opacity: .6; font-size: 12px; }
+
+/* ===== Settings — Provider 编辑(二期) ===== */
+.settings-editor-head { display: flex; align-items: baseline; gap: 10px; margin-bottom: 10px; }
+.settings-back { background: none; border: 1px solid var(--border, rgba(128,128,128,.3)); border-radius: 6px; color: var(--text, #d8d8d8); padding: 3px 8px; cursor: pointer; font-size: 12px; }
+.settings-editor-block { margin-bottom: 14px; padding-bottom: 12px; border-bottom: 1px solid var(--border, rgba(128,128,128,.15)); }
+.settings-editor-block-title { margin: 0 0 8px; font-size: 13px; font-weight: 600; }
+.settings-input { background: var(--surface-2, #262933); color: var(--text, #d8d8d8); border: 1px solid var(--border, rgba(128,128,128,.3)); border-radius: 6px; padding: 6px 8px; flex: 1; min-width: 0; }
+.settings-btn { background: var(--surface-2, #262933); border: 1px solid var(--border, rgba(128,128,128,.35)); border-radius: 6px; color: var(--text, #d8d8d8); padding: 5px 10px; cursor: pointer; font-size: 12px; }
+.settings-btn:disabled { opacity: .5; cursor: default; }
+.settings-btn-tiny { padding: 1px 7px; }
+.settings-model-list { list-style: none; margin: 0 0 8px; padding: 0; }
+.settings-model-row { display: flex; align-items: center; gap: 8px; padding: 4px 2px; border-bottom: 1px solid var(--border, rgba(128,128,128,.1)); font-size: 13px; }
+.settings-model-row .settings-btn { margin-left: auto; }
