@@ -36,6 +36,12 @@ export interface PluginRuntimeHandle {
   inventory(): Promise<{ ok: true; value: readonly unknown[] } | { ok: false; error: { code: string; message: string } }>
   /** 控制台用户触发的 run/update(dynamicCordisRunner.runHostHalf 直发)。 */
   runRow(agentId: string, pluginId: string, packageId: string, mode: 'run' | 'update'): Promise<{ ok: boolean; errorCode?: string; errorMessage?: string }>
+  /** 面板 stop(dynamicCordisRunner.stopFromPanel;not-running 视为成功)。 */
+  stopRow(agentId: string, pluginId: string): Promise<{ ok: boolean; message?: string }>
+  /** 面板 remove(dynamicCordisRunner.undefineFromPanel)。 */
+  removeRow(agentId: string, pluginId: string): Promise<{ ok: boolean; message?: string }>
+  /** 用 wire 的 rpc 重建 remote(fixture 页 → 内存 rpc;real 页 → HTTP)。 */
+  setRpc(rpc: import('../../vendor/client-connection/rpc.ts').ClientConnectionRpc): void
 }
 
 let singleton: { runtime: PluginRuntime; registry: SlotRegistry; orchestrator: CordisRunOrchestrator } | undefined
@@ -137,6 +143,27 @@ function handle(): PluginRuntimeHandle {
       return answered.ok
         ? { ok: true }
         : { ok: false, errorCode: answered.error.code, errorMessage: answered.error.message }
+    },
+    // P3-⑪:面板级 stop/remove(dynamicCordisRunner.stopFromPanel/undefineFromPanel)。
+    stopRow: async (agentId, pluginId) => {
+      const answered = await remote!.stopFromPanel(agentId, pluginId)
+      if (!answered.ok) return { ok: false, message: `${answered.error.code}: ${answered.error.message}` }
+      const value = answered.value
+      return value.ok || value.reason === 'not-running'
+        ? { ok: true }
+        : { ok: false, message: value.message ?? 'stop failed' }
+    },
+    removeRow: async (agentId, pluginId) => {
+      const answered = await remote!.undefineFromPanel(agentId, pluginId)
+      if (!answered.ok) return { ok: false, message: `${answered.error.code}: ${answered.error.message}` }
+      return answered.value.ok
+        ? { ok: true }
+        : { ok: false, message: answered.value.message ?? 'remove failed' }
+    },
+    setRpc: (rpc) => {
+      // 用 wire 的 rpc 重建 remote(fixture 页 → 内存 rpc 确定性驱动面板;
+      // real 页 → 同一 HTTP rpc,行为不变)。
+      remote = createCordisRunnerRemote(rpc)
     },
   }
 }

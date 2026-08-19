@@ -731,3 +731,10 @@ body {
   gap: 10px;
   margin-top: 14px;
 }
+
+/* ===== PluginHost 控制台增强(P3-⑪:版本/Stop/Remove/过渡) ===== */
+.plugin-console-version { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; opacity: .85; }
+.plugin-console-version select { background: var(--surface-2, #262933); color: var(--text, #d8d8d8); border: 1px solid var(--border, rgba(128,128,128,.3)); border-radius: 4px; font-size: 11px; padding: 1px 4px; max-width: 180px; }
+.plugin-console-row[data-cordis-status="running"] .plugin-console-name::after { content: ' ●'; color: var(--dsw-alias-state-success-primary, #22c55e); font-size: 10px; }
+.plugin-console-danger { color: var(--dsw-alias-state-error-primary, #ff6b6b) !important; }
+.plugin-console-transition { display: inline-flex; align-items: center; gap: 6px; }

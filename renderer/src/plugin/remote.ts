@@ -73,6 +73,10 @@ export interface CordisRunnerRemote {
   getClientCode(agentId: string, pluginId: string, pluginRunId: string): Promise<RemoteResult<DynamicCordisClientSource>>
   resolveRequestRun(requestId: string, resolution: DynamicCordisRunResolution): Promise<RemoteResult<DynamicCordisResolveAck>>
   settleUserRun(agentId: string, pluginId: string, resolution: DynamicCordisRunResolution): Promise<RemoteResult<DynamicCordisRunResponse>>
+  /** 面板 stop:停掉一个动态插件的宿主半(官方 dynamicCordisRunner.stopFromPanel)。 */
+  stopFromPanel(agentId: string, pluginId: string): Promise<RemoteResult<{ ok: boolean; reason?: string; message?: string }>>
+  /** 面板 remove:注销并移除一个动态插件(官方 dynamicCordisRunner.undefineFromPanel)。 */
+  undefineFromPanel(agentId: string, pluginId: string): Promise<RemoteResult<{ ok: boolean; wasRunning?: boolean; message?: string }>>
   /** Route host.call(method, args) to the active Host half of one exact run. */
   invoke(pluginId: string, pluginRunId: string, method: string, args: unknown): Promise<RemoteResult<unknown>>
 }
@@ -94,6 +98,10 @@ export function createCordisRunnerRemote(rpc: ClientConnectionRpc = createWebCon
       call('resolveRequestRun', { requestId, resolution }),
     settleUserRun: (agentId, pluginId, resolution) =>
       call('settleUserRun', { agentId, pluginId, resolution }),
+    stopFromPanel: (agentId, pluginId) =>
+      call('stopFromPanel', { agentId, pluginId }),
+    undefineFromPanel: (agentId, pluginId) =>
+      call('undefineFromPanel', { agentId, pluginId }),
     invoke: (pluginId, pluginRunId, method, args) =>
       call('invoke', { pluginId, pluginRunId, method, args }),
   }

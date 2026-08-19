@@ -217,6 +217,9 @@ export function RuntimeProvider({ children }: { children: ReactNode }): JSX.Elem
   }, [reloadWorkspaces])
 
   useEffect(() => {
+    // P3-⑪:面板级 cordis 控制台走 wire 的 rpc(fixture 页 → 内存清单确定性驱动;
+    // real 页 → 同一 HTTP 通道)。
+    getPluginRuntimeHandle().setRpc(runtime.wire.rpc)
     const stop = runtime.wire.start({
       onConnected: () => setConnectionState('connected'),
       onStateChange: (s) => setConnectionState(s === 'reconnecting' ? 'reconnecting' : 'connected'),

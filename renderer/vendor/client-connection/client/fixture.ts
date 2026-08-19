@@ -1598,6 +1598,31 @@ function createFixtureWorld(options: FixtureOptions): FixtureWorld {
   /** Permission default-preset state (the settings row + Full access gate surface). */
   let fixturePermissionPreset = 'workspace-write'
   let fixturePermissionRevision = 0
+  // zion: 面板级 cordis 动态插件清单(fixture 内存;P3-⑪ 控制台行动词/版本/过渡)。
+  interface FixtureCordisPackage { packageId: string; name: string; purpose: string; hasClientHalf: boolean }
+  interface FixtureCordisRow {
+    pluginId: string
+    agentId: SessionId
+    packages: FixtureCordisPackage[]
+    currentPackageId: string
+    nextPackageId: string | undefined
+    activeRun: { packageId: string; status: string } | undefined
+    latestRun: { packageId: string; status: string }
+  }
+  const fixtureCordisRows: FixtureCordisRow[] = [{
+    pluginId: 'fx-cordis-demo',
+    agentId: sid('fx-alpha'),
+    packages: [
+      { packageId: 'fx-pkg-1', name: 'demo-v1', purpose: 'fixture 动态插件 v1', hasClientHalf: true },
+      { packageId: 'fx-pkg-2', name: 'demo-v2', purpose: 'fixture 动态插件 v2(待更新)', hasClientHalf: true },
+    ],
+    currentPackageId: 'fx-pkg-1',
+    nextPackageId: 'fx-pkg-2',
+    activeRun: { packageId: 'fx-pkg-1', status: 'running' },
+    latestRun: { packageId: 'fx-pkg-1', status: 'running' },
+  }]
+  const fixtureCordisInventory = (): readonly FixtureCordisRow[] =>
+    fixtureCordisRows.map(row => ({ ...row, packages: [...row.packages] }))
   /** Schemastery envelope for the permission defaultPreset schema (host PermissionPresetService shape, mirroring PERMISSION_PRESETS). */
   const permissionSchemaEnvelope = {
     uid: 700,
@@ -3228,6 +3253,52 @@ function createFixtureWorld(options: FixtureOptions): FixtureWorld {
         case 'goals/resume': return Promise.resolve(goalRemotes.resume(sessionId, args.ref as FxGoalRef))
         case 'goals/complete': return Promise.resolve(goalRemotes.complete(sessionId, args.ref as FxGoalRef))
         case 'goals/clear': return Promise.resolve(goalRemotes.clear(sessionId, args.ref as FxGoalRef))
+        // zion: 面板级 cordis 控制台端点(fixture 内存清单;P3-⑪ 驱动行动词/版本选择/过渡)。
+        // 与其它 case 同形:返回 RpcResult(remotes 面),rpcId 由上层信封回填。
+        case 'dynamicCordisRunner/inventory':
+          return Promise.resolve({ ok: true as const, value: fixtureCordisInventory() })
+        case 'dynamicCordisRunner/runHostHalf': {
+          const pluginId = (args as { pluginId?: string }).pluginId
+          const packageId = (args as { packageId?: string }).packageId
+          const row = fixtureCordisRows.find(r => r.pluginId === pluginId)
+          if (row === undefined) {
+            return Promise.resolve({ ok: true as const, value: { ok: false, message: 'plugin-not-running' } })
+          }
+          row.activeRun = { packageId: packageId ?? row.currentPackageId, status: 'running' }
+          row.latestRun = { packageId: packageId ?? row.currentPackageId, status: 'running' }
+          return Promise.resolve({ ok: true as const, value: { ok: true, pluginId } })
+        }
+        case 'dynamicCordisRunner/stopFromPanel': {
+          const pluginId = (args as { pluginId?: string }).pluginId
+          const row = fixtureCordisRows.find(r => r.pluginId === pluginId)
+          if (row === undefined || row.activeRun === undefined) {
+            return Promise.resolve({ ok: true as const, value: { ok: false, reason: 'not-running' } })
+          }
+          row.activeRun = undefined
+          return Promise.resolve({ ok: true as const, value: { ok: true } })
+        }
+        case 'dynamicCordisRunner/undefineFromPanel': {
+          const pluginId = (args as { pluginId?: string }).pluginId
+          const index = fixtureCordisRows.findIndex(r => r.pluginId === pluginId)
+          if (index === -1) {
+            return Promise.resolve({ ok: true as const, value: { ok: false, message: 'not found' } })
+          }
+          const [removed] = fixtureCordisRows.splice(index, 1)
+          return Promise.resolve({ ok: true as const, value: { ok: true, wasRunning: removed.activeRun !== undefined } })
+        }
+        case 'dynamicCordisRunner/getClientCode':
+          return Promise.resolve({
+            ok: true as const,
+            value: {
+              code: 'export default { name: "fx-panel-plugin", hooks: {} }',
+              name: 'fx-panel-plugin',
+              pluginId: (args as { pluginId?: string }).pluginId ?? 'fx',
+              packageId: (args as { packageId?: string }).packageId ?? 'pkg-1',
+              pluginRunId: (args as { pluginRunId?: string }).pluginRunId ?? 'run-1',
+            },
+          })
+        case 'dynamicCordisRunner/resolveRequestRun':
+          return Promise.resolve({ ok: true as const, value: { accepted: true } })
         default:
           return Promise.reject(new Error(`fixture connection RPC endpoint ${JSON.stringify(endpoint)} is unavailable`))
       }

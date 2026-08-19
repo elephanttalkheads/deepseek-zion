@@ -31,6 +31,7 @@
 - P3 **Agent 预设四表面(ui-agent-preset)** ✅ probe-preset fixture 10/10 + real 9/9(本轮;vendor ui-agent-preset 整包(4 组件+3 控制器+PresetMenu);zion 适配三控制器装配 + 四座位(hero chip/会话头标签/通用区行/设置分区);manager 快照补 ids/byId 等位(官方 SessionListState 面);ui-settings 等位 SlotMap;fixture settings.update 补 agent-presets ns;深绿调色板补缺令牌并修正上一轮浅色误值;probe-preset:hero 暂存→新建会话自动应用→会话头标签;通用区行往返;分区复制/查看/删除/设默认全链路;real 真实 roster 渲染)
 - P3 **Miller 目录浏览弹窗(ui-directory-picker-browse)** ✅ probe-directory fixture 9/9 + real 9/9(本轮;vendor DirectoryBrowser 纯组件(Translate 改从 ui-slots 导入)+ zion 适配(host.listDirectory/createDirectory → workspace.create,失败留窗)+ WorkspaceMenu 新建工作区改开应用内弹窗(原生 picker 退役);probe-directory:主目录单栏(隐藏项默认不可见)→ 双栏 → 推进 → 新建文件夹 → 路径编辑 → 显示隐藏 → 打开创建;real:3080 未装配 browse 能力 → 官方同款诚实报错面)
 - P3 **子代理目录树 + 只读 composer(ui-subagent)** ✅ probe-subagent fixture 6/6 + real 6/6(本轮;vendor ui-subagent(目录树 + 只读 composer)+ ts-types dsh-subagent 占位(subagentTiming 投影)+ 会话头目录树座位(展开/打开子级/openChild=selectSession)+ ComposerSeat 链只读分支(官方 priority -10:one-shot/父离线未运行,approval>question>只读>InputBar)+ fixture 目录样本(Beta 可继续→Gamma 一次性);probe-subagent:计数徽标 → 树行 → 展开 → 打开 Gamma → 只读 composer 无输入条 → 回选父会话恢复;real 无子代理隐藏动作(官方同款))
+- P3 **cordis 插件面板增强** ✅ probe-cordis-panel fixture 6/6 + real 6/6(本轮;remote 补 stopFromPanel/undefineFromPanel(3080 已实装)+ hub stopRow/removeRow/setRpc(wire rpc 注入)+ PluginHost 行增强:版本选择器/运行(run|update)/停止/移除/重试下一版本/回滚 + fixture 内存清单端点全链(inventory/runHostHalf/stop/undefine/getClientCode/resolveRequestRun);real:清单读取 + 面板端点对不存在插件确定性业务拒绝)
 - ⑤(部分) 消息复制/分支 ✅ real 6/6
 - ④ 会话导出按钮 → **已核定为 N/A**(官方 web 客户端无该按钮,`downloads` 是 host-only 通道;见 §3)
 
@@ -39,6 +40,7 @@
 ## 1. 最近提交链(自本会话;`main` 最新行在前)
 
 | 提交 | 内容 |
+| `(本轮,见 git log)` | cordis 插件面板增强 ⑪:remote 补 stopFromPanel/undefineFromPanel + hub stopRow/removeRow/setRpc(wire rpc 注入)+ PluginHost 行增强(版本选择器/运行 run|update/停止/移除/重试下一版本/回滚)+ fixture 内存清单端点全链;probe-cordis-panel fixture 6/6 + real 6/6 |
 | `(本轮,见 git log)` | 子代理目录树 + 只读 composer ⑩:vendor ui-subagent(目录树/只读 composer)+ ts-types dsh-subagent 占位(subagentTiming 投影 merge)+ 会话头目录树座位(openChild=selectSession)+ ComposerSeat 只读分支(priority -10 语义)+ fixture subagents.list 目录样本;probe-subagent fixture 6/6 + real 6/6 |
 | `(本轮,见 git log)` | Miller 目录浏览弹窗 ⑨:vendor ui-directory-picker-browse(DirectoryBrowser;Translate 改从 ui-slots 导入)+ zion 适配(host.listDirectory/createDirectory → workspace.create)+ WorkspaceMenu 新建工作区改开应用内弹窗;probe-directory fixture 9/9 + real 9/9 |
 | `(本轮,见 git log)` | Agent 预设四表面:vendor ui-agent-preset(4 组件+3 控制器+PresetMenu+locales)+ zion 适配(三控制器/四座位/rosterChanged 联动)+ manager 快照补 ids/byId 等位 + ui-settings 等位 SlotMap + fixture settings.update 补 agent-presets ns + 深绿调色板补缺令牌(修上一轮浅色误值);probe-preset fixture 10/10 + real 9/9 |
@@ -162,6 +164,7 @@
 | `probe-preset.mjs` | Agent 预设四表面(hero chip 暂存→新建会话自动应用→会话头标签;通用区默认行往返;分区:复制对话框/只读查看器/删除确认/设默认;real 真实 roster 只读) | 3080+fixture | 10/10 + 9/9 |
 | `probe-directory.mjs` | Miller 目录浏览(主目录单栏/双栏推进/新建文件夹/路径编辑/显示隐藏/打开创建;real browse 能力缺失诚实报错面) | 3080+fixture | 9/9 + 9/9 |
 | `probe-subagent.mjs` | 子代理目录树(计数徽标/展开/打开子级)+ 只读 composer(一次性/父离线;回选父会话恢复) | 3080+fixture | 6/6 + 6/6 |
+| `probe-cordis-panel.mjs` | cordis 面板增强(版本选择器/运行/停止/移除/重试/回滚 + 审批卡;real 面板端点确定性业务拒绝) | 3080+fixture | 6/6 + 6/6 |
 
 > ⚠️ `probe-backend-only` 现为 **24/26**:A1/A6 断言的默认/会话模型期望 `opencode-go/deepseek-v4-flash`,而真后端 3080 当前选中为 `deepseek-official/deepseek-v4-flash`(后端侧模型选择漂移,与本次改动无关;待后端选回后恢复 26/26)。
 > ⚠️ `probe-permission-plan` 现为 **10/12**:P3/P7 断言的权限默认值期望 `Full access`,真后端当前为 `workspace-write`(后端侧权限默认漂移,机械断言全过;恢复 12/12 需后端默认回 Full access)。

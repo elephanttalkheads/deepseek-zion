@@ -1,9 +1,9 @@
 /**
  * Plugin runtime 底座 — PluginHost 控制台。
  * 显示已加载动态插件 + 载入/卸载(演示用),cordis_run 审批卡(允许 / 批准并信任 / 拒绝),
- * 以及「运行控制台」:dynamicCordisRunner.inventory 进程级动态插件清单 + 每行 Run/Update
- * (经 remote.runHostHalf 真发;无 host 插件时得到规范业务错误)。stop/remove 属宿主原生
- * 控制台能力(dynamicCordisRunner 无面板级远程方法),按钮以说明呈现。
+ * 以及「运行控制台」:dynamicCordisRunner.inventory 进程级动态插件清单 + 每行
+ * Run/Stop/Remove/版本选择/重试下一版本/回滚(P3-⑪:stopFromPanel/undefineFromPanel
+ * 面板级远程方法;fixture 内存清单确定性驱动,real 经 3080 直发)。
  */
 import { useEffect, useState } from 'react'
 import { usePlugins } from '../plugin/hub.tsx'
@@ -15,8 +15,21 @@ interface InventoryRow {
   pluginId?: string
   name?: string
   agentId?: string
-  packages?: readonly { packageId?: string }[] | readonly string[]
+  packages?: readonly { packageId?: string; name?: string; purpose?: string; hasClientHalf?: boolean }[] | readonly string[]
+  currentPackageId?: string
+  nextPackageId?: string
+  activeRun?: { packageId?: string; status?: string }
+  latestRun?: { packageId?: string; status?: string }
   [k: string]: unknown
+}
+
+/** 行内 package 解析(字符串列表或对象列表)。 */
+function rowPackages(row: InventoryRow): { packageId: string; name?: string; purpose?: string; hasClientHalf?: boolean }[] {
+  const raw = row.packages ?? []
+  return raw.map(pkg => typeof pkg === 'string'
+    ? { packageId: pkg }
+    : { packageId: pkg.packageId ?? '', name: pkg.name, purpose: pkg.purpose, hasClientHalf: pkg.hasClientHalf === true })
+    .filter(pkg => pkg.packageId !== '')
 }
 
 export function PluginHost(): JSX.Element {
@@ -28,6 +41,8 @@ export function PluginHost(): JSX.Element {
   const [inventoryError, setInventoryError] = useState<string | null>(null)
   const [consoleBusy, setConsoleBusy] = useState<string | null>(null)
   const [consoleResult, setConsoleResult] = useState<string | null>(null)
+  // P3-⑪:每行选中的 package(版本选择器);未选时取 active/current/最新。
+  const [selectedPkg, setSelectedPkg] = useState<Record<string, string>>({})
 
   useEffect(() => {
     const refresh = (): void => { setActive(runtime.active()); setActivity([...runtime.runActivity().values()]) }
@@ -69,20 +84,51 @@ export function PluginHost(): JSX.Element {
     else setInventoryError(`${res.error.code}: ${res.error.message}`)
   }
 
-  const runRow = async (verb: 'run' | 'update', row: InventoryRow): Promise<void> => {
-    setConsoleBusy(`${verb}:${row.pluginId ?? ''}`)
+  const runRow = async (verb: 'run' | 'update', row: InventoryRow, packageId?: string): Promise<void> => {
+    const id = row.pluginId ?? ''
+    setConsoleBusy(`${verb}:${id}`)
     setConsoleResult(null)
     try {
-      // 经 hub 的 runHostHalf 直发(采样:当前 PluginHost 只经 orchestrator 审批驱动;
-      // 这里暴露用户触发的 Run/Update 入口,host 无对应插件时得到规范业务错误)。
       const agentId = typeof row.agentId === 'string' ? row.agentId : ''
-      const mode = verb
-      const answered = await runtime.runRow(agentId, row.pluginId ?? '', row.packageId ?? '', mode)
-      setConsoleResult(`Run(${mode}) ${row.pluginId ?? ''}: ${answered.ok ? 'ok' : `${answered.errorCode}: ${answered.errorMessage}`}`)
+      const pkg = packageId ?? selectedPackageOf(row)
+      const answered = await runtime.runRow(agentId, id, pkg, verb)
+      setConsoleResult(`Run(${verb}) ${id} [${pkg}]: ${answered.ok ? 'ok' : `${answered.errorCode}: ${answered.errorMessage}`}`)
     } catch (e) {
       setConsoleResult(String(e))
     }
     setConsoleBusy(null)
+    void refreshInventory()
+  }
+
+  // P3-⑪:行动词(Stop/Remove)与版本选择。
+  const selectedPackageOf = (row: InventoryRow): string => {
+    const id = row.pluginId ?? ''
+    const packages = rowPackages(row)
+    const picked = selectedPkg[id]
+    if (picked !== undefined && packages.some(pkg => pkg.packageId === picked)) return picked
+    return row.activeRun?.packageId ?? row.currentPackageId ?? packages.at(-1)?.packageId ?? ''
+  }
+  const runModeOf = (row: InventoryRow, packageId: string): 'run' | 'update' =>
+    row.currentPackageId !== undefined && packageId !== row.currentPackageId ? 'update' : 'run'
+
+  const stopRow = async (row: InventoryRow): Promise<void> => {
+    const id = row.pluginId ?? ''
+    setConsoleBusy(`stop:${id}`)
+    setConsoleResult(null)
+    const answered = await runtime.stopRow(typeof row.agentId === 'string' ? row.agentId : '', id)
+    setConsoleResult(`Stop ${id}: ${answered.ok ? 'ok' : answered.message ?? 'failed'}`)
+    setConsoleBusy(null)
+    void refreshInventory()
+  }
+
+  const removeRow = async (row: InventoryRow): Promise<void> => {
+    const id = row.pluginId ?? ''
+    setConsoleBusy(`remove:${id}`)
+    setConsoleResult(null)
+    const answered = await runtime.removeRow(typeof row.agentId === 'string' ? row.agentId : '', id)
+    setConsoleResult(`Remove ${id}: ${answered.ok ? 'ok' : answered.message ?? 'failed'}`)
+    setConsoleBusy(null)
+    void refreshInventory()
   }
 
   const approvals = activity.filter(a => a.phase === 'awaiting-approval')
@@ -130,20 +176,85 @@ export function PluginHost(): JSX.Element {
             {rows.length === 0 && <span className="plugin-console-empty">无动态插件(运行编排由 host 经审批流驱动)</span>}
             {rows.map((row, idx) => {
               const id = row.pluginId ?? String(idx)
-              const pkgId = typeof row.packageId === 'string'
-                ? row.packageId
-                : Array.isArray(row.packages) && typeof row.packages[0] === 'string'
-                  ? row.packages[0]
-                  : (row.packages?.[0] as { packageId?: string } | undefined)?.packageId ?? ''
+              const agentId = typeof row.agentId === 'string' ? row.agentId : ''
+              const packages = rowPackages(row)
+              const selectedPackageId = selectedPackageOf(row)
+              const status = row.activeRun !== undefined ? 'running' : 'idle'
+              const transition = row.nextPackageId !== undefined && row.nextPackageId !== row.currentPackageId
               return (
-                <div key={id} className="plugin-console-row">
+                <div key={id} className="plugin-console-row" data-cordis-row={id} data-cordis-status={status}>
                   <span className="plugin-console-name">{row.name ?? id}</span>
                   <code className="plugin-console-id">{id}</code>
-                  {pkgId !== '' && <code className="plugin-console-pkg">{pkgId}</code>}
-                  <button type="button" className="plugin-console-run" disabled={consoleBusy !== null} onClick={() => { void runRow('run', row) }}>运行</button>
-                  <button type="button" className="plugin-console-run" disabled={consoleBusy !== null} onClick={() => { void runRow('update', row) }}>更新</button>
-                  <button type="button" title="stop/remove 由宿主原生控制台执行(dynamicCordisRunner 无面板级远程方法)" disabled>停止</button>
-                  <button type="button" title="同上" disabled>移除</button>
+                  {packages.length > 1 && (
+                    <label className="plugin-console-version" title="版本">
+                      版本
+                      <select
+                        value={selectedPackageId}
+                        disabled={consoleBusy !== null}
+                        onChange={(e) => {
+                          setSelectedPkg(prev => ({ ...prev, [id]: e.target.value }))
+                        }}
+                      >
+                        {packages.map(pkg => (
+                          <option key={pkg.packageId} value={pkg.packageId}>
+                            {`${pkg.name ?? pkg.packageId} · ${pkg.packageId}`}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                  )}
+                  <button
+                    type="button"
+                    className="plugin-console-run"
+                    data-cordis-switch="run"
+                    disabled={consoleBusy !== null || selectedPackageId === ''}
+                    onClick={() => { void runRow(runModeOf(row, selectedPackageId), row, selectedPackageId) }}
+                  >
+                    运行
+                  </button>
+                  <button
+                    type="button"
+                    className="plugin-console-run"
+                    disabled={consoleBusy !== null || row.activeRun === undefined}
+                    data-cordis-switch="stop"
+                    onClick={() => { void stopRow(row) }}
+                  >
+                    停止
+                  </button>
+                  <button
+                    type="button"
+                    className="plugin-console-run plugin-console-danger"
+                    disabled={consoleBusy !== null}
+                    data-cordis-remove={id}
+                    onClick={() => { void removeRow(row) }}
+                  >
+                    移除
+                  </button>
+                  {transition && (
+                    <span className="plugin-console-transition">
+                      <code className="plugin-console-pkg">当前 {row.currentPackageId}</code>
+                      <button
+                        type="button"
+                        className="plugin-console-run"
+                        disabled={consoleBusy !== null}
+                        data-cordis-switch="retry"
+                        onClick={() => { void runRow('update', row, row.nextPackageId) }}
+                      >
+                        重试下一版本
+                      </button>
+                      {row.currentPackageId !== undefined && (
+                        <button
+                          type="button"
+                          className="plugin-console-run"
+                          disabled={consoleBusy !== null}
+                          data-cordis-switch="rollback"
+                          onClick={() => { void runRow('run', row, row.currentPackageId) }}
+                        >
+                          回滚
+                        </button>
+                      )}
+                    </span>
+                  )}
                 </div>
               )
             })}
