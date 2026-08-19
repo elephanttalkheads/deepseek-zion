@@ -39,6 +39,9 @@ smoke-*
 # local backup of path-referencing docs (orig + now); do not commit
 backup/
 
+# vision toolkit temp (pasted images etc.)
+.dsh-vision-toolkit/
+
 # os
 .DS_Store
 Thumbs.db

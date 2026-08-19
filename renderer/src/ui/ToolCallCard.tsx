@@ -76,6 +76,91 @@ function oneLine(s: string): string {
   return one.length > 180 ? one.slice(0, 180) + '…' : one
 }
 
+// ---- Matrix diff 卡(M1:port of pi-martix DiffCard + DSH wire adapter) ----
+
+/** diff 卡行(与 pi-martix DiffRow 同构) */
+interface DiffRow { t: '+' | '-' | ' '; n: string | null; c: string }
+
+/** 结构化 wire diff:hunks 的单个块(DiffHunk shape) */
+interface DiffHunk { path?: string; oldText?: string | null; newText?: string }
+
+/**
+ * 把 wire 的 hunk(path/oldText/newText)转成 pi-martix 行模型。
+ * 逐 hunk 产出;每个 hunk 内部用公共前缀/后缀朴素 diff(整段删+增)。
+ */
+function rowsFromTexts(oldT: string | undefined, newT: string | undefined): DiffRow[] {
+  const oldLines = oldT === undefined ? [] : oldT.split('\n')
+  const newLines = newT === undefined ? [] : newT.split('\n')
+  let pre = 0
+  while (pre < oldLines.length && pre < newLines.length && oldLines[pre] === newLines[pre]) pre++
+  let suf = 0
+  while (
+    suf < oldLines.length - pre &&
+    suf < newLines.length - pre &&
+    oldLines[oldLines.length - 1 - suf] === newLines[newLines.length - 1 - suf]
+  ) {
+    suf++
+  }
+  const rows: DiffRow[] = []
+  for (let i = 0; i < pre; i++) rows.push({ t: ' ', n: String(i + 1), c: oldLines[i] })
+  for (let i = pre; i < oldLines.length - suf; i++) rows.push({ t: '-', n: String(i + 1), c: oldLines[i] })
+  for (let i = pre; i < newLines.length - suf; i++) rows.push({ t: '+', n: String(i + 1), c: newLines[i] })
+  for (let i = newLines.length - suf; i < newLines.length; i++) {
+    rows.push({ t: ' ', n: String(i + 1), c: newLines[i] })
+  }
+  return rows
+}
+
+/** 从 wire view 里规范化 diffs(不 throw;非法即 null → 走通用路径) */
+function narrowDiffs(view: unknown): DiffHunk[] | null {
+  if (view === null || typeof view !== 'object') return null
+  const diffs = (view as { diffs?: unknown }).diffs
+  if (!Array.isArray(diffs)) return null
+  const out: DiffHunk[] = []
+  for (const h of diffs) {
+    if (typeof h !== 'object' || h === null) return null
+    const { path, oldText, newText } = h as Record<string, unknown>
+    if (typeof path !== 'string') return null
+    if (oldText !== null && typeof oldText !== 'string') return null
+    if (typeof newText !== 'string') return null
+    out.push({ path, oldText, newText })
+  }
+  return out.length === 0 ? null : out
+}
+
+/** Matrix diff 卡:校验环 + 文件头(+/- 计数/MODIFIED)+ 烧录显影行(M1 port from pi-martix) */
+function MatrixDiffCard({ file, rows }: { file: string; rows: DiffRow[] }): JSX.Element {
+  let plus = 0
+  let minus = 0
+  for (const r of rows) {
+    if (r.t === '+') plus++
+    else if (r.t === '-') minus++
+  }
+  const dFile = file.startsWith('✎ ') ? file : `✎ ${file}`
+  return (
+    <div className="matrix-diff">
+      <svg className="matrix-diff-ring" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
+        <rect x="1" y="1" width="98" height="98" pathLength={400} />
+      </svg>
+      <div className="matrix-diff-head">
+        <span className="matrix-diff-file">{dFile}</span>
+        <span className="matrix-diff-plus">+{plus}</span>
+        <span className="matrix-diff-minus">−{minus}</span>
+        <span className="matrix-diff-mod">MODIFIED</span>
+      </div>
+      <div className="matrix-diff-body">
+        {rows.map((r, i) => (
+          <div key={i} className={`matrix-diff-row ${r.t === '+' ? 'add' : r.t === '-' ? 'del' : 'ctx'}`}>
+            <span className="matrix-diff-ln">{r.n ?? ''}</span>
+            <span className="matrix-diff-sign">{r.t === '+' ? '+' : r.t === '-' ? '−' : '·'}</span>
+            <span className="matrix-diff-code">{r.c || ' '}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
 /** Render the body inside the expanded row, keyed on the result card. */
 function ToolBody({ block }: { block: ToolCallBlock }): JSX.Element {
   const settled = isSettled(block)
@@ -85,6 +170,19 @@ function ToolBody({ block }: { block: ToolCallBlock }): JSX.Element {
   // Terminal-ish card
   if (cardName === 'terminal') {
     return <pre className="tool-body tool-body--terminal">{renderText(view)}</pre>
+  }
+  // Matrix diff 卡(M1):wire card='diff' + 合法 diffs → 烧录显影渲染
+  if (cardName === 'diff') {
+    const hunks = narrowDiffs(view)
+    if (hunks !== null) {
+      const rows: DiffRow[] = []
+      const firstPath = hunks.find(h => h.path !== '')?.path ?? hunks[0]?.path ?? ''
+      for (const h of hunks) {
+        rows.push(...rowsFromTexts(h.oldText ?? undefined, h.newText))
+      }
+      return <MatrixDiffCard file={firstPath} rows={rows} />
+    }
+    // diffs 缺失/非法 → 回退通用路径(兼容官方语义:非法 payload 走 generic)
   }
   // Diff / read / search / web fall back to structured text dump
   if (cardName !== null) {
