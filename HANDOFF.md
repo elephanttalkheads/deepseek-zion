@@ -9,7 +9,7 @@
 
 `deepseek-zion` = 为 DeepSeek Harness(DSH)封装的桌面 GUI。**干掉「官方 UI 皮肤层」这一条路线**,改走:**自建 React 18 + Vite 复刻 renderer,数据层直接用官方纯类(B 直拼),插件底座让社区插件跑起来**。当前做到「功能对等(大致相似)+ 插件运行时底座 + 真后端联通」,尚未做「像素 1:1 精修」。
 
-一句话当前状态:**M1–M6 全部完成并推送,工作区干净**(`git status` 0),远端正出 `356580c`。
+一句话当前状态:**M1–M6 全部完成并推送 + rc.7 同步批次已推送**(本机 dsh 已升 rc.7、file: 链随升、vendor 保持 rc.6 因 wire 未变,探针 24/24 + probe-real 通过),远端正出 `356580c`(rc.7 同步批次后见 §1 提交链)。
 
 ---
 
@@ -30,6 +30,11 @@
 | `3a0c754` | docs:SYNC.md(官方更新后如何同步;4 耦合面 + 升级流程 + 换机链) |
 | `44a3154` | docs:AGENTS.md UI 风格铁律 + ui-change-log 记账本 |
 | `356580c` | docs:修剪 CONTEXT.md/HANDOFF.md(去机器专有盘符/路径指针) |
+| `eb3c9c3` | docs:HANDOFF refresh(AGENTS.md UI 铁律为换肤先读、交叉盘 file: 缘由、迁移源路径) |
+| `44b7d53` | docs:purge pi-martix-ui 机器路径 + gitignore local backup |
+| `7d6afe6` | docs:AGENTS.md UI 铁律标「复刻阶段暂停适用」+ UPDATE-DSH.md 本机升级指令 |
+| `15d60bb` | chore:file: refs 解析到 rc.7(npm install 后 lock 更新) |
+| `58dc787` | docs:Sync/README/HANDOFF 基线更新到 rc.7(wire 未变,vendor 保持 rc.6) |
 
 **里程碑验收记录(主文档,先读)**:`renderer/M1-验收记录.md` — 含每批交付/验证/遗留,最后一节是 M6。
 
@@ -50,14 +55,14 @@
 ## 2. 环境与运行(本机)
 
 - 路径:`D:\deepseek-zion`(工作区),仓库 `origin=https://github.com/elephanttalkheads/deepseek-zion.git`(`main`)。
-- Node/DSH:Windows;DSH 装在 `C:\Users\zyf\AppData\Local\nvm\v24.19.0\node_modules\@deepseek-ai\dsh\`;DSH_HOME=`C:\Users\zyf\.dsh`;官方 npm 链在 `C:\Users\zyf\.dsh\profiles\node_modules\@deepseek-ai\`(rc.6,file: 引用)。
+- Node/DSH:Windows;DSH 装在 `C:\Users\zyf\AppData\Local\nvm\v24.19.0\node_modules\@deepseek-ai\dsh\`(**rc.7**,升级流程见 `UPDATE-DSH.md`);DSH_HOME=`C:\Users\zyf\.dsh`;官方 npm 链在 `C:\Users\zyf\.dsh\profiles\node_modules\@deepseek-ai\`(rc.7,file: 引用;junction 到 nvm dsh 内嵌链)。
 - 官方 harness 源码 clone:`D:\github-Clone\deepseek-harness`(改代码/查契约都看这里,`packages/extensions/...` 是 cordis-runner、`packages/host/apiproxy` 是 wire)。
 - 常用命令:
   - 构建:`npx vite build --config renderer/vite.config.ts`(root=renderer,输出 `renderer/dist`)。
   - 类型检查(只查 `src/`,vendor 的 cordis 类型噪音是既有的,不算错):`npx tsc --noEmit -p renderer/tsconfig.json`(grep 掉 vendor 行)。
   - preview(复刻页面):`npx vite preview --config renderer/vite.config.ts --port 5199 --strictPort`(后台 job)。
   - Electron 壳:无头验收用 `npx electron <probe>.mjs`(各探针,见 §5)。
-  - 依赖:`npm install`(file: 引本地 rc.6;`dsh-llm-retry` 那行 file: 指向 dsh 安装内部 node_modules,换机器要改,见 §6)。
+  - 依赖:`npm install`(file: 引本地 rc.7;`dsh-llm-retry` 那行 file: 指向 dsh 安装内部 node_modules,换机器要改,见 §6)。
 
 ---
 
@@ -146,7 +151,7 @@ return {
 git clone https://github.com/elephanttalkheads/deepseek-zion.git
 cd deepseek-zion
 npm install
-# 注意 package.json 里 file: 指到本机 rc.6 链(如 C:/Users/zyf/.dsh/profiles/...)
+# 注意 package.json 里 file: 指到本机 rc.7 链(如 C:/Users/zyf/.dsh/profiles/...)
 # 与 dsh-llm-retry 指到 dsh 安装内部路径 —— 换机要改成你自己机器上的真实路径,或改成 npm 版本。
 # 官方 client 四包已 vendor(renderer/vendor),不需要额外装;apiproxy/session/llm 等 ESM 面包仍需在本地有同版本源码反射。
 npx vite build --config renderer/vite.config.ts
@@ -171,7 +176,7 @@ npx vite build --config renderer/vite.config.ts
 - 本文件即你(接任 agent)的入口。**先读这个文件,再读 `renderer/M1-验收记录.md` 尾部(M1→M6)与 `CONTEXT.md`**。
 - **若你做 UI 风格改造(换肤/动效/迁移)**:先读 `AGENTS.md` 的 UI 风格铁律 + `ui-change-log/`,再动手;默认动作=改样式保留功能,官方展示内容(如输入框左下 `+` 命令列表入口)不禁删。
 - UI 风格迁移的**源文件**在 ZION 主工程仓库 https://github.com/elephanttalkheads/pi-martix-ui (不是工作区 `D:\pi-martix-ui`,也不是本仓库)。
-- 你在哪台机器都行:**主仓库在 GitHub**(`elephanttalkheads/deepseek-zion`,`main` 最新 `356580c`)。clone 即得全部代码和探针。
+- 你在哪台机器都行:**主仓库在 GitHub**(`elephanttalkheads/deepseek-zion`,`main` 最新见 §1 提交链首行)。clone 即得全部代码和探针。
 - 你的职责延续方向见 §3;第一优先建议做「浅色主题化逼近官方布局」,因为它最能肉眼见效且不碰任何红线。
 - 若你做插件相关:`renderer/src/plugin/` 是全部答案;`CONTEXT.md`「插件运行时/slot 注入面」给设计口径。
 - 若做真后端验收:先 `dsh --profile web --port 3080`(或已有),再起 5199 preview,探针 `probe-real/checklist/queue-*` 覆盖大部分。
@@ -225,4 +230,4 @@ R7 动效不拖累主线程(当前深色主题无大动效,未来加动效要遵
 
 ---
 
-*本文件由原开发会话生成并持续维护,信息截至 `356580c`。如接手后有重大架构变化(新增里程碑、架构调整、UI 大规模改版),请更新本文 §1/§3/§4 并按 `AGENTS.md` 铁律记录 UI 删改后 git 提交。*
+*本文件由原开发会话生成并持续维护,信息截至 rc.7 同步批次(见 §1 提交链)。如接手后有重大架构变化(新增里程碑、架构调整、UI 大规模改版),请更新本文 §1/§3/§4 并按 `AGENTS.md` 铁律记录 UI 删改后 git 提交。*

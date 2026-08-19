@@ -24,7 +24,7 @@
 ## 快速开始
 
 ```sh
-npm install          # 首次(file: 依赖指向本机 rc.6 链,换机见 HANDOFF §6)
+npm install          # 首次(file: 依赖指向本机 rc.7 链,换机见 HANDOFF §6;本机升级见 UPDATE-DSH.md)
 npx vite build --config renderer/vite.config.ts    # 构建复刻 renderer → renderer/dist
 npx tsc --noEmit -p renderer/tsconfig.json         # 自查(过滤 vendor 噪音)
 npx vite preview --config renderer/vite.config.ts --port 5199 --strictPort   # 复刻页面

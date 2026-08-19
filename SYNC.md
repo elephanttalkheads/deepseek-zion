@@ -1,7 +1,7 @@
 # deepseek-zion 与官方 deepseek harness 的同步机制(SYNC)
 
 > 适用:官方 `@deepseek-ai/*` 或 harness 本体更新后,如何把 deepseek-zion 对到新版本。
-> 本文件是**机制向导**;现状基线(rc.6 + official clone HEAD `dsh-v0.1.0-rc.7`)见文末「当前基线」。
+> 本文件是**机制向导**;现状基线(file: 链 rc.7 + official clone HEAD `dsh-v0.1.0-rc.7`,wire 未变故 vendor 保持 rc.6)见文末「当前基线」。
 > 写文件时间:2025-08(M6 后,官方已发 rc.7)。
 
 ---
@@ -17,7 +17,7 @@ deepseek-zion 对官方的耦合有 **4 个面**,同步时逐面核对:
 ## 1. 四个耦合面(按风险排序)
 
 ### 面 A:file: ESM 面包(低风险,最常触发)
-`package.json` `dependencies` 里指向本机 rc.6 链的普通 ESM 包(共 14 个):
+`package.json` `dependencies` 里指向本机当前链(现为 rc.7,见 §5 基线)的普通 ESM 包(共 14 个):
 `dsh-agent / dsh-api-remotes / dsh-attachment / dsh-commands / dsh-host-apiproxy / dsh-llm / dsh-llm-retry / dsh-session / dsh-session-projection / dsh-session-title / dsh-tools / dsh-typert-protocol`(+ cordis 是 4.0.1 精确版)。
 
 这些是**客户端纯数据/契约层**。官方升小版本一般只加字段、不改已用面,`npm install` 指向新链即可;若 file: 路径在新机器不存在 → 见 SYNC §4 换机。
@@ -89,11 +89,13 @@ deepseek-zion 对官方的耦合有 **4 个面**,同步时逐面核对:
 
 | 项 | 值 |
 |---|---|
-| deepseek-zion `main` 最新 | `5c8ff40`(M6 后 + README/CONTEXT/HANDOFF) |
-| file: 链版本 | `0.1.0-rc.6`(本机 `C:\Users\zyf\.dsh\profiles\node_modules\@deepseek-ai\*`) |
-| `@deepseek-ai/cordis` | `4.0.1`(精确) |
-| vendor 的官方包 | client-connection / client-runtime / client-web-react / client-ui-slots / client-ui-conversation(拷自 rc.6) |
+| deepseek-zion `main` 最新 | 见 HANDOFF §1(rc.7 同步批次后) |
+| file: 链版本 | `0.1.0-rc.7`(本机 `C:\Users\zyf\.dsh\profiles\node_modules\@deepseek-ai\*`;已按 [UPDATE-DSH.md](./UPDATE-DSH.md) 升级) |
+| `@deepseek-ai/cordis` | `4.0.1`(精确,rc.6→rc.7 未变) |
+| vendor 的官方包 | client-connection / client-runtime / client-web-react / client-ui-slots / client-ui-conversation(**仍拷自 rc.6**) |
+| vendor 相对 rc.7 的漂移 | **无实质 drift**:rc.6→rc.7 内 4 包源码 0 diff,ui-conversation 仅 1 处 Safari textarea 渲染修复(非 wire) |
+| wire 契约(面 D) | **rc.6→rc.7 未变**(RPC map / MuxFrame-HostFrame / remote-event allowlist / dynamicCordisRunner / session.export-QueueAction 全部 0 diff) |
 | 官方源码 clone | `D:\github-Clone\deepseek-harness`,HEAD = `dsh-v0.1.0-rc.7` |
-| 官方已发 | rc.7(晚于 deepseek-zion 锁的 rc.6)→ 若要吃 rc.7 新特性,按本文 §2 走 |
+| 官方已发 | rc.7(deepseek-zion 已升 file: 链;探针 24/24 + probe-real 通过) |
 
-> 说明:rc.6 → rc.7 期间官方发布的是正式 rc,是否值得升看它是否动了 deepseek-zion 用到的 wire 面;若只是 UI/新增包而 wire 面没变,可先记漂移暂不升。
+> 说明(2025-08 rc.7 同步记录):本次按 §2 判读 —— wire 面(面 D)未变,故 **vendor 保持 rc.6 源码不升**;仅把 file: 链(面 A)升到 rc.7,`vite build` + `tsc(src/ 0 错)` + `probe-checklist 24/24` + `probe-real` 全部通过。 rc.6→rc.7 期间 apiproxy settings 表面有变化(删 `settings-not-exposed` 错码、namespace 全量暴露),zion 客户端不依赖这些,无影响。下次官方更新仍按 §2 先看 wire。
