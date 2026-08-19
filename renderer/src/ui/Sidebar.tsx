@@ -1,12 +1,12 @@
 /**
  * Sidebar — session list (M1). Renders the manager's SessionListSnapshot with
  * search filtering, per-row title/activity state, and selection highlight.
- * CRUD (create/rename/archive) over the wire awaits M2 wiring; M1 shows the
- * rows the fixture/host provides.
+ * 页脚:设置齿轮(打开 SettingsShell,M2 后为官方 sidebar.footer 设置座位)。
  */
 import { useMemo, useState } from 'react'
 import { useRuntime } from '../app/runtime.tsx'
 import { SlotAnchor } from '../plugin/anchors.tsx'
+import { SettingsShell } from './SettingsShell.tsx'
 import type { SessionListEntry } from '../../vendor/client-runtime/client/sessions/lineage.ts'
 
 /** Relative time in the official style: 刚刚 / N分钟 / N小时 / DD/MM. */
@@ -36,6 +36,7 @@ export function Sidebar({ query, onQueryChange }: { query: string; onQueryChange
   const items = useSessions(s => s.items)
   const listState = useSessions(s => s.state)
   const [expanded, setExpanded] = useState<Record<string, boolean>>({})
+  const [settingsOpen, setSettingsOpen] = useState(false)
 
   const rows = useMemo(() => {
     const q = query.trim().toLowerCase()
@@ -109,7 +110,19 @@ export function Sidebar({ query, onQueryChange }: { query: string; onQueryChange
           )
         })}
       </nav>
-      <SlotAnchor slot="sidebar.footer.action" ownerProps={{}} />
+      <div className="sidebar-footer">
+        <button
+          className="sidebar-settings-trigger"
+          type="button"
+          data-open={settingsOpen || undefined}
+          onClick={() => setSettingsOpen(o => !o)}
+          title="设置"
+        >
+          设置
+        </button>
+        <SlotAnchor slot="sidebar.footer.action" ownerProps={{}} />
+      </div>
+      <SettingsShell open={settingsOpen} onClose={() => setSettingsOpen(false)} />
     </div>
   )
 }
