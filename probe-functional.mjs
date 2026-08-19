@@ -4,7 +4,7 @@
 //  2. composer «+» command menu (commands.list) -> command rows render
 //  3. slash dispatch (/echo …) -> session.command executes via the commands remote
 //  4. goal bar (goal projection + goal.create/edit/pause/complete/clear)
-//  5. workspace menu (workspace.list + create via host.pickDirectory + rename/delete)
+//  5. workspace menu (workspace.list + create via Miller 目录浏览弹窗 + rename/delete)
 //  6. subagent panel (subagents.list via refreshSubagents) renders in the right column
 // Usage: npx electron probe-functional.mjs
 import { app, BrowserWindow } from 'electron'
@@ -117,9 +117,13 @@ app.whenReady().then(async () => {
   const wsCount = await js(win, `document.querySelectorAll('.workspace-menu-item').length`)
   details['13'] = `工作区数量 = ${wsCount}`
   await check('13', `true`, '13 工作区(details)')
-  // create (menu closes on success — reopen to verify the new row)
+  // create (P3-⑨:应用内 Miller 目录浏览弹窗;打开即采用当前层级 → 面板关闭;
+  // 重开菜单验证新行)
   await js(win, `(() => { const b = document.querySelector('.workspace-menu-create'); if (b) b.click(); return !!b })()`)
-  await sleep(800)
+  const browseShown = await waitFor(win, `!!document.querySelector('[role="dialog"]')`, 8000)
+  details['13b'] = `浏览弹窗出现 = ${browseShown}`
+  await js(win, `(() => { const d = [...document.querySelectorAll('[role="dialog"]')].at(-1); const b = d ? [...d.querySelectorAll('button')].find(x => (x.innerText ?? '').trim() === '打开') : null; if (b) b.click(); return !!b })()`)
+  await waitFor(win, `![...document.querySelectorAll('[role="dialog"]')].some(d => (d.innerText ?? '').includes('选择工作区目录'))`, 8000)
   await js(win, `(() => { const b = document.querySelector('.shell-workspace'); if (b) b.click(); return !!b })()`)
   await check('14', `document.querySelectorAll('.workspace-menu-item').length > ${wsCount}`, '14 workspace.create: 新工作区行出现(重开菜单)')
   const newWsTitle = await js(win, `(() => { const rows = [...document.querySelectorAll('.workspace-menu-item')]; return rows[rows.length - 1]?.querySelector('.workspace-menu-title')?.innerText ?? '(none)' })()`)

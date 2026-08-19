@@ -29,6 +29,7 @@
 - P2 **`/` 触发菜单 MenuView + popupSelect(ui-input-trigger + ui-commands)** ✅ probe-trigger fixture 9/9 + real 9/9(本轮;vendor input-trigger 核心/controller/MenuView + commands popup 壳;zion 管线:command/skill 双源 + /permission popupSelect 装饰(Full access 风险确认)+ actx shim + track 去重;InputBar 键入触发/仲裁/锚点)
 - P3 **ApprovalPanel composer 接管 + QuestionComposer/PlanReview 区分(ui-conversation skeleton + ui-user-questions)** ✅ probe-takeover fixture 8/8 + real 8/8(本轮;vendor ui-user-questions 整包;激活 vendored ApprovalPanel;tsconfig paths 把 `@deepseek-ai/dsh-client-ui-conversation/client` 解析到 vendored chat-nodes.ts → 官方 ChatNodeDataMap 增强真实 merge(9 个基线错误文件清零);ComposerSeat 链选举(approval>question>InputBar);**移除 M3 InteractionDock 独立卡**(官方语义:挂起交互接管 composer,聊天流不重复渲染);fixture 常驻审批配对在飞 bash 调用(turn 78)+ 稳定 question rpcId;探针缝 rpcId 显式化;回归全绿:trigger/skill/msg-actions/checklist/jobs/deliverables/attachment/m3/queue-edit)
 - P3 **Agent 预设四表面(ui-agent-preset)** ✅ probe-preset fixture 10/10 + real 9/9(本轮;vendor ui-agent-preset 整包(4 组件+3 控制器+PresetMenu);zion 适配三控制器装配 + 四座位(hero chip/会话头标签/通用区行/设置分区);manager 快照补 ids/byId 等位(官方 SessionListState 面);ui-settings 等位 SlotMap;fixture settings.update 补 agent-presets ns;深绿调色板补缺令牌并修正上一轮浅色误值;probe-preset:hero 暂存→新建会话自动应用→会话头标签;通用区行往返;分区复制/查看/删除/设默认全链路;real 真实 roster 渲染)
+- P3 **Miller 目录浏览弹窗(ui-directory-picker-browse)** ✅ probe-directory fixture 9/9 + real 9/9(本轮;vendor DirectoryBrowser 纯组件(Translate 改从 ui-slots 导入)+ zion 适配(host.listDirectory/createDirectory → workspace.create,失败留窗)+ WorkspaceMenu 新建工作区改开应用内弹窗(原生 picker 退役);probe-directory:主目录单栏(隐藏项默认不可见)→ 双栏 → 推进 → 新建文件夹 → 路径编辑 → 显示隐藏 → 打开创建;real:3080 未装配 browse 能力 → 官方同款诚实报错面)
 - ⑤(部分) 消息复制/分支 ✅ real 6/6
 - ④ 会话导出按钮 → **已核定为 N/A**(官方 web 客户端无该按钮,`downloads` 是 host-only 通道;见 §3)
 
@@ -37,6 +38,7 @@
 ## 1. 最近提交链(自本会话;`main` 最新行在前)
 
 | 提交 | 内容 |
+| `(本轮,见 git log)` | Miller 目录浏览弹窗 ⑨:vendor ui-directory-picker-browse(DirectoryBrowser;Translate 改从 ui-slots 导入)+ zion 适配(host.listDirectory/createDirectory → workspace.create)+ WorkspaceMenu 新建工作区改开应用内弹窗;probe-directory fixture 9/9 + real 9/9 |
 | `(本轮,见 git log)` | Agent 预设四表面:vendor ui-agent-preset(4 组件+3 控制器+PresetMenu+locales)+ zion 适配(三控制器/四座位/rosterChanged 联动)+ manager 快照补 ids/byId 等位 + ui-settings 等位 SlotMap + fixture settings.update 补 agent-presets ns + 深绿调色板补缺令牌(修上一轮浅色误值);probe-preset fixture 10/10 + real 9/9 |
 | `(本轮,见 git log)` | composer 接管 ⑦:vendor ui-user-questions(QuestionComposer/PlanReviewPanel;去 merge import)+ 激活 vendored ApprovalPanel(两处 surgical)+ tsconfig paths → vendored chat-nodes.ts(官方 ChatNodeDataMap 增强 merge)+ ui-layout 等位 SlotMap + 移除重复 SlotMap 声明(TS2717)+ ComposerSeat 链选举 + 移除 M3 InteractionDock;fixture 常驻审批配对在飞 bash(turn 78)+ 稳定 question rpcId + 探针缝 rpcId;probe-takeover fixture 8/8 + real 8/8 |
 | `(本轮,见 git log)` | 触发菜单 + popupSelect:vendor ui-input-trigger(core/controller/MenuView,controller actx 本地化)+ ui-commands(popup/PopupSelectView)+ primitives useAnchoredMaxHeight;zion 管线(command/skill 源 + /permission 装饰 + actx shim + track 去重)+ InputBar 接线;probe-trigger fixture 9/9 + real 9/9 |
@@ -156,6 +158,7 @@
 | `probe-trigger.mjs` | 触发菜单(`/` 命令+技能组/过滤/pick 落文本/Escape)+ popupSelect(/permission 预设/执行/令牌移除) | 3080+fixture | 9/9 + 9/9 |
 | `probe-takeover.mjs` | composer 接管(ApprovalPanel 审批卡+配对命令/允许一次 → QuestionComposer 三问 → 结算 InputBar 回归;合成 plan-review → PlanReviewPanel 决策卡+拒绝回执+结算离场;real 空闲回退) | 3080+fixture | 8/8 + 8/8 |
 | `probe-preset.mjs` | Agent 预设四表面(hero chip 暂存→新建会话自动应用→会话头标签;通用区默认行往返;分区:复制对话框/只读查看器/删除确认/设默认;real 真实 roster 只读) | 3080+fixture | 10/10 + 9/9 |
+| `probe-directory.mjs` | Miller 目录浏览(主目录单栏/双栏推进/新建文件夹/路径编辑/显示隐藏/打开创建;real browse 能力缺失诚实报错面) | 3080+fixture | 9/9 + 9/9 |
 
 > ⚠️ `probe-backend-only` 现为 **24/26**:A1/A6 断言的默认/会话模型期望 `opencode-go/deepseek-v4-flash`,而真后端 3080 当前选中为 `deepseek-official/deepseek-v4-flash`(后端侧模型选择漂移,与本次改动无关;待后端选回后恢复 26/26)。
 > ⚠️ `probe-permission-plan` 现为 **10/12**:P3/P7 断言的权限默认值期望 `Full access`,真后端当前为 `workspace-write`(后端侧权限默认漂移,机械断言全过;恢复 12/12 需后端默认回 Full access)。

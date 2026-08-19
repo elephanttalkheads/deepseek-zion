@@ -1,11 +1,13 @@
 /**
  * WorkspaceMenu — top-bar workspace selector (functional wiring, M2). A
  * dropdown over the workspace.list rows with rename / delete, plus «新建工作区»
- * which opens the native directory picker (host.pickDirectory) and creates the
- * workspace (workspace.create). Mirrors the official top-bar workspace switch.
+ * which opens the in-app Miller 目录浏览弹窗(ui-directory-picker-browse,官方
+ * 「选择工作区目录」)并创建工作区(workspace.create)。Mirrors the official
+ * top-bar workspace switch.
  */
 import { useEffect, useRef, useState } from 'react'
 import { useRuntime } from '../app/runtime.tsx'
+import { WorkspaceDirectoryBrowser } from '../app/directory-browser.tsx'
 import type { WorkspaceView } from '../../vendor/client-connection/client/api.ts'
 
 interface WorkspaceMenuProps {
@@ -21,6 +23,7 @@ export function WorkspaceMenu({ current, open, onToggle, onClose }: WorkspaceMen
   const [error, setError] = useState<string | null>(null)
   const [renamingId, setRenamingId] = useState<string | null>(null)
   const [renameText, setRenameText] = useState('')
+  const [browseOpen, setBrowseOpen] = useState(false)
   const renameRef = useRef<HTMLInputElement | null>(null)
   const rootRef = useRef<HTMLDivElement | null>(null)
 
@@ -38,17 +41,11 @@ export function WorkspaceMenu({ current, open, onToggle, onClose }: WorkspaceMen
     return () => document.removeEventListener('mousedown', onDocMouseDown)
   }, [open, onClose])
 
-  const createWorkspace = async (): Promise<void> => {
+  const createWorkspace = (): void => {
     if (busy) return
-    setBusy(true)
     setError(null)
-    const workspace = await workspaceActions.create()
-    setBusy(false)
-    if (workspace === null) {
-      setError('新建工作区失败（选择目录后仍无法创建）')
-      return
-    }
-    onClose()
+    // P3-⑨:官方用应用内 Miller 目录浏览弹窗代替原生 picker。
+    setBrowseOpen(true)
   }
 
   const startRename = (workspace: WorkspaceView): void => {
@@ -126,11 +123,16 @@ export function WorkspaceMenu({ current, open, onToggle, onClose }: WorkspaceMen
           })}
           {workspaces.length === 0 && <div className="workspace-menu-empty">暂无工作区</div>}
           {error !== null && <div className="workspace-menu-error">{error}</div>}
-          <button type="button" className="workspace-menu-create" onClick={() => void createWorkspace()} disabled={busy}>
-            {busy ? '…' : '+ 新建工作区'}
+          <button type="button" className="workspace-menu-create" onClick={createWorkspace} disabled={busy}>
+            + 新建工作区
           </button>
         </div>
       )}
+      <WorkspaceDirectoryBrowser
+        open={browseOpen}
+        onClose={() => { setBrowseOpen(false) }}
+        onCreated={() => { setBrowseOpen(false); onClose() }}
+      />
     </div>
   )
 }
