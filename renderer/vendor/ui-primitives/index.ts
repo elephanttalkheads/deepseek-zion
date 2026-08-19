@@ -15,6 +15,8 @@ export { RiskConfirmation, type RiskConfirmationProps } from './RiskConfirmation
 export { StateDot, type StateDotState } from './StateDot.tsx'
 export { useDismissOnOutsidePointer } from './useDismissOnOutsidePointer.ts'
 export { writeClipboard } from './clipboard.ts'
+export { DisclosureRow, type DisclosureRowProps } from './DisclosureRow.tsx'
+export type { MarkdownFileMentions } from './markdown-file-mentions.ts'
 export {
   extractMarkdownPlainText,
   type MarkdownPlainTextMode,

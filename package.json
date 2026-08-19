@@ -29,6 +29,8 @@
     "@deepseek-ai/dsh-session-title": "file:C:/Users/DELL/.dsh/profiles/node_modules/@deepseek-ai/dsh-session-title",
     "@deepseek-ai/dsh-tools": "file:C:/Users/DELL/.dsh/profiles/node_modules/@deepseek-ai/dsh-tools",
     "@deepseek-ai/dsh-typert-protocol": "file:C:/Users/DELL/.dsh/profiles/node_modules/@deepseek-ai/dsh-typert-protocol",
+    "@deepseek-ai/dsh-tool-workflow": "file:C:/Users/DELL/.dsh/profiles/node_modules/@deepseek-ai/dsh-tool-workflow",
+    "@deepseek-ai/dsh-workflow": "file:C:/Users/DELL/.dsh/profiles/node_modules/@deepseek-ai/dsh-workflow",
     "@tanstack/react-virtual": "^3.14.9",
     "clsx": "^2.1.1",
     "diff": "^9.0.0",

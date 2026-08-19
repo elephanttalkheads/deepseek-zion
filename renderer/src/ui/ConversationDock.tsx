@@ -21,6 +21,7 @@ export function ConversationDock(): JSX.Element {
   const [view, setView] = useState<ViewId>('chat')
   const order = useConversation(s => s.chat.order)
   const nodesStore = useConversation(s => s.chat.nodes)
+  const timeline = useConversation(s => s.chat.timeline)
   const running = useConversation(s => s.running)
   const composerPhase = useConversation(s => s.composerPhase)
   const nodes = order.map(key => nodesStore.get(key)).filter((n): n is NonNullable<typeof n> => n !== undefined)
@@ -81,7 +82,7 @@ export function ConversationDock(): JSX.Element {
           {nodes.length === 0 ? (
             <p className="conversation-placeholder-muted">Loading conversation…</p>
           ) : (
-            <ChatView nodes={nodes} sessionId={selectedSessionId} wire={wire} />
+            <ChatView nodes={nodes} sessionId={selectedSessionId} wire={wire} timeline={timeline} />
           )}
         </div>
       )}

@@ -595,6 +595,23 @@ function buildAlphaLog(): SessionEvent[] {
   const callIndex = events.length - 4
   const callTime = events[callIndex]?.time as number
   events.splice(callIndex + 1, 0, { type: 'todo/write', time: callTime + 400, data: { todos: fixtureTodos } })
+  // zion: turn 75 tool-workflow 样本 — workflow-run 节点(ui-workflow-run 定义
+  // 把该事件族折叠为单一 chat 节点,渲染 WorkflowRunPanel)。
+  {
+    const turn = 75
+    const runId = 'fx-run-1'
+    push({ type: 'turn/start', data: { turn } })
+    push({ type: 'user/message', surfaceOp: 'append', data: userMessage(text('问题 75：并行跑两个子代理。')) })
+    push({ type: 'step/start', data: { turn, step: 0 } })
+    push({ type: 'tool-workflow/run-start', data: { runId, name: '深度审查' } })
+    push({ type: 'tool-workflow/agent-start', data: { runId, seq: 1, label: '阅读', childId: sid('fx-wf-1'), phase: '调研' } })
+    push({ type: 'tool-workflow/agent-start', data: { runId, seq: 2, label: '编写', childId: sid('fx-wf-2'), phase: '撰写' } })
+    push({ type: 'tool-workflow/agent-end', data: { runId, seq: 1, outcome: 'completed' } })
+    push({ type: 'tool-workflow/agent-end', data: { runId, seq: 2, outcome: 'completed' } })
+    push({ type: 'tool-workflow/run-end', data: { runId, stopReason: 'completed' } })
+    push({ type: 'step/end', data: { turn, step: 0 } })
+    push({ type: 'turn/end', data: { turn, reason: { kind: 'completed' } } })
+  }
   events.forEach((e, i) => { e.seq = i })
   return events as unknown as SessionEvent[]
 }
@@ -622,6 +639,9 @@ function presentCall(name: string, argsRaw: string): ToolCallView | undefined {
       return {
         card: 'diff', title: `Write ${str(args.path)}`,
         diffs: [{ path: str(args.path), oldText: null, newText: str(args.content) }],
+        // zion: locations 让 ui-deliverables 的产物行在 fixture 上可派生
+        // (真后端 write/edit 工具同样上报 locations)。
+        locations: [{ path: str(args.path) }],
       }
     // A read pending call is a GENERIC card (kind: 'read', a follow-along
     // location): the read render intent is result-side only, because a call
@@ -639,16 +659,22 @@ function presentCall(name: string, argsRaw: string): ToolCallView | undefined {
             { path: str(args.file_path), oldText: 'const timeout = 30', newText: 'const timeout = 60' },
             { path: str(args.file_path), oldText: 'retries: 1', newText: 'retries: 3' },
           ],
+          // zion: 同 fx-write(产物行派生)。
+          locations: [{ path: str(args.file_path) }],
         }
       }
       return {
         card: 'diff', title: `Edit ${str(args.file_path)}`,
         diffs: [{ path: str(args.file_path), oldText: str(args.old_string), newText: str(args.new_string) }],
+        // zion: 同 fx-write(产物行派生)。
+        locations: [{ path: str(args.file_path) }],
       }
     case 'write':
       return {
         card: 'diff', title: `Write ${str(args.file_path)}`,
         diffs: [{ path: str(args.file_path), oldText: null, newText: str(args.content) }],
+        // zion: 同 fx-write(产物行派生)。
+        locations: [{ path: str(args.file_path) }],
       }
     // A search call stays a generic card (kind: 'search'): the structured
     // matches/paths exist only after execute, so the search card is result-time

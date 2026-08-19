@@ -33,6 +33,8 @@
 | **JobListAction 会话头作业 badge** | 会话头无后台任务入口 | vendor `ui-jobs`(JobListAction + locales,含 surgical 改:去官方 type-only contract import)+ `ui-primitives` 补 StateDot/useDismissOnOutsidePointer + styles.css 补 4 token + ConversationDock 会话头动作座位 + RuntimeProvider `__zionProbePushMuxFrame` 探针缝(fixture 注入 session/jobs 帧) | probe-jobs **fixture 9/9 + real 10/10**(无 jobs 无控件 → 注入帧徽标出现(计数/StateDot)→ 列表运行中在前+状态点+时长 → 时钟实时走 → 外点/Escape 关闭 → 空帧消失;真后端真实 jobs 数据渲染,零错误) |
 | **消息 MessageIconActions(复制/分支/hover 时间戳)** | 消息行动作是文本按钮、无时间戳;user 节点无动作行 | vendor 完整 `ui-conversation/client/chat/MessageIconActions`(休眠态转激活:补 primitives `writeClipboard` + `locale-common.ts`(官方 common 词表 + makeT)+ common 命名空间 declare;两处 surgical:setTimeout ref 类型本地化、t 类型本地化切断 contract/slots.ts 级联)+ ChatView 接线(user/steering/context clock=start;assistant clock=end + 分支 + extraActions 插件槽)+ `data-time-hover-root`;forkSession 补 select 重试(与行菜单 fork 同款竞态修复) | probe-msg-actions **fixture 8/8 + real 8/8**(图标按钮、时钟文案(real 跨日 "8月17日 19:57")、user 行无分支、fork 选中子会话、零错误) |
 | **图片 Lightbox / 拖放附件覆盖层(ui-attachment)** | 消息图片不渲染;输入侧是自研 chip 行、无拖放 | vendor `ui-attachment` 整包(4 组件零 cordis)+ alias/paths + ChatView 接 ImageGallery(loader=session.readAttachment,官方 resolveImage 等位;user/assistant 图片块)+ InputBar 换 AttachmentRail + document 级拖放监听 + DropOverlay + 缩略图 Lightbox | probe-attachment **fixture 8/8 + real 8/8**(缩略图加载 → Lightbox → Escape;合成拖拽 → 覆盖层 → drop → rail → 移除;零错误) |
+| **ProducedFiles 产物行(ui-deliverables)** | turn 结束无产物行 | vendor ui-deliverables(deliverablesDefinition 累积 + ProducedFiles 行,两处 surgical:TurnTailOwnerProps 本地化)+ conversation.ts 注册 + ChatView turn-tail 渲染(timeline turn 数据 `deliverables`)+ openFile=host.openPath + primitives 补 MarkdownFileMentions 类型 + fixture diff 卡补 locations | probe-deliverables **fixture 6/6 + real 6/6**(turns 61–64 四行产物 chip + 点击 openPath;真后端派生逻辑同源) |
+| **WorkflowRun 面板(ui-workflow-run)** | workflow 运行无面板 | vendor ui-workflow-run(workflowRunDefinition + WorkflowRunPanel;deps 加 dsh-tool-workflow/dsh-workflow;两处 surgical:data cast + navigableMembers 容错 manager 快照)+ primitives 补 DisclosureRow + conversation.ts 注册 + ChatView keyed 渲染 + fixture 补 tool-workflow 事件族 | 同上探针 D4/D5(run 头 → 展开阶段 → 成员状态;真后端无事件时隐藏) |
 
 ## 2. 待补(按优先级)
 
@@ -62,7 +64,6 @@
 | ApprovalPanel composer 接管 / PlanReview 区分 | ui-conversation skeleton / ui-user-questions | 🟡 独立卡 | 布局改造 |
 | `/` `@` 触发菜单 MenuView + popupSelect 命令弹窗 | ui-input-trigger / ui-commands | ❌ | vendor |
 | 消息赞/踩 + 备注 | ui-message-feedback | N/A(真后端 3080 无 messageFeedback.* 远程端点,404 已探;官方接线但宿主未挂服务) | 若宿主补端点再 vendor |
-| ProducedFiles / WorkflowRun 面板 | ui-deliverables / ui-workflow-run | ❌ | vendor 节点定义 |
 
 ### P4 — 管理/浏览面
 | 入口 | 官方源码 | zion 现状 | 补法 |

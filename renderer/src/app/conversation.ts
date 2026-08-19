@@ -22,6 +22,8 @@ import { registerTrajectoryAssistantDefinition } from '../../vendor/ui-trajector
 import { registerTrajectoryToolDefinition } from '../../vendor/ui-trajectory/client/trajectory-tool-definition.ts'
 import { registerTrajectoryCompactionDefinitions } from '../../vendor/ui-trajectory/client/trajectory-compaction-definition.ts'
 import { registerTrajectoryConversationView } from '../../vendor/ui-trajectory/client/trajectory-snapshot-builder.ts'
+import { deliverablesDefinition } from '../../vendor/ui-deliverables/client/turn-deliverables.ts'
+import { workflowRunDefinition } from '../../vendor/ui-workflow-run/client/workflow-definition.ts'
 import type { ConversationRuntime } from '../../vendor/client-runtime/client/sessions/conversation-assembler.ts'
 
 let singleton: { conversation: ConversationRuntime; ctx: Context } | undefined
@@ -46,6 +48,11 @@ export function getConversationRuntime(): { conversation: ConversationRuntime; c
   registerTrajectoryToolDefinition(ctx)
   registerTrajectoryCompactionDefinitions(ctx)
   registerTrajectoryConversationView(ctx)
+  // 产物行(ui-deliverables):turn 级 produced 路径累积 Definition(tool 的
+  // locations 派生,纯客户端无模型依赖);WorkflowRun(ui-workflow-run):
+  // tool-workflow/* 事件族折叠为单一 chat 节点。
+  ctx.conversationEvents.register(deliverablesDefinition)
+  ctx.conversationEvents.register(workflowRunDefinition)
   singleton = { conversation, ctx }
   return singleton
 }

@@ -16,6 +16,8 @@ import type { ImageLoader } from '../../vendor/ui-attachment/index.ts'
 import { ImageGallery } from '../../vendor/ui-attachment/index.ts'
 import type { ImageAttachmentRef } from '@deepseek-ai/dsh-attachment'
 import { messageImageLabels } from '../../vendor/client-ui-conversation/client/image-labels.ts'
+import type { ConversationTimelineSnapshot } from '../../vendor/client-runtime/client/contract/conversation.ts'
+import { ProducedFilesSeat, WorkflowRunSeat } from '../app/run-surfaces.tsx'
 import { useRuntime } from '../app/runtime.tsx'
 import type { AssembledWire } from '../protocol/assemble.ts'
 import { makeT } from '../app/locale-common.ts'
@@ -122,10 +124,11 @@ function nodeTime(node: ChatConversationViewNode): number | undefined {
   return typeof data.time === 'number' ? data.time : undefined
 }
 
-export function ChatView({ nodes, sessionId, wire }: {
+export function ChatView({ nodes, sessionId, wire, timeline }: {
   nodes: readonly ChatConversationViewNode[]
   sessionId: SessionId
   wire: AssembledWire
+  timeline: ConversationTimelineSnapshot
 }): JSX.Element {
   const { forkSession } = useRuntime()
 
@@ -174,6 +177,24 @@ export function ChatView({ nodes, sessionId, wire }: {
         const gallery = images.length > 0
           ? <ImageGallery images={images} load={loadImage} align={isAssistant ? 'start' : 'end'} labels={imageLabels} />
           : null
+        // 产物行:turn-tail 节点处读 timeline turn 数据(deliverables 累积)。
+        const deliverables = node.kind === 'turn-tail'
+          ? (() => {
+            const turn = (node.data as { turn?: unknown }).turn
+            return typeof turn === 'number'
+              ? <ProducedFilesSeat timeline={timeline} turn={turn} seq={node.anchorSeq} />
+              : null
+          })()
+          : null
+        // workflow-run:keyed 节点整卡。
+        const workflow = node.kind === 'workflow-run' ? <WorkflowRunSeat node={node} /> : null
+        if (workflow !== null) {
+          return (
+            <div key={node.key} className="chat-node chat-node--workflow-run" data-kind="workflow-run">
+              {workflow}
+            </div>
+          )
+        }
         return (
           <div
             key={node.key}
@@ -184,6 +205,7 @@ export function ChatView({ nodes, sessionId, wire }: {
             {isUser ? gallery : null}
             <div className="chat-node-body">{nodeBody(node)}</div>
             {isAssistant ? gallery : null}
+            {deliverables}
             {(isAssistant || isUser) && (
               <MessageIconActions
                 text={text}
