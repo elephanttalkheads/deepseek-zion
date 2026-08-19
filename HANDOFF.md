@@ -47,6 +47,9 @@
   - 对话定义层 = 官方 `client-ui-conversation` 的节点定义,挂在**一个**「UI 逻辑面」`new Context()`(`app/conversation.ts`)。
   - 插件运行时 = 旁路底座,`renderer/src/plugin/`(详细见 §4)。
 - **wire 契约零改动**:只消费,不重写 52 RPC + respond + 双 WS + session.export。
+- **两条运行线(重要,别混淆)**:
+  - **复刻 renderer 线(当前正业)**:React 应用在 `renderer/src/`,构建产物 `renderer/dist`,起 `npx vite preview ... --port 5199` 或者 `npm run dev:web` 开发。数据经 `/api` proxy 连 3080。
+  - **Electron 壳线(prototype 遗留)**:`npm run dev`/`npm start` = `electron .` → 跑 `main.mjs`,它**直接加载官方 3080 UI**(`dsh --profile web --port 3080`),**不加载复刻 renderer**。`main.mjs` 文件头注释明确写着 "the UI IS the official harness UI"。所以 `npm run dev` 看到的**不是**复刻 UI;要看复刻得走 5199 / `dev:web`。`--dev` 参数在 main.mjs 里未被消费,与 `start` 行为一致。
 - **真后端联通方式**:`renderer/vite.config.ts` 的 `/api` proxy → `http://127.0.0.1:3080`(changeOrigin + ws + **剥 Origin**)。3080 有 `api-request-trust` fence(要求 Host=loopback 且 Origin 同源或缺省),不剥 Origin 会 403。复刻页面在 5199 不带 `?fixture` 即走 WebApiClient 连真后端。
 - **UI 结构**:`renderer/src/ui/` — AppFrame(三栏+顶栏)/ Sidebar(会话列表)/ ConversationDock(中央)/ DetailsPanel(右栏)/ ChatView(节点渲染)/ InputBar(composer)/ ToolCallCard / InteractionDock(审批+问卷)/ QueueDock / PluginHost。
 
@@ -61,6 +64,7 @@
   - 构建:`npx vite build --config renderer/vite.config.ts`(root=renderer,输出 `renderer/dist`)。
   - 类型检查(只查 `src/`,vendor 的 cordis 类型噪音是既有的,不算错):`npx tsc --noEmit -p renderer/tsconfig.json`(grep 掉 vendor 行)。
   - preview(复刻页面):`npx vite preview --config renderer/vite.config.ts --port 5199 --strictPort`(后台 job)。
+  - ⚠️ `npm run dev`/`npm start` 是 **Electron 壳(prototype 遗留)**,加载官方 3080 UI,**不是复刻**;复刻看上一行 preview / `npm run dev:web`(见 §1 架构事实「两条运行线」)。
   - Electron 壳:无头验收用 `npx electron <probe>.mjs`(各探针,见 §5)。
   - 依赖:`npm install`(file: 引本地 rc.7;`dsh-llm-retry` 那行 file: 指向 dsh 安装内部 node_modules,换机器要改,见 §6)。
 
