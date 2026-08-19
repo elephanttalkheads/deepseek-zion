@@ -61,8 +61,8 @@ app.whenReady().then(async () => {
   await check('07', `!document.querySelector('.interaction-dock') || true`, '07 无审批时 dock 不渲染(或存在)')
   await check('08', `document.querySelector('.chat-node, .conversation-placeholder-muted') !== null`, '08 对话区节点或占位渲染')
   await check('09', `!!document.querySelector('.input-bar') && !!document.querySelector('.input-bar-textarea')`, '09 输入栏 + 文本框')
-  await check('10', `!!document.querySelector('.input-bar-model-select')`, '10 模型选择器存在')
-  await check('11', `document.querySelectorAll('.input-bar-model-select option').length >= 2 || !!document.querySelector('.input-bar-model-select')`, '11 模型目录选项(≥2 或选择器存在)')
+  await check('10', `!!document.querySelector('.input-bar-model button')`, '10 模型席位触发按钮存在')
+  await check('11', `!!document.querySelector('.input-bar-model button') && (document.querySelector('.input-bar-model button').innerText || '').trim() !== ''`, '11 模型席位触发按钮含当前模型/占位文本')
   await check('12', `!!document.querySelector('.input-bar-attach') || document.querySelectorAll('.input-bar [type=file]').length >= 1`, '12 附件按钮/文件输入')
 
   // M3: tool/interaction/model
@@ -90,9 +90,9 @@ app.whenReady().then(async () => {
   console.log(`${hasStop || hasSend ? '✅' : '❌'} 20 发送/停止按钮按运行态切换(${hasStop ? '停止' : hasSend ? '发送' : '无'})`)
 
   // model selection mutation (selectModel round-trip is verified in M3 probe; here just selector interaction)
-  const modelCount = await js(win, `document.querySelector('.input-bar-model-select')?.options.length ?? 0`)
-  details['21'] = `模型选项数 = ${modelCount}`
-  await check('21', `true`, '21 模型目录真实选项数(details)')
+  const modelCount = await js(win, `(document.querySelector('.input-bar-model button')?.innerText ?? '').trim().length`)
+  details['21'] = `模型席位触发文本长度 = ${modelCount}`
+  await check('21', `true`, '21 模型席位触发文本(details)')
 
   // details panel
   await check('22', `!!document.querySelector('.details') || document.querySelector('.app-details *') !== null`, '22 右栏详情面板渲染')

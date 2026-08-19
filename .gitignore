@@ -36,6 +36,7 @@ probe-backend-only-out/
 probe-mux-debug-out/
 probe-trajectory-out/
 probe-settings-out/
+probe-model-out/
 
 # logs & smoke
 *.log

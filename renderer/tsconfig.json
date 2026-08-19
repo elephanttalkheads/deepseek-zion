@@ -27,6 +27,8 @@
       "@deepseek-ai/dsh-client-ui-primitives": ["vendor/ui-primitives/index.ts"],
       "@deepseek-ai/dsh-client-ui-trajectory": ["vendor/ui-trajectory/index.ts"],
       "@deepseek-ai/dsh-client-ui-trajectory/client": ["vendor/ui-trajectory/client/index.ts"],
+      "@deepseek-ai/dsh-client-ui-model-selection": ["vendor/ui-model-selection/index.ts"],
+      "@deepseek-ai/dsh-client-ui-model-selection/client": ["vendor/ui-model-selection/client/index.ts"],
       "@deepseek-ai/dsh-compaction/types": ["vendor/ts-types/dsh-compaction.d.ts"],
       "@deepseek-ai/dsh-invariants": ["vendor/ts-types/dsh-invariants.d.ts"],
       "@deepseek-ai/dsh-client-locale/client": ["vendor/ts-types/dsh-client-locale.d.ts"]

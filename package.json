@@ -30,6 +30,7 @@
     "@deepseek-ai/dsh-tools": "file:C:/Users/zyf/.dsh/profiles/node_modules/@deepseek-ai/dsh-tools",
     "@deepseek-ai/dsh-typert-protocol": "file:C:/Users/zyf/.dsh/profiles/node_modules/@deepseek-ai/dsh-typert-protocol",
     "@tanstack/react-virtual": "^3.14.9",
+    "clsx": "^2.1.1",
     "diff": "^9.0.0",
     "immer": "10.1.1",
     "react": "18.3.1",

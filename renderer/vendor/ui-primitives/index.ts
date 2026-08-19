@@ -7,6 +7,7 @@ export * from './icons/index.tsx'
 export { Tooltip, type TooltipSide } from './Tooltip.tsx'
 export { JsonTree, type JsonTreeProps } from './json-tree.tsx'
 export { MarkdownText, type MarkdownTextProps } from './markdown-text.tsx'
+export { Toast, type ToastProps } from './toast.tsx'
 export {
   extractMarkdownPlainText,
   type MarkdownPlainTextMode,

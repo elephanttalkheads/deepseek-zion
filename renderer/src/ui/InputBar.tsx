@@ -9,6 +9,7 @@
  */
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useRuntime, type MediaType } from '../app/runtime.tsx'
+import { ModelSelectAdapter } from '../app/model-select.tsx'
 import { SlotAnchor } from '../plugin/anchors.tsx'
 import { GoalBar } from './GoalBar.tsx'
 import type { PromptContentPart } from '../../vendor/client-connection/client/api.ts'
@@ -27,7 +28,7 @@ function formatBytes(n: number): string {
 }
 
 export function InputBar(): JSX.Element {
-  const { sendPrompt, stop, useConversation, models, selectModel, imageLimits, runCommand, listCommands } = useRuntime()
+  const { wire, selectedSessionId, sendPrompt, stop, useConversation, imageLimits, runCommand, listCommands } = useRuntime()
   const running = useConversation(s => s.running)
   const promptError = useConversation(s => s.promptError)
   const [draft, setDraft] = useState('')
@@ -119,37 +120,16 @@ export function InputBar(): JSX.Element {
     setImages([])
   }
 
-  const currentModel = models?.current
-  const groups = models?.groups ?? []
-
   return (
     <div className="input-bar">
       <SlotAnchor slot="conversation.input.dock" ownerProps={{}} />
       <GoalBar />
-      <div className="input-bar-model" title={currentModel === undefined ? '加载模型中…' : `${currentModel.provider}/${currentModel.model}`}>
-        <label className="input-bar-model-label" htmlFor="model-select">模型</label>
-        <select
-          id="model-select"
-          className="input-bar-model-select"
-          value={currentModel === undefined ? '' : `${currentModel.provider}/${currentModel.model}`}
-          onChange={(e) => {
-            const [provider, ...rest] = e.target.value.split('/')
-            const model = rest.join('/')
-            if (provider !== undefined && model !== '') selectModel({ provider, model })
-          }}
-          aria-label="Select model"
-        >
-          {currentModel === undefined && <option value="">加载中…</option>}
-          {groups.map(group => (
-            <optgroup key={group.id} label={group.name}>
-              {group.models.map(m => (
-                <option key={m.id} value={`${group.id}/${m.id}`}>
-                  {m.name}
-                </option>
-              ))}
-            </optgroup>
-          ))}
-        </select>
+      <div className="input-bar-model">
+        {selectedSessionId === undefined ? (
+          <span className="input-bar-model-fallback">模型</span>
+        ) : (
+          <ModelSelectAdapter wire={wire} sessionId={selectedSessionId} locked={running} />
+        )}
       </div>
 
       <div className="input-bar-command" data-open={menuOpen || undefined}>
