@@ -5,14 +5,17 @@
  * definitions already turned Session events into these nodes). Kind dispatch is
  * keyed on the node's business kind; content blocks are rendered as text for
  * this milestone. Detailed per-kind surfaces (tool tree, diff, deliberation…)
- * arrive as M2/M3 polish.
+ * arrive as M2/M3 polish. 消息行动作(官方 MessageIconActions 对齐):复制 / 分支(fork at
+ * anchorSeq;经 runtime.forkSession 真后端 fork 并选中子会话)。
  */
+import { useState } from 'react'
+import { useRuntime } from '../app/runtime.tsx'
 import type { ChatConversationViewNode } from '../../vendor/client-runtime/client/contract/conversation.ts'
 import type { ToolCallBlock } from '../../vendor/client-runtime/client/sessions/conversation.ts'
 import { ToolCallCard } from './ToolCallCard.tsx'
 import { SlotAnchor } from '../plugin/anchors.tsx'
 
-interface BlockLike { type?: string; text?: string }
+interface BlockLike { type?: string; text?: string; name?: string }
 
 function renderContentBlocks(content: unknown): string {
   if (!Array.isArray(content)) return ''
@@ -24,6 +27,17 @@ function renderContentBlocks(content: unknown): string {
       default: return b.text ?? ''
     }
   }).filter(Boolean).join('\n')
+}
+
+/** 助手消息的可复制正文:仅 text 块(不含 reasoning/tool-call 标记)。 */
+function assistantText(node: ChatConversationViewNode): string {
+  const data = node.data as { blocks?: unknown }
+  if (!Array.isArray(data.blocks)) return ''
+  return (data.blocks as BlockLike[])
+    .filter(b => b.type === 'text')
+    .map(b => b.text ?? '')
+    .filter(Boolean)
+    .join('\n')
 }
 
 function nodeBody(node: ChatConversationViewNode): string {
@@ -41,7 +55,7 @@ function nodeBody(node: ChatConversationViewNode): string {
       const blocks = data.blocks
       if (Array.isArray(blocks)) {
         return (blocks as BlockLike[]).map(b => b.type === 'tool-call'
-          ? `[tool: ${(b as { name?: string }).name ?? '?'}]`
+          ? `[tool: ${b.name ?? '?'}]`
           : b.text ?? (b.type ?? ''))
           .filter(Boolean).join('\n')
       }
@@ -67,8 +81,28 @@ function nodeBody(node: ChatConversationViewNode): string {
 }
 
 export function ChatView({ nodes }: { nodes: readonly ChatConversationViewNode[] }): JSX.Element {
+  const { forkSession } = useRuntime()
+  const [note, setNote] = useState<string | null>(null)
+
+  const copyNode = async (node: ChatConversationViewNode): Promise<void> => {
+    const text = assistantText(node).trim()
+    if (text === '') { setNote('无可复制的正文'); return }
+    try {
+      await navigator.clipboard.writeText(text)
+      setNote('已复制')
+    } catch {
+      setNote('复制失败')
+    }
+  }
+
+  const forkNode = async (node: ChatConversationViewNode): Promise<void> => {
+    const ok = await forkSession(node.anchorSeq)
+    setNote(ok ? '已分支到新会话' : '分支失败')
+  }
+
   return (
     <div className="chat-view">
+      {note !== null && <div className="chat-view-action-note">{note}</div>}
       {nodes.map((node) => {
         if (node.kind === 'tool-call') {
           const data = node.data as { root?: ToolCallBlock }
@@ -92,6 +126,8 @@ export function ChatView({ nodes }: { nodes: readonly ChatConversationViewNode[]
             <div className="chat-node-body">{nodeBody(node)}</div>
             {isAssistant && (
               <div className="chat-node-actions" data-kind={node.kind}>
+                <button className="chat-node-action" type="button" onClick={() => { void copyNode(node) }}>复制</button>
+                <button className="chat-node-action" type="button" onClick={() => { void forkNode(node) }}>分支</button>
                 <SlotAnchor slot="conversation.chat.assistant-actions" ownerProps={{ kind: node.kind }} />
               </div>
             )}

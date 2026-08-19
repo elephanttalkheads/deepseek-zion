@@ -583,3 +583,10 @@ body {
 .plugin-console .plugin-console-run, .plugin-console-row button { background: none; border: 1px solid var(--border, rgba(128,128,128,.3)); border-radius: 5px; color: var(--text, #d8d8d8); padding: 1px 7px; font-size: 11px; cursor: pointer; }
 .plugin-console-row button:disabled { opacity: .45; cursor: not-allowed; }
 .plugin-console-result { font-size: 11px; opacity: .8; }
+
+/* ===== 消息行动作(复制/分支/时间戳) ===== */
+.chat-node-actions { display: flex; gap: 6px; align-items: center; opacity: .6; }
+.chat-node-actions:hover { opacity: 1; }
+.chat-node-action { background: none; border: 1px solid var(--border, rgba(128,128,128,.25)); border-radius: 5px; color: var(--text, #d8d8d8); padding: 1px 7px; font-size: 11px; cursor: pointer; }
+.chat-node-action:hover { border-color: var(--accent, #4a6cf7); }
+.chat-view-action-note { font-size: 11px; opacity: .7; padding: 4px 8px; }

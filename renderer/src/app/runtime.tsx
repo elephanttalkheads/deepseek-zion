@@ -107,6 +107,8 @@ export interface AppRuntime {
   stop: () => void
   /** Apply one mutation to a still-pending queue item (remove / steer / edit). */
   updateQueue: (itemId: string, action: { kind: 'remove' } | { kind: 'steer' } | { kind: 'edit'; content: unknown[] }) => Promise<void>
+  /** Fork the selected session at a turn boundary (atSeq = 锚点,见官方 forkAt)。成功则选中子会话。 */
+  forkSession: (atSeq: number) => Promise<boolean>
   /** Model catalog + current selection for the SELECTED session (null while loading / no selection). */
   models: SessionModels | null
   /** Pick a model (and optional reasoning effort) for the selected session. */
@@ -333,6 +335,16 @@ export function RuntimeProvider({ children }: { children: ReactNode }): JSX.Elem
         if (selectedId === undefined) return
         const session = wire.sessions.get(selectedId)
         await session.updateQueue(itemId as never, action as never)
+      },
+      async forkSession(atSeq) {
+        if (selectedId === undefined) return false
+        const api = wire.api
+        const res = await api.sessions.fork({ sessionId: selectedId, atSeq })
+        if (!res.result.ok) return false
+        const child = res.result.value.sessionId
+        wire.sessions.select(child)
+        setSelectedId(child)
+        return true
       },
       models,
       selectModel(selection) {

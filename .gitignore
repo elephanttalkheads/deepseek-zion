@@ -38,6 +38,7 @@ probe-trajectory-out/
 probe-settings-out/
 probe-model-out/
 probe-cordis-console-out/
+probe-msg-actions-out/
 
 # logs & smoke
 *.log
