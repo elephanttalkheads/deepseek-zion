@@ -35,6 +35,7 @@
 | **图片 Lightbox / 拖放附件覆盖层(ui-attachment)** | 消息图片不渲染;输入侧是自研 chip 行、无拖放 | vendor `ui-attachment` 整包(4 组件零 cordis)+ alias/paths + ChatView 接 ImageGallery(loader=session.readAttachment,官方 resolveImage 等位;user/assistant 图片块)+ InputBar 换 AttachmentRail + document 级拖放监听 + DropOverlay + 缩略图 Lightbox | probe-attachment **fixture 8/8 + real 8/8**(缩略图加载 → Lightbox → Escape;合成拖拽 → 覆盖层 → drop → rail → 移除;零错误) |
 | **ProducedFiles 产物行(ui-deliverables)** | turn 结束无产物行 | vendor ui-deliverables(deliverablesDefinition 累积 + ProducedFiles 行,两处 surgical:TurnTailOwnerProps 本地化)+ conversation.ts 注册 + ChatView turn-tail 渲染(timeline turn 数据 `deliverables`)+ openFile=host.openPath + primitives 补 MarkdownFileMentions 类型 + fixture diff 卡补 locations | probe-deliverables **fixture 6/6 + real 6/6**(turns 61–64 四行产物 chip + 点击 openPath;真后端派生逻辑同源) |
 | **WorkflowRun 面板(ui-workflow-run)** | workflow 运行无面板 | vendor ui-workflow-run(workflowRunDefinition + WorkflowRunPanel;deps 加 dsh-tool-workflow/dsh-workflow;两处 surgical:data cast + navigableMembers 容错 manager 快照)+ primitives 补 DisclosureRow + conversation.ts 注册 + ChatView keyed 渲染 + fixture 补 tool-workflow 事件族 | 同上探针 D4/D5(run 头 → 展开阶段 → 成员状态;真后端无事件时隐藏) |
+| **SkillRow 专用工具卡(ui-skill)** | skill 调用渲染为通用卡 | vendor ui-skill(SkillRow;surgical:ToolCallViewProps 本地化)+ ChatView toolName==='skill' 分支(settled 名取自 block.call.name)+ fixture turn 76 skill 样本 | probe-skill **fixture 5/5 + real 5/5**(状态点/标题 Skill/摘要 code-review → 展开说明区 → 收起;真后端无 skill 调用时隐藏) |
 
 ## 2. 待补(按优先级)
 
@@ -71,7 +72,7 @@
 | Agent 预设四表面(选择/copy/删除/查看/打开文档) | ui-agent-preset | ❌ | vendor |
 | 680×500 Miller 目录浏览弹窗(含 hidden/新建目录) | ui-directory-picker-browse | ❌ | vendor |
 | 子代理目录树下拉 + 展开/打开子级 + 只读 composer | ui-subagent | 🟡 右栏扁平列表 | 部分 vendor |
-| skill `/` 源 + SkillRow | ui-skill | ❌ | vendor |
+| skill `/` 源 + SkillRow | ui-skill | 🟡 SkillRow 已 vendor 接线(见 §1);`/` 触发源随 P2 MenuView 一并接入 | ⑥ 时 vendor |
 | cordis 插件面板 run/stop/remove/版本/approve-plugin/retry-rollback | extensions/ui-cordis CordisPanel | 🟡 仅审批/演示 | 手写接入已有 orchestrator + remote |
 | cordis define/run 卡 + Package 业务槽 | ui-cordis CordisRunRow etc. | 🟡 槽已声明 | 手写 |
 

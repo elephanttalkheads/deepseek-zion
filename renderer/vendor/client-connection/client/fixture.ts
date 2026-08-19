@@ -612,6 +612,8 @@ function buildAlphaLog(): SessionEvent[] {
     push({ type: 'step/end', data: { turn, step: 0 } })
     push({ type: 'turn/end', data: { turn, reason: { kind: 'completed' } } })
   }
+  // zion: turn 76 skill 样本 — 专用 SkillRow 工具卡(ui-skill keyed toolview)。
+  toolTurn(76, 'skill', '{"name":"code-review","description":"review the diff"}', '已加载 skill 说明(3 条规范)')
   events.forEach((e, i) => { e.seq = i })
   return events as unknown as SessionEvent[]
 }

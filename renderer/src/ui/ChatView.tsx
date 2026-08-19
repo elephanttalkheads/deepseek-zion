@@ -18,6 +18,7 @@ import type { ImageAttachmentRef } from '@deepseek-ai/dsh-attachment'
 import { messageImageLabels } from '../../vendor/client-ui-conversation/client/image-labels.ts'
 import type { ConversationTimelineSnapshot } from '../../vendor/client-runtime/client/contract/conversation.ts'
 import { ProducedFilesSeat, WorkflowRunSeat } from '../app/run-surfaces.tsx'
+import { SkillRowSeat } from '../app/skill-row.tsx'
 import { useRuntime } from '../app/runtime.tsx'
 import type { AssembledWire } from '../protocol/assemble.ts'
 import { makeT } from '../app/locale-common.ts'
@@ -156,12 +157,24 @@ export function ChatView({ nodes, sessionId, wire, timeline }: {
       {nodes.map((node) => {
         if (node.kind === 'tool-call') {
           const data = node.data as { root?: ToolCallBlock }
-          const toolName = data.root !== undefined
-            ? (data.root as { name?: string }).name
-            : undefined
+          const block = data.root
+          // 与 ToolCallCard 同款:settled 结果节点的 name 在 block.call.name。
+          const toolName = block === undefined
+            ? undefined
+            : (block as { kind?: string }).kind === 'tool-result'
+              ? (block as { call?: { name?: string } }).call?.name
+              : (block as { name?: string }).name
+          // skill 专用行(官方 ui-skill keyed toolview);其余工具走通用卡 + 插件槽。
+          if (toolName === 'skill' && block !== undefined) {
+            return (
+              <div key={node.key} className="chat-node chat-node--tool-call" data-kind={node.kind} data-tool="skill">
+                <SkillRowSeat block={block} />
+              </div>
+            )
+          }
           return (
             <div key={node.key} className="chat-node chat-node--tool-call" data-kind={node.kind} data-tool={toolName ?? ''}>
-              {data.root !== undefined ? <ToolCallCard block={data.root} /> : <div className="chat-node-body">[tool]</div>}
+              {block !== undefined ? <ToolCallCard block={block} /> : <div className="chat-node-body">[tool]</div>}
               {toolName !== undefined && (
                 <div className="chat-node-toolview" data-tool={toolName}>
                   <SlotAnchor slot="tool.call.toolview" ownerProps={{ tool: toolName, key: toolName }} />
