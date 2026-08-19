@@ -8,6 +8,7 @@
   "main": "main.mjs",
   "scripts": {
     "start": "electron .",
+    "start:replica": "electron . --replica",
     "dev": "electron . --dev",
     "dev:web": "vite --config renderer/vite.config.ts",
     "build:web": "vite build --config renderer/vite.config.ts",

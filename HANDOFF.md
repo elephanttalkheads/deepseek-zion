@@ -75,7 +75,7 @@
 - 数据层 = 官方纯类 B 直拼:`renderer/vendor/`(现 **12 包+类型占位**,§4 有清单)由 Vite 直编;装配 `protocol/assemble.ts`;React 侧 `app/runtime.tsx` 用 `bindSnapshotSelector`.
 - 对话定义层 = 一个「UI 逻辑面」`new Context()`(`app/conversation.ts`),注册 chat 节点 + **trajectory 6 个节点 Definition**.
 - 插件底座 = `renderer/src/plugin/`(runtime/slot-registry/evaluator/guard/hub/remote/run-orchestrator/anchors).
-- **两条运行线(别混淆)**:复刻线 = `npx vite preview ... --port 5199`(或 `dev:web`)经 `/api` proxy 连 3080,不带 `?fixture` 即真后端;**Electron 壳线是 prototype 遗留**(`npm run dev/start` 加载官方 3080 UI,不是复刻).
+- **两条运行线(别混淆)**:复刻线 = `npx vite preview ... --port 5199`(或 `dev:web`)经 `/api` proxy 连 3080,不带 `?fixture` 即真后端;**Electron 壳线有两条**:`npm run start:replica`(= `electron . --replica`)加载**复刻界面**——主进程自动 ensure 3080 后端、`renderer/dist` 缺失时先 `vite build`、再起 5199 preview 代理 `/api`(+ws)后开窗;旧 `npm run dev/start` 仍是 prototype 遗留(加载官方 3080 UI,不是复刻).
 - 探针:`npx electron <probe>.mjs` 无头加载 `http://localhost:5199/[?fixture]`;fixture 页 authority 必须 `?fixture`.
 
 ### 本会话新增关键机制(vendor + 适配层)
@@ -202,7 +202,7 @@
 - Node/DSH:Windows;`C:\Users\zyf\AppData\Local\nvm\v24.19.0\node_modules\@deepseek-ai\dsh\`(rc.7);DSH_HOME=`C:\Users\zyf\.dsh`;官方 npm 链 `...\.dsh\profiles\node_modules\@deepseek-ai\`(rc.7,file: 引用;junction 到底层链)。
 - 官方源码 clone:`D:\github-Clone\deepseek-harness`(HEAD `dsh-v0.1.0-rc.7`;vendor 源、契约查证都看它)。
 - 常用命令:`npm run build:web`(= vite build -c renderer/vite.config.ts)、`npx tsc --noEmit -p renderer/tsconfig.json`、`npx vite preview --config renderer/vite.config.ts --port 5199 --strictPort`。
-- ⚠️ `npm run dev/start` 是 Electron 壳(proto 遗留,加载官方 3080 UI,非复刻);看复刻走 5199/`dev:web`。
+- ⚠️ `npm run dev/start` 是 Electron 壳(proto 遗留,加载官方 3080 UI,非复刻);看复刻走 5199/`dev:web`,或 `npm run start:replica`(Electron 窗口加载复刻界面,自动 ensure 3080 + 缺 dist 先 build + 起 5199 preview,main.mjs `--replica` 分支)。
 - 换机:`npm install`;`file:` 依赖是机器绝对路径(C 盘 profile / dsh 内嵌),换机改路径或 vendor 面包(SYNC.md 换机链);vendor 已含 10 包不额外装。
 
 ---
