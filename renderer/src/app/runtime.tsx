@@ -138,6 +138,14 @@ export interface AppRuntime {
   /** Selected session's direct-child subagent catalogs; read via
    *  `useSessions(s => s.subagentsByParent)` on the full list snapshot. */
   subagentActions: SubagentActions
+  /** Session-row actions over the wire (sidebar … 菜单): rename / fork at last
+   *  completed turn (selects the child) / archive. */
+  sessionRowActions: {
+    rename(sessionId: string, title: string): Promise<boolean>
+    /** Fork at the source's last completed turn(omitted atSeq); selects the child on success. */
+    fork(sessionId: string): Promise<boolean>
+    archive(sessionId: string): Promise<boolean>
+  }
 }
 
 const RuntimeContext = createContext<AppRuntime | null>(null)
@@ -460,6 +468,33 @@ export function RuntimeProvider({ children }: { children: ReactNode }): JSX.Elem
         interrupt: (address) => {
           if (selectedId === undefined) return Promise.resolve(false)
           return wire.api.subagents.interrupt({ ...address, mode: 'continuable' }).then(res => res.result.ok)
+        },
+      },
+      sessionRowActions: {
+        rename: (sessionId, title) =>
+          wire.api.sessions.rename({ sessionId, title }).then(res => res.result.ok),
+        fork: async (sessionId) => {
+          const res = await wire.api.sessions.fork({ sessionId })
+          if (!res.result.ok) return false
+          const child = res.result.value.sessionId
+          // The host/session-added frame can land after the RPC response; select
+          // throws on unknown summaries, so retry until the manager knows the child.
+          const deadline = Date.now() + 3000
+          while (true) {
+            try {
+              wire.sessions.select(child)
+              setSelectedId(child)
+              return true
+            } catch {
+              if (Date.now() > deadline) return false
+              await new Promise(r => setTimeout(r, 40))
+            }
+          }
+        },
+        archive: async (sessionId) => {
+          const res = await wire.api.workspace.archiveSession({ sessionId })
+          if (res.result.ok) await reloadWorkspaces()
+          return res.result.ok
         },
       },
     }

@@ -2211,7 +2211,7 @@ function createFixtureWorld(options: FixtureOptions): FixtureWorld {
 
   const api: ApiProxy = {
     sessions: {
-      list: request => ok(request, { items: [...sessions].sort((a, b) => b.updatedAt - a.updatedAt) }),
+      list: request => ok(request, { items: [...sessions].filter(s => !archivedSessionIds.includes(s.sessionId)).sort((a, b) => b.updatedAt - a.updatedAt) }),
       search: (request, signal) => {
         if (signal.aborted) {
           return err(request, {
@@ -2758,6 +2758,14 @@ function createFixtureWorld(options: FixtureOptions): FixtureWorld {
         if (!archivedSessionIds.includes(sessionId)) {
           archivedSessionIds.push(sessionId)
           emitHost({ type: 'host/archived-sessions-changed', archivedSessionIds: [...archivedSessionIds] })
+          // Host parallel: the archived session leaves the account (list + workspace),
+          // so the sidebar row drops live instead of lingering until a reload.
+          emitHost({ type: 'host/session-removed', sessionId })
+          const ws = workspaces.find(w => w.sessionIds.includes(sessionId))
+          if (ws !== undefined) {
+            ws.sessionIds = ws.sessionIds.filter(id => id !== sessionId)
+            emitHost({ type: 'host/workspace-changed', workspace: { ...ws } })
+          }
         }
         return ok(request, { archivedSessionIds: [...archivedSessionIds] })
       },
