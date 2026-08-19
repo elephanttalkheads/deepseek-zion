@@ -8,6 +8,7 @@
 import { useEffect, useState } from 'react'
 import { useRuntime } from '../app/runtime.tsx'
 import { TrajectoryPane } from '../app/trajectory-pane.tsx'
+import { JobListActionSeat } from '../app/job-list-action.tsx'
 import { ChatView } from './ChatView.tsx'
 import { InputBar } from './InputBar.tsx'
 import { InteractionDock } from './InteractionDock.tsx'
@@ -46,6 +47,10 @@ export function ConversationDock(): JSX.Element {
         <div className="conversation-header-title-row">
           <div className="conversation-header-title" title={sessionTitle ?? selectedSessionId}>
             {sessionTitle ?? selectedSessionId}
+          </div>
+          {/* 会话头动作行(官方 conversation.session.header.actions seat):后台任务 badge。 */}
+          <div className="conversation-header-actions">
+            <JobListActionSeat />
           </div>
         </div>
         <div className="conversation-header-tabs" role="tablist">

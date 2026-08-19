@@ -11,6 +11,10 @@
   --dsw-alias-border-l2: #26332a;
   --dsw-alias-border-l3: #2e3f30;
   --dsw-alias-border-l4: #3a4f3c;
+  --dsw-alias-fill-l2: #1a281a;
+  --dsw-alias-state-success-primary: #22c55e;
+  --dsw-static-deepseek-450: #5686fe;
+  --dsw-font-mono: var(--m-font);
   --dsw-alias-button-primary-fill: #2f9e57;
   --dsw-alias-button-primary-hover: #3ab868;
   --dsw-alias-button-tool-bar-fill: transparent;
@@ -569,6 +573,8 @@ body {
 
 /* ---- conversation hero / placeholder ---- */
 .conversation { padding: 40px; height: 100%; display: flex; flex-direction: column; }
+.conversation-header-title-row { display: flex; align-items: center; gap: 8px; }
+.conversation-header-actions { display: inline-flex; align-items: center; }
 .conversation-hero { margin: auto; text-align: center; }
 .conversation-hero-title { font-size: 28px; font-weight: 600; }
 .conversation-hero-sub { color: var(--fg-muted); }

@@ -30,6 +30,7 @@
 | **ContextMeter / StatsLine / TodoDock(projection 绑定)** | composer 缺上下文环/统计条/plan strip | runtime 增通用 `useProjection`(per-key uSES 绑定)+ 适配层三 seat(vendor 组件直接接线)+ ts-types 补 token-meter/session-stats/tool-todo 占位(含 SessionProjectionMap merge) | probe-composer-stats **fixture 6/6 + real 7/7**(真实投影:8 轮 · 25 步、缓存命中 89%、上下文已用 5%;todos=null 正确隐藏) |
 | **会话行 … 菜单(重命名/分叉/归档)+ 视图选项菜单(分组/排序)** | 侧栏无行操作菜单、无分组/排序 | 手写(官方 ui-workspace 等位):行 … Menu(rename Modal / fork 省略 atSeq=最后完成回合并选中子代 / archive 无确认)+ 视图选项 Menu(groupBy workspace|flat 用 WorkspaceView.sessionIds 账目、orderBy manual|updated) | probe-workspace-actions **fixture 8/8 + real 8/8**(重命名往返、fork 子行出现并选中、archive 行实时消失;真实分组 DEEPSEEK-ZION/DSH-PLUGINS/PI-MARTIX-UI/未分组) |
 | **会话/工作区拖拽重排 + 会话溢出展开** | 无拖拽、无溢出控制 | 手写(官方 DragState 等位):组内会话行拖到目标上/下半 → insertSessionBefore;工作区组头拖拽 → insertBefore;host/workspace-* 帧驱动账目自动刷新;溢出折叠 COLLAPSED_SESSION_LIMIT=5 + 「+N 个更多…」展开 | probe-sidebar-drag **fixture 6/6 + real 6/6**(3 次 fork 后组内 6 行 → 折叠 5+1 → 展开 → 拖拽到最后 → 顺序可见更新;真实分组含 >5 行组溢出按钮) |
+| **JobListAction 会话头作业 badge** | 会话头无后台任务入口 | vendor `ui-jobs`(JobListAction + locales,含 surgical 改:去官方 type-only contract import)+ `ui-primitives` 补 StateDot/useDismissOnOutsidePointer + styles.css 补 4 token + ConversationDock 会话头动作座位 + RuntimeProvider `__zionProbePushMuxFrame` 探针缝(fixture 注入 session/jobs 帧) | probe-jobs **fixture 9/9 + real 10/10**(无 jobs 无控件 → 注入帧徽标出现(计数/StateDot)→ 列表运行中在前+状态点+时长 → 时钟实时走 → 外点/Escape 关闭 → 空帧消失;真后端真实 jobs 数据渲染,零错误) |
 
 ## 2. 待补(按优先级)
 
@@ -60,7 +61,6 @@
 | `/` `@` 触发菜单 MenuView + popupSelect 命令弹窗 | ui-input-trigger / ui-commands | ❌ | vendor |
 | 图片 Lightbox / 拖放附件覆盖层 | ui-attachment | ❌ | 手写 |
 | 消息赞/踩 + 备注 | ui-message-feedback | N/A(真后端 3080 无 messageFeedback.* 远程端点,404 已探;官方接线但宿主未挂服务) | 若宿主补端点再 vendor |
-| JobListAction 作业 badge | ui-jobs | 🟡 vendor 依赖待补(StateDot/useDismissOnOutsidePointer);jobsBySession 数据已有;计划见 HANDOFF §3A | vendor |
 | ProducedFiles / WorkflowRun 面板 | ui-deliverables / ui-workflow-run | ❌ | vendor 节点定义 |
 
 ### P4 — 管理/浏览面

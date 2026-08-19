@@ -17,6 +17,7 @@ import { assembleWire, type AssembledWire } from '../protocol/assemble.ts'
 import type { SessionListSnapshot } from '../../vendor/client-runtime/client/sessions/manager.ts'
 import { EMPTY_CHAT_SNAPSHOT, EMPTY_CONVERSATION_VIEWS, type ConversationSnapshot } from '../../vendor/client-runtime/client/sessions/conversation.ts'
 import type { ModelSelection, PromptContentPart, SessionModels, WorkspaceId, WorkspaceView } from '../../vendor/client-connection/client/api.ts'
+import type { MuxFrame } from '../../vendor/client-connection/client/api.ts'
 import { getConversationRuntime } from './conversation.ts'
 import { getPluginRuntimeHandle } from '../plugin/hub.tsx'
 
@@ -231,7 +232,20 @@ export function RuntimeProvider({ children }: { children: ReactNode }): JSX.Elem
         getPluginRuntimeHandle().handleRemoteEvent(event, args)
       },
     })
-    return stop.stop
+    // Probe seam(fixture only):headless probes push synthetic mux frames
+    //(如 `session/jobs`)直入 SessionManager 镜像,驱动 UI 形状断言。
+    if (runtime.wire.isFixture) {
+      const win = window as unknown as Record<string, unknown>
+      win.__zionProbePushMuxFrame = (frame: MuxFrame): void => {
+        runtime.wire.sessions.handleMuxEnvelope({ rpcId: crypto.randomUUID(), payload: frame })
+      }
+    }
+    return () => {
+      if (runtime.wire.isFixture) {
+        delete (window as unknown as Record<string, unknown>).__zionProbePushMuxFrame
+      }
+      stop.stop()
+    }
   }, [runtime, reloadWorkspaces])
 
   // Model catalog + current selection follows the selected session.

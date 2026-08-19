@@ -12,6 +12,8 @@ export { Menu, type MenuEntry, type MenuItem, type MenuSeparator, type MenuLabel
 export { Button, type ButtonVariant } from './Button.tsx'
 export { Modal } from './Modal.tsx'
 export { RiskConfirmation, type RiskConfirmationProps } from './RiskConfirmation.tsx'
+export { StateDot, type StateDotState } from './StateDot.tsx'
+export { useDismissOnOutsidePointer } from './useDismissOnOutsidePointer.ts'
 export {
   extractMarkdownPlainText,
   type MarkdownPlainTextMode,

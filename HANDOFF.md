@@ -21,6 +21,7 @@
 - P2 **会话行 … 菜单 + 视图选项菜单** ✅ fixture 8/8 + real 8/8(本轮)
 - P2 **拖拽重排 + 溢出展开** ✅ fixture 6/6 + real 6/6(本轮)→ **P2 全清**
 - P3 **QueueDock 行内编辑 + 运行中排队发送** ✅ 3/3(本轮;InputBar 运行中同时显示 停止+发送,补上官方 composer 队列姿态缺口)
+- P0 **JobListAction 作业 badge** ✅ probe-jobs fixture 9/9 + real 10/10(本轮;见 §3A 已执行)
 - ⑤(部分) 消息复制/分支 ✅ real 6/6
 - ④ 会话导出按钮 → **已核定为 N/A**(官方 web 客户端无该按钮,`downloads` 是 host-only 通道;见 §3)
 
@@ -29,6 +30,7 @@
 ## 1. 最近提交链(自本会话;`main` 最新行在前)
 
 | 提交 | 内容 |
+| `(本轮,见 git log)` | JobListAction 会话头作业 badge:vendor ui-jobs + ui-primitives 补 StateDot/useDismissOnOutsidePointer + 会话头座位 + __zionProbePushMuxFrame 探针缝;probe-jobs fixture 9/9 + real 10/10 |
 | `b7be773` | QueueDock 行内编辑(updateQueue edit)+ InputBar 运行中排队发送;fixture edit 分支真实替换;probe-queue-edit 3/3 |
 |---|---|
 | `6fa73d5` | 拖拽重排 + 溢出展开:组内会话行拖拽(上/下半标记 → insertSessionBefore)、工作区组头拖拽(insertBefore)、host/workspace-* 帧自动刷新账目、溢出折叠 5 行 + 「+N」展开;probe-sidebar-drag fixture 6/6 + real 6/6 |
@@ -126,8 +128,9 @@
 | `probe-composer-stats.mjs` | ContextMeter 环+组成面板 / StatsLine 统计条 / TodoDock plan strip | 3080+fixture | 7/7 |
 | `probe-workspace-actions.mjs` | 视图选项(分组/排序)/ 行 … 菜单(重命名/fork/archive) | 3080+fixture | 8/8 |
 | `probe-sidebar-drag.mjs` | 拖拽重排(insertSessionBefore 顺序落点)/ 溢出折叠展开 | 3080+fixture | 6/6 |
+| `probe-jobs.mjs` | JobListAction 会话头作业 badge(注入帧徽标/列表排序/时钟实时走/外点+Escape 关闭/空帧消失;real 真实 jobs 数据) | 3080+fixture | 9/9 + 10/10 |
 
-### 3A. JobListAction 实施计划(已侦察,未动手)
+### 3A. JobListAction 实施记录(✅ 已执行,commit 见 §1 行首)
 - 数据:zion manager 已有 jobsBySession(useSessions(s => s.jobsBySession[id]) 读,由 session/jobs mux 帧填充;fixture 不产生 jobs)。
 - vendor 依赖补齐:ui-primitives 缺 StateDot(svg+css)与 useDismissOnOutsidePointer(hook)——官方 packages/client/ui-primitives/src/ 直拷 3 文件(StateDot.tsx/.module.css + use-dismiss-on-outside-pointer.ts),index.ts 增导出。
 - vendor ui-jobs(client:index.ts / JobListAction.tsx / JobListAction.module.css / locales.ts);props = PropsRuntime<"conversation.session.header.actions"> & PropsLocale<"jobs"> → 需在 zion 适配 declare SlotMap "conversation.session.header.actions"(官方 ui-conversation contract/slots.ts 声明,kind list,scope session)+ LocaleNamespaceMap "jobs"。
