@@ -2559,8 +2559,13 @@ function createFixtureWorld(options: FixtureOptions): FixtureWorld {
           append(id, { type: 'user/message', surfaceOp: 'append', data: userMessage(source.message.content) })
           return ok(request, { accepted: true as const })
         }
-        // edit unsupported by the fixture — accept as a no-op to keep the
-        // mutation path live without faking content parsing.
+        if (action?.kind === 'edit') {
+          const content = action.content
+          queueItems.set(id, pending.map(item =>
+            item.id === itemId ? { ...item, message: { ...item.message, content } } : item))
+          publishQueue(id)
+          return ok(request, { accepted: true as const })
+        }
         return ok(request, { accepted: true as const })
       },
       cancel: (request) => {

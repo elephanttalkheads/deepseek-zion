@@ -3,9 +3,10 @@
  *
  * Renders the selected session's transient inbox snapshot (snapshot.queue):
  * queued / steering / context placements the host pushes during and across
- * turns, plus per-row queue mutations (remove / steer) for queued items.
- * Also surfaces the session feedback strip: lastAgentError.
+ * turns, plus per-row queue mutations (remove / steer / edit 行内编辑) for
+ * queued items. Also surfaces the session feedback strip: lastAgentError.
  */
+import { useState } from 'react'
 import { useRuntime } from '../app/runtime.tsx'
 
 const PLACEMENT_LABELS: Record<string, string> = { queued: '待发送', steering: '插队', context: '上下文' }
@@ -22,8 +23,27 @@ export function QueueDock(): JSX.Element | null {
   const { useConversation, updateQueue } = useRuntime()
   const queue = useConversation(s => s.queue)
   const lastAgentError = useConversation(s => s.lastAgentError)
+  const [editingId, setEditingId] = useState<string | null>(null)
+  const [draft, setDraft] = useState('')
+  const [editBusy, setEditBusy] = useState(false)
   const hasQueue = queue.length > 0
   if (!hasQueue && lastAgentError === null) return null
+
+  const startEdit = (msgId: unknown, content: unknown): void => {
+    setEditingId(String(msgId))
+    setDraft(textOf(content))
+  }
+
+  const commitEdit = async (msgId: string): Promise<void> => {
+    const text = draft.trim()
+    if (text === '' || editBusy) return
+    setEditBusy(true)
+    // 官方 updateQueue edit:以完整 prompt content 块数组替换排队内容。
+    await updateQueue(msgId, { kind: 'edit', content: [{ type: 'text', text }] })
+    setEditBusy(false)
+    setEditingId(null)
+  }
+
   return (
     <div className="queue-dock">
       {lastAgentError !== null && (
@@ -37,17 +57,43 @@ export function QueueDock(): JSX.Element | null {
           {queue.map(msg => (
             <div className="queue-row" key={msg.id} data-placement={msg.placement}>
               <span className="queue-placement">{PLACEMENT_LABELS[msg.placement] ?? msg.placement}</span>
-              <span className="queue-preview">{msg.preview || textOf(msg.content) || '(empty)'}</span>
+              {editingId === String(msg.id) ? (
+                <span className="queue-edit">
+                  <input
+                    className="queue-edit-input"
+                    value={draft}
+                    autoFocus
+                    onChange={(e) => setDraft(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') { e.preventDefault(); void commitEdit(String(msg.id)) }
+                      if (e.key === 'Escape') setEditingId(null)
+                    }}
+                    aria-label="排队内容"
+                  />
+                  <button type="button" className="queue-action" disabled={editBusy || draft.trim() === ''} onClick={() => void commitEdit(String(msg.id))}>保存</button>
+                  <button type="button" className="queue-action" disabled={editBusy} onClick={() => setEditingId(null)}>取消</button>
+                </span>
+              ) : (
+                <span className="queue-preview">{msg.preview || textOf(msg.content) || '(empty)'}</span>
+              )}
               {msg.placement === 'queued' && (
                 <span className="queue-actions">
-                  <button
-                    type="button" className="queue-action" title="提升为插队(steer)"
-                    onClick={() => void updateQueue(String(msg.id), { kind: 'steer' })}
-                  >插队</button>
-                  <button
-                    type="button" className="queue-action" title="移除排队"
-                    onClick={() => void updateQueue(String(msg.id), { kind: 'remove' })}
-                  >移除</button>
+                  {editingId === String(msg.id) ? null : (
+                    <>
+                      <button
+                        type="button" className="queue-action" title="行内编辑排队内容"
+                        onClick={() => startEdit(msg.id, msg.content)}
+                      >编辑</button>
+                      <button
+                        type="button" className="queue-action" title="提升为插队(steer)"
+                        onClick={() => void updateQueue(String(msg.id), { kind: 'steer' })}
+                      >插队</button>
+                      <button
+                        type="button" className="queue-action" title="移除排队"
+                        onClick={() => void updateQueue(String(msg.id), { kind: 'remove' })}
+                      >移除</button>
+                    </>
+                  )}
                 </span>
               )}
             </div>

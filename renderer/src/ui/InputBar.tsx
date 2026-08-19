@@ -201,8 +201,9 @@ export function InputBar(): JSX.Element {
         onChange={(e) => setDraft(e.target.value)}
         onKeyDown={(e) => {
           if (e.key === 'Enter' && !e.shiftKey) {
+            // 运行中也允许发送:提示进入队列模式(queue),官方 composer 同姿态。
             e.preventDefault()
-            if (!running) submit()
+            submit()
           }
           if (e.key === 'Escape' && menuOpen) setMenuOpen(false)
         }}
@@ -223,11 +224,10 @@ export function InputBar(): JSX.Element {
           onChange={(e) => { readFiles(e.target.files); e.target.value = '' }}
         />
         <ContextMeterSeat />
-        {running ? (
+        {running && (
           <button className="input-bar-stop" type="button" onClick={() => stop()}>停止</button>
-        ) : (
-          <button className="input-bar-send" type="button" onClick={submit} disabled={(draft.trim() === '' && images.length === 0) || imageLimitError !== null}>发送</button>
         )}
+        <button className="input-bar-send" type="button" onClick={submit} disabled={(draft.trim() === '' && images.length === 0) || imageLimitError !== null}>发送</button>
       </div>
     </div>
   )

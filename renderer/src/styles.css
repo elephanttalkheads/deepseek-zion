@@ -219,6 +219,13 @@ body {
 .input-bar { margin-top: auto; border-top: 1px solid var(--border); padding: 10px; background: var(--bg-panel); }
 .input-bar-model { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
 .input-bar-modes { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; flex-wrap: wrap; }
+/* ---- queue dock edit 行内编辑(P3) ---- */
+.queue-edit { display: inline-flex; align-items: center; gap: 6px; flex: 1; min-width: 0; }
+.queue-edit-input {
+  flex: 1; min-width: 0; padding: 4px 8px; border: 1px solid var(--border);
+  border-radius: 5px; background: var(--bg-raised); color: var(--fg); font: inherit; font-size: 12px;
+}
+.queue-edit-input:focus { outline: 1px solid var(--accent-dim); }
 /* ---- sidebar 行 … 菜单 / 视图选项 / 分组 / 重命名 Modal(P2) ---- */
 .sidebar-search { display: flex; align-items: center; gap: 4px; }
 .sidebar-search-input { flex: 1; min-width: 0; }
