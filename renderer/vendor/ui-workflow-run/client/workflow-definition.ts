@@ -34,8 +34,18 @@ export interface WorkflowRunChatData {
   readonly phases: readonly WorkflowRunPhaseData[]
 }
 
-// zion patch: 官方此 declare 增强 ui-conversation contract 的 ChatNodeDataMap;
-// 该模块不在 zion 编译面(TS2664),节点 data 类型由 WorkflowRunPanel 内 cast 承接。
+// zion patch: 官方此 declare 走 `declare module '@deepseek-ai/dsh-client-ui-conversation/client'`
+// 增强 ChatNodeDataMap;该包名在 zion 由 tsconfig paths 解析到 vendored
+// chat-nodes.ts(声明 ChatNodeDataMap 的模块),故官方形式恢复可用 ——
+// ChatNodeKind 含 'workflow-run',SlotMap 'conversation.chat.node' keyProps
+// 派生完整,WorkflowRunPanel 的 PropsRuntime<'conversation.chat.node','workflow-run'>
+// 可解析。
+declare module '@deepseek-ai/dsh-client-ui-conversation/client' {
+  interface ChatNodeDataMap {
+    /** Durable top-level workflow run and all members that actually started. */
+    'workflow-run': WorkflowRunChatData
+  }
+}
 
 interface WorkflowMemberState extends Omit<ToolWorkflowAgentStartData, 'runId'> {
   readonly outcome?: WorkflowAgentOutcome

@@ -40,6 +40,16 @@ app.whenReady().then(async () => {
   // 选 fx-alpha(第一行,运行中)→ 排队一条提示
   await js(win, `(() => { const b = document.querySelector('.sidebar-row'); if (b) b.click(); return !!b })()`)
   await sleep(1500)
+  // zion composer 接管前置(P3-⑦):fx-alpha 常驻 approval+question 会接管
+  // composer;先用 resolved 帧结算,直到 InputBar 回归。
+  const pushFrame = (frame) => js(win, `window.__zionProbePushMuxFrame(${JSON.stringify(frame)})`)
+  if (await js(win, `!!document.querySelector('[data-approval-key]')`)) {
+    await pushFrame({ type: 'approval/resolved', sessionId: 'fx-alpha', approvalId: 'fx-approval-1' })
+    await waitFor(win, `!!document.querySelector('[data-question-key]')`, 8000)
+    await pushFrame({ type: 'question/resolved', sessionId: 'fx-alpha', questionRpcId: 'fx-rpc-question' })
+    await waitFor(win, `!document.querySelector('[data-question-key]')`, 8000)
+  }
+  await waitFor(win, `!!document.querySelector('.input-bar-textarea')`, 8000)
   const typed = await js(win, `(() => {
     const ta = document.querySelector('.input-bar-textarea')
     if (!ta) return false

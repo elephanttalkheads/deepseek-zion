@@ -5,6 +5,9 @@
  */
 export type {
   ArbitrateKey, ArbitrateOutcome, CandidateRequest, ClientSessionContext, CommandClaim,
+  // zion surgical: ConsumeTokenRequest 补入转发(官方 client/index.ts 同款转发;
+  // vendored ui-conversation input/contract.ts 消费,缺此符号 TS2305)。
+  ConsumeTokenRequest,
   InputTriggerCandidate, InputTriggerPick, InputTriggerSource, InsertReferenceRequest,
   InsertTextRequest, PickOutcome, PickVia, ReferenceCodec, ReferenceInsert, SubmitOutcome,
   TokenSpan, TriggerChar, TriggerGuard, TriggerPosition,

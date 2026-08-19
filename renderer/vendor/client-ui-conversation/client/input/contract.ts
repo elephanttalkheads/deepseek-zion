@@ -6,7 +6,10 @@
  * (machine.ts) is package-private and never exported.
  */
 import type { ClientContext, SnapshotStore } from '@deepseek-ai/dsh-client-runtime/client'
-import type { Branded } from '@deepseek-ai/dsh-brand'
+// zion surgical: 官方 `import type { Branded } from '@deepseek-ai/dsh-brand'`;
+// zion 无该包,本地等位(官方签名 `string & { readonly [BRAND]: B }`,语义即带
+// 唯一标记的 string 子类型,本文件仅用作 DraftAttachmentId 的字符串标记)。
+type Branded<B extends string> = string & { readonly __dshBrand?: B }
 import type {
   ArbitrateKey, ArbitrateOutcome, CommandClaim, ConsumeTokenRequest, PickOutcome,
   ReferenceInsert, SubmitOutcome, TokenSpan,

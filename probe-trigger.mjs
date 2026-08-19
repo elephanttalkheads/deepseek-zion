@@ -29,6 +29,24 @@ const waitFor = async (win, expr, waitMs = 10000, every = 400) => {
 fs.mkdirSync(OUT, { recursive: true })
 const tag = URL.includes('fixture') ? 'fixture' : 'real'
 
+// zion composer 接管前置(P3-⑦):fx-alpha 常驻 approval+question 会接管
+// composer(ApprovalPanel → QuestionComposer);先用 resolved 帧结算,直到
+// InputBar 回归。real 无挂起交互则直通。
+const settleTakeover = async (win) => {
+  const pushFrame = (frame) => js(win, `window.__zionProbePushMuxFrame(${JSON.stringify(frame)})`)
+  const has = (sel) => js(win, `!!document.querySelector(${JSON.stringify(sel)})`)
+  try {
+    await waitFor(win, `!!document.querySelector('[data-approval-key]') || !!document.querySelector('.input-bar-textarea')`, 8000)
+  } catch { /* 面板未出现也继续(real 无挂起) */ }
+  if (await has('[data-approval-key]')) {
+    await pushFrame({ type: 'approval/resolved', sessionId: 'fx-alpha', approvalId: 'fx-approval-1' })
+    await waitFor(win, `!!document.querySelector('[data-question-key]')`, 8000)
+    await pushFrame({ type: 'question/resolved', sessionId: 'fx-alpha', questionRpcId: 'fx-rpc-question' })
+    await waitFor(win, `!document.querySelector('[data-question-key]')`, 8000)
+  }
+  await waitFor(win, `!!document.querySelector('.input-bar-textarea')`, 8000)
+}
+
 // 原生 setter + input 事件(React 受控输入;handoff §5)。
 const SET_TEXT = (text) => `(() => {
   const el = document.querySelector('.input-bar-textarea')
@@ -68,6 +86,7 @@ app.whenReady().then(async () => {
   const clicked = await js(win, `(() => { const r = document.querySelector('.sidebar-row'); if (!r) return false; r.click(); return true })()`)
   const headerShown = await waitFor(win, `!!document.querySelector('.conversation-header')`, 8000)
   mark('t1', clicked && headerShown, 'T1 选中会话')
+  await settleTakeover(win)
 
   if (tag === 'fixture') {
     // ---- T2: 键入 '/' → 菜单出现(命令/技能组) ----

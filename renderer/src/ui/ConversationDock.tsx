@@ -9,9 +9,8 @@ import { useEffect, useState } from 'react'
 import { useRuntime } from '../app/runtime.tsx'
 import { TrajectoryPane } from '../app/trajectory-pane.tsx'
 import { JobListActionSeat } from '../app/job-list-action.tsx'
+import { ComposerSeat } from '../app/composer-takeover.tsx'
 import { ChatView } from './ChatView.tsx'
-import { InputBar } from './InputBar.tsx'
-import { InteractionDock } from './InteractionDock.tsx'
 import { QueueDock } from './QueueDock.tsx'
 
 type ViewId = 'chat' | 'trajectory'
@@ -86,10 +85,9 @@ export function ConversationDock(): JSX.Element {
           )}
         </div>
       )}
-      <InteractionDock />
       <QueueDock />
       {running && view === 'chat' && <div className="conversation-streaming" data-running>streaming… ({composerPhase})</div>}
-      <InputBar />
+      <ComposerSeat />
     </div>
   )
 }

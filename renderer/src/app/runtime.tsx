@@ -234,10 +234,13 @@ export function RuntimeProvider({ children }: { children: ReactNode }): JSX.Elem
     })
     // Probe seam(fixture only):headless probes push synthetic mux frames
     //(如 `session/jobs`)直入 SessionManager 镜像,驱动 UI 形状断言。
+    // rpcId 可显式传入(composer 接管探针用同一 id 同时作为信封与
+    // payload.questionRpcId,使 question/requested 可被 question/resolved
+    // 确定性结算;缺省随机)。
     if (runtime.wire.isFixture) {
       const win = window as unknown as Record<string, unknown>
-      win.__zionProbePushMuxFrame = (frame: MuxFrame): void => {
-        runtime.wire.sessions.handleMuxEnvelope({ rpcId: crypto.randomUUID(), payload: frame })
+      win.__zionProbePushMuxFrame = (frame: MuxFrame, rpcId?: string): void => {
+        runtime.wire.sessions.handleMuxEnvelope({ rpcId: rpcId ?? crypto.randomUUID(), payload: frame })
       }
     }
     return () => {

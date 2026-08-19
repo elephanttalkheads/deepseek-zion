@@ -31,15 +31,10 @@ declare module '@deepseek-ai/dsh-client-ui-slots' {
     /** Workflow-run panel copy. */
     workflowRun: WorkflowRunKey
   }
-  interface SlotMap {
-    /** Final business node renderer, keyed dispatch on the node kind(官方
-     *  contract 等位;zion 只消费 workflow-run 一个入口)。 */
-    'conversation.chat.node': {
-      kind: 'keyed'
-      scope: 'session'
-      keyProps: { 'workflow-run': { node: ChatConversationViewNode } }
-    }
-  }
+  // zion: `conversation.chat.node` 的 SlotMap 条目此前在此声明;vendored
+  // ui-conversation contract/slots.ts 入图后自带完整条目(含 workflow-run 键,
+  // ChatNodeDataMap 由 ui-workflow-run workflow-definition.ts 增强),故此处
+  // 不再重复声明(重复会 TS2717 冲突)。
 }
 
 const deliverablesT = makeT(deliverablesZh as Record<string, string>)

@@ -12,7 +12,8 @@ import type {
 } from '@deepseek-ai/dsh-client-runtime/client'
 import type { MarkdownFileMentions } from '@deepseek-ai/dsh-client-ui-primitives'
 import type { MessageId } from '@deepseek-ai/dsh-client-connection/client'
-import type {} from '@deepseek-ai/dsh-client-ui-layout/client'
+// zion surgical: 官方此行把 ui-layout 的 Context merge 拉进编译面;zion 无该包
+// 别名且本文件不消费其符号(type-only 纯 merge),删除不影响类型面。
 import type { ComposerBlock } from '../input/blocks.ts'
 import type {
   ComposerKeyboard, DraftAttachmentId, EditSelection, InputActions, InputNotice, InputState,

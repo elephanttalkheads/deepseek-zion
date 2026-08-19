@@ -54,6 +54,20 @@ app.whenReady().then(async () => {
   const headerShown = await waitFor(win, `!!document.querySelector('.conversation-header')`, 8000)
   mark('a1', clicked && headerShown, 'A1 选中会话')
 
+  // zion composer 接管前置(P3-⑦):fx-alpha 常驻 approval+question 会接管
+  // composer(拖放覆盖层挂在 InputBar 卡片上);先用 resolved 帧结算,直到
+  // InputBar 回归。real 无挂起交互则直通。
+  {
+    const pushFrame = (frame) => js(win, `window.__zionProbePushMuxFrame(${JSON.stringify(frame)})`)
+    if (await js(win, `!!document.querySelector('[data-approval-key]')`)) {
+      await pushFrame({ type: 'approval/resolved', sessionId: 'fx-alpha', approvalId: 'fx-approval-1' })
+      await waitFor(win, `!!document.querySelector('[data-question-key]')`, 8000)
+      await pushFrame({ type: 'question/resolved', sessionId: 'fx-alpha', questionRpcId: 'fx-rpc-question' })
+      await waitFor(win, `!document.querySelector('[data-question-key]')`, 8000)
+    }
+    await waitFor(win, `!!document.querySelector('.input-bar-textarea')`, 8000)
+  }
+
   if (tag === 'fixture') {
     // ---- A2: 历史图片缩略图出现且加载(自然宽 > 0) ----
     const imgShown = await waitFor(win, `!!document.querySelector(${JSON.stringify(IMG_BTN)})`, 12000)

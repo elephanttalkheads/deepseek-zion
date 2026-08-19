@@ -36,6 +36,11 @@
       "@deepseek-ai/dsh-client-ui-attachment": ["vendor/ui-attachment/index.ts"],
       "@deepseek-ai/dsh-client-ui-input-trigger/client": ["vendor/ui-input-trigger/client/index.ts"],
       "@deepseek-ai/dsh-client-schema-form": ["vendor/schema-form/index.ts"],
+      // 官方各 conversation-nodes/*.ts 以 `declare module
+      // '@deepseek-ai/dsh-client-ui-conversation/client'` 增强 ChatNodeDataMap
+      // (ChatNodeKind 键源);zion 无该包,把包名解析到声明该接口的 vendored
+      // 模块,使增强真正 merge(官方类型面成立,且不拉入 apply/service 等大图)。
+      "@deepseek-ai/dsh-client-ui-conversation/client": ["vendor/client-ui-conversation/client/contract/chat-nodes.ts"],
       "@deepseek-ai/dsh-permission-presets/client": ["vendor/ts-types/dsh-permission-presets.d.ts"],
       "@deepseek-ai/dsh-plan-mode/client": ["vendor/ts-types/dsh-plan-mode.d.ts"],
       "@deepseek-ai/dsh-client-ui-commands/client": ["vendor/ts-types/dsh-client-ui-commands.d.ts"],

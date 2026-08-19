@@ -80,45 +80,41 @@ app.whenReady().then(async () => {
   await clickText(win, '.sidebar-row', 'Fixture 历史会话')
   await sleep(1800)
 
-  // 2. wait for the approval card
-  out('--- approval card ---')
-  const approval = await grab(win, '.interaction-card--approval')
-  out(approval === null ? 'MISSING approval card' : `approval: ${approval.replace(/\n/g, ' | ')}`)
+  // 2. composer takeover: fx-alpha 常驻审批 → ApprovalPanel(官方接管面,
+  //    取代早期 M3 InteractionDock 卡片;官方语义:挂起交互接管 composer,
+  //    聊天流内不再渲染重复等待卡)。
+  out('--- approval takeover ---')
+  await waitForJS(win, `!!document.querySelector('[data-approval-key]')`)
+  const approvalText = await grab(win, '[data-approval-key]')
+  out(approvalText === null ? 'MISSING approval panel' : `approval: ${approvalText.replace(/\n/g, ' | ')}`)
 
-  // 2b. screenshot the pending cards BEFORE answering
+  // 2b. screenshot the pending panel BEFORE answering
   const shotPending = await win.webContents.capturePage()
   fs.writeFileSync(path.join(OUT, 'm3-interaction-cards.png'), shotPending.toPNG())
 
-  // 3. wait for question card
-  out('--- question card ---')
-  const question = await grab(win, '.interaction-card--question')
-  out(question === null ? 'MISSING question card' : `question: ${question.slice(0, 900).replace(/\n/g, ' | ')}`)
-
-  // 4. answer the approval -> card should disappear
+  // 3. 允许一次 → 审批结算 → QuestionComposer 接管
   out('--- allow-once ---')
-  const clicked = await clickText(win, '.interaction-btn--allow', '允许一次')
+  const clicked = await clickText(win, '[data-approval-key] button', '允许一次')
   out(`clicked allow: ${clicked}`)
-  await sleep(1200)
-  const afterApproval = await win.webContents.executeJavaScript(`document.querySelector('.interaction-card--approval') === null`)
+  await waitForJS(win, `!!document.querySelector('[data-question-key]')`)
+  const afterApproval = await win.webContents.executeJavaScript(`document.querySelector('[data-approval-key]') === null`)
   out(`approval gone after response: ${afterApproval}`)
 
-  // 5. answer all questions (option click = immediate selection) then submit all
+  // 4. 三问:单选推进 Q1→Q2→Q3(多选勾选)后提交
   out('--- answer question ---')
-  await clickText(win, '.interaction-option', '工程落地型')
-  await sleep(150)
-  await clickText(win, '.interaction-option', '先做小型原型')
-  await sleep(150)
-  await clickText(win, '.interaction-option', '系统设计')
-  await sleep(150)
-  await clickText(win, '.interaction-option', 'Agent 产品判断')
+  await win.webContents.executeJavaScript(`(() => { const b = [...document.querySelectorAll('[data-question-key] [role="radio"]')][0]; if (!b) return false; b.click(); return true })()`)
+  await waitForJS(win, `(document.querySelector('[data-question-key] h2')?.innerText ?? '').includes('工作方式')`)
+  await win.webContents.executeJavaScript(`(() => { const b = [...document.querySelectorAll('[data-question-key] [role="radio"]')][0]; if (!b) return false; b.click(); return true })()`)
+  await waitForJS(win, `(document.querySelector('[data-question-key] h2')?.innerText ?? '').includes('面试信号')`)
+  await win.webContents.executeJavaScript(`(() => { const b = [...document.querySelectorAll('[data-question-key] [role="checkbox"]')][0]; if (!b) return false; b.click(); return true })()`)
   await sleep(250)
-  const submitEnabled = await win.webContents.executeJavaScript(`(() => { const b = [...document.querySelectorAll('.interaction-btn--allow')].find(e => e.innerText.includes('提交全部回答')); return b ? !b.disabled : null })()`)
+  const submitEnabled = await win.webContents.executeJavaScript(`(() => { const b = [...document.querySelectorAll('[data-question-key] button')].find(e => e.innerText.includes('提交')); return b ? !b.disabled : null })()`)
   out(`submit enabled after all 3 answered: ${submitEnabled}`)
   if (submitEnabled) {
-    await win.webContents.executeJavaScript(`(() => { const b = [...document.querySelectorAll('.interaction-btn--allow')].find(e => e.innerText.includes('提交全部回答')); if (b) b.click(); return true })()`)
-    await sleep(1200)
+    await win.webContents.executeJavaScript(`(() => { const b = [...document.querySelectorAll('[data-question-key] button')].find(e => e.innerText.includes('提交')); if (b) b.click(); return true })()`)
+    await waitForJS(win, `!!document.querySelector('.input-bar-textarea')`)
   }
-  const afterQuestion = await win.webContents.executeJavaScript(`document.querySelector('.interaction-card--question') === null`)
+  const afterQuestion = await win.webContents.executeJavaScript(`document.querySelector('[data-question-key]') === null`)
   out(`question gone after response: ${afterQuestion}`)
 
   // 6. model selector present + switch model then report via prompt

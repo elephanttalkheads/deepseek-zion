@@ -686,3 +686,35 @@ body {
 /* ===== 消息行动作(复制/分支/时间戳) ===== */
 .chat-node-actions { display: flex; align-items: center; justify-content: flex-end; }
 .chat-view-action-note { font-size: 11px; opacity: .7; padding: 4px 8px; }
+
+/* ===== Composer 接管(ApprovalPanel / QuestionComposer / PlanReviewPanel) =====
+ * 官方 ConversationRoot 在 root 上声明 --dsh-chat-content-width 等布局令牌,
+ * 并把链输出包进 .composerSeat;zion 直编座位同款:令牌落在座位(链唯一公共
+ * 祖先),面板卡按官方宽度/边距绘制,悬起面板替换 InputBar 时页脚不高出被
+ * 替换的卡片(共享 --dsh-composer-text-max-height 上限)。
+ * 令牌值:官方 ui-theme design-platform.css(light)+ ConversationRoot.module.css。 */
+.composer-seat {
+  --dsh-chat-content-width: 748px;
+  --dsh-composer-side-clearance: 16px;
+  --dsh-composer-text-max-height: 336px;
+  display: flex;
+  flex: none;
+  flex-direction: column;
+}
+
+/* 官方 design-platform.css light 主题补缺令牌 */
+:root {
+  --ds-font-family-code: 'SF Mono', 'JetBrains Mono', 'Fira Code', Consolas, 'Liberation Mono', Menlo, Courier, 'PingFang SC', 'Microsoft YaHei';
+  --dsw-alias-bg-overlay: #e9ecf2;
+  --dsw-alias-border-l2-darkmode-thin: rgba(0, 0, 0, 0.1);
+  --dsw-alias-border-l2: rgba(0, 0, 0, 0.1);
+  --dsw-alias-border-l4: rgba(0, 0, 0, 0.16);
+  --dsw-alias-button-info-fill: #4176e6;
+  --dsw-alias-scrollbar-bg-l2: #e5e5e5;
+  --dsw-alias-scrollbar-hover-l2: #d4d4d4;
+  --dsw-alias-state-business-primary: #4176e6;
+  --dsw-alias-state-warn-secondary: #f7ad31;
+  --dsw-shadow-lv2: 0 4px 12px 0 rgba(0, 0, 0, 0.02), 0 2px 8px 0 rgba(0, 0, 0, 0.04);
+  --dsw-specific-input-major: #ffffff;
+  --dsw-specific-sidebar-nav-item-active-accent: #e4edfd;
+}

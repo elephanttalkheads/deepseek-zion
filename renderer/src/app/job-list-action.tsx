@@ -23,11 +23,9 @@ declare module '@deepseek-ai/dsh-client-ui-slots' {
     /** Background-job list copy(官方 NS = 'job')。 */
     job: JobKey
   }
-  interface SlotMap {
-    /** One button in the session header's action row(官方 contract 等位;
-     *  owner 空:控件所需一切来自框架 session kit 与注册方注入面)。 */
-    'conversation.session.header.actions': { kind: 'list'; scope: 'session'; owner: object }
-  }
+  // zion: `conversation.session.header.actions` 的 SlotMap 条目此前在此声明;
+  // vendored ui-conversation contract/slots.ts 入图后自带完整条目
+  // (owner: ConversationHeaderActionOwnerProps),此处不再重复(重复会 TS2717)。
 }
 
 /** job 字典投影翻译器({count} 插值;错误文案不本地化)。 */

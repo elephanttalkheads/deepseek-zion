@@ -614,6 +614,26 @@ function buildAlphaLog(): SessionEvent[] {
   }
   // zion: turn 76 skill 样本 — 专用 SkillRow 工具卡(ui-skill keyed toolview)。
   toolTurn(76, 'skill', '{"name":"code-review","description":"review the diff"}', '已加载 skill 说明(3 条规范)')
+  // zion: turn 77 bash 样本 — 常驻审批卡(ApprovalPanel)配对 callId 用:工具卡
+  // 需在初始窗口内且 argsRaw 携带 `command`,命令行才会显示。
+  toolTurn(77, 'bash', '{"command":"echo approval-paired","cwd":"/tmp/fixture"}', 'approval-paired')
+  // zion: turn 78 在飞 bash 调用(无 tool/result,会话 running 常驻)——审批卡的
+  // 命令行只对 RUNNING 调用显示(官方语义:settled 根节点带 'kind' 则不显示),
+  // 常驻审批配对此调用以覆盖命令行渲染。
+  {
+    const turn = 78
+    const callId = `fx-call-${turn}`
+    const args = JSON.stringify({ command: 'echo approval-paired', cwd: '/tmp/fixture' })
+    push({ type: 'turn/start', data: { turn } })
+    push({ type: 'user/message', surfaceOp: 'append', data: userMessage(text(`问题 ${turn}：在飞审批配对样本。`)) })
+    push({ type: 'step/start', data: { turn, step: 0 } })
+    push({
+      type: 'assistant/message', surfaceOp: 'append',
+      data: { turn, step: 0, message: assistantMessage([{ type: 'tool-call', id: callId, name: 'bash', arguments: args } as ContentBlock]) },
+    })
+    push({ type: 'tool/call', data: { turn, step: 0, callId, name: 'bash', arguments: args } })
+    // 故意不推 tool/result / step/end / turn/end:调用在飞,审批与其配对。
+  }
   events.forEach((e, i) => { e.seq = i })
   return events as unknown as SessionEvent[]
 }
@@ -1661,7 +1681,10 @@ function createFixtureWorld(options: FixtureOptions): FixtureWorld {
   const pendingApprovalId = 'fx-approval-1' as Extract<MuxFrame, { type: 'approval/requested' }>['approvalId']
   /** Cleared once answered through respond; replay stops and approval/resolved is broadcast. */
   let approvalPending = true
-  const pendingQuestionRpcId = mint()
+  // zion: 常驻提问的 rpcId 改为稳定字面量(官方为 mint())。会话侧 pending 键 =
+  // `q:<envelope rpcId>`,解析帧携带 questionRpcId 同值;固定字面量让探针能
+  // 确定性推送 question/resolved 结算常驻提问(composer 接管回归前置)。
+  const pendingQuestionRpcId = RpcId('fx-rpc-question')
   let questionPending = true
   const fixtureQuestions: Extract<MuxFrame, { type: 'question/requested' }>['questions'] = [
     {
@@ -2960,6 +2983,8 @@ function createFixtureWorld(options: FixtureOptions): FixtureWorld {
             payload: {
               type: 'approval/requested', sessionId: sid('fx-alpha'),
               approvalId: pendingApprovalId,
+              // zion: 配对 turn 78 的在飞 bash 调用(命令行 `echo approval-paired`)。
+              callId: 'fx-call-78' as Extract<MuxFrame, { type: 'approval/requested' }>['callId'],
               toolName: 'dangerous_tool', reason: 'fixture 常驻审批（可答：批准/拒绝后消失）',
             },
           })

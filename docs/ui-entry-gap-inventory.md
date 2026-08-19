@@ -11,10 +11,11 @@
 - **会话导出/下载按钮:官方 web UI 不存在**(全 client 树 `session.export` 仅出现在
   `connection/fixture.ts` 契约注释;host-only 下载通道,官方无按钮)→ 该项标 **N/A**,
   不再是差距(除非作为 zion 增值,另行评估)。
-- zion `renderer/vendor` 现为 **10 包 + 类型占位**:client-connection / client-runtime /
+- zion `renderer/vendor` 现为 **11 包 + 类型占位**:client-connection / client-runtime /
   client-ui-conversation / client-ui-slots / client-web-react / **ui-primitives(最小面,
   含 Menu/Button/Modal/RiskConfirmation)** / **ui-trajectory(完整)** / **ui-plan(完整)** /
-  **ui-permission-presets(完整)** / **schema-form(完整)** + `vendor/ts-types`
+  **ui-permission-presets(完整)** / **ui-user-questions(完整,composer 接管)** /
+  **schema-form(完整)** + `vendor/ts-types`
   (type-only 占位:locale / compaction / invariants / permission-presets / plan-mode /
   ui-commands)。npm 依赖新增 `@deepseek-ai/schemastery`(file: 官方链)。
 - vendored ui-conversation 大量官方组件(Chat/skeleton)处于休眠态:zion 只消费了它的
@@ -37,6 +38,7 @@
 | **WorkflowRun 面板(ui-workflow-run)** | workflow 运行无面板 | vendor ui-workflow-run(workflowRunDefinition + WorkflowRunPanel;deps 加 dsh-tool-workflow/dsh-workflow;两处 surgical:data cast + navigableMembers 容错 manager 快照)+ primitives 补 DisclosureRow + conversation.ts 注册 + ChatView keyed 渲染 + fixture 补 tool-workflow 事件族 | 同上探针 D4/D5(run 头 → 展开阶段 → 成员状态;真后端无事件时隐藏) |
 | **SkillRow 专用工具卡(ui-skill)** | skill 调用渲染为通用卡 | vendor ui-skill(SkillRow;surgical:ToolCallViewProps 本地化)+ ChatView toolName==='skill' 分支(settled 名取自 block.call.name)+ fixture turn 76 skill 样本 | probe-skill **fixture 5/5 + real 5/5**(状态点/标题 Skill/摘要 code-review → 展开说明区 → 收起;真后端无 skill 调用时隐藏) |
 | **`/` 触发菜单 MenuView + popupSelect(ui-input-trigger + ui-commands)** | 输入侧无 `/` 候选菜单、无命令弹窗 | vendor ui-input-trigger(core 纯逻辑 + controller + MenuView;controller surgical:actx bail 面本地化)+ primitives 补 useAnchoredMaxHeight + vendor ui-commands(popup.ts + PopupSelectView)+ zion 管线(trigger-menu.tsx:command/skill 双源、/permission 装饰 → popupSelect 壳、actx shim → draft 落盘、track 去重)+ InputBar 接线(data-composer-card/锚点/仲裁)+ 权限投影 options(Full access 风险确认) | probe-trigger **fixture 9/9 + real 9/9**(/ 菜单命令+技能组 → 过滤 → pick /permission → popup 预设 → 执行+令牌移除;普通命令/技能落文本;Escape 关闭;real 真实命令目录) |
+| **ApprovalPanel composer 接管 + QuestionComposer/PlanReview(ui-conversation skeleton + ui-user-questions)** | 挂起交互渲染为独立 Dock 卡(自研 M3),与官方「接管 composer」语义不符 | vendor ui-user-questions 整包(QuestionComposer + PlanReviewPanel + contract;surgical:去不可解析 merge import)+ 激活 vendored ApprovalPanel(两处 surgical:layout merge import、dsh-brand 本地等位)+ tsconfig paths 把 `@deepseek-ai/dsh-client-ui-conversation/client` 解析到 vendored chat-nodes.ts(官方 ChatNodeDataMap 增强全部真实 merge,9 个基线错误文件清零)+ ui-layout 等位 SlotMap('conversation'/'details')+ 移除旧 `conversation.session.header.actions`/`conversation.chat.node` 重复声明(TS2717)+ ComposerSeat 直编链选举(approval 优先 > question > InputBar)+ ConversationDock 接线 + **移除 M3 InteractionDock 独立卡**(官方语义:挂起交互接管 composer,聊天流内不重复渲染)+ fixture:常驻审批配对在飞 bash 调用(turn 78,命令行仅对 running 调用显示)+ 稳定 question rpcId + 探针缝 rpcId 显式化 | probe-takeover **fixture 8/8 + real 8/8**(审批卡:等待条/理由/配对命令/拒绝+允许一次 → 允许一次 → 三问问题流(单选推进/多选+跳过)→ 结算 InputBar 回归;合成 plan-review 提问 → 决策卡(计划正文+三按钮) → 拒绝回执错误反馈 → resolved 离场;real 空闲回退 InputBar)+ 回归:trigger 9/9+9/9、skill 5/5、msg-actions 8/8、checklist 24/24、jobs 10/10、deliverables 6/6、attachment 8/8、m3/queue-edit 全绿 |
 
 ## 2. 待补(按优先级)
 
@@ -63,7 +65,7 @@
 | ContextMeter / TodoPanel / StatsLine(projection 绑定) | ui-conversation skeleton / chat | 🟢(vendor 接线,useProjection 通用钩子) | — |
 | PermissionSelect(composer 权限 chip) | ui-conversation skeleton | 🟢(见 §1) | — |
 | QueueDock edit 行内编辑 | ui-conversation queue | 🟢(行内输入 + updateQueue edit 往返;InputBar 运行中排队发送补位) | — |
-| ApprovalPanel composer 接管 / PlanReview 区分 | ui-conversation skeleton / ui-user-questions | 🟡 独立卡 | 布局改造 |
+| ApprovalPanel composer 接管 / PlanReview 区分 | ui-conversation skeleton / ui-user-questions | 🟢(vendor 接线;见 §1;M3 InteractionDock 独立卡已移除) | — |
 | 消息赞/踩 + 备注 | ui-message-feedback | N/A(真后端 3080 无 messageFeedback.* 远程端点,404 已探;官方接线但宿主未挂服务) | 若宿主补端点再 vendor |
 
 ### P4 — 管理/浏览面
