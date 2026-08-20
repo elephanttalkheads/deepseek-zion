@@ -35,7 +35,7 @@
 - ⑤(部分) 消息复制/分支 ✅ real 6/6
 - ④ 会话导出按钮 → **已核定为 N/A**(官方 web 客户端无该按钮,`downloads` 是 host-only 通道;见 §3)
 - **归档过滤修复(bugfix)** ✅ 归档的会话从侧边栏消失(官方 ui-workspace 语义;真实后端只发 host/archived-sessions-changed、zion 此前未过滤 → 归档后行不消失 + 官方 3080 隐藏的那批会话全显示);probe-archive-filter real 4/4 + fixture 4/4,workspace-actions fixture 回归 8/8
-- **插件设置分区(对齐官方 ui-settings-plugins)** ✅ 移除多余「插件清单」导航项;「插件」页 = 两 tab(插件配置:终端/Agent 循环/网页搜索三卡可编辑(settings.mutate+revision 栅栏,网页搜索 API key 走 credentials.set);插件列表:pluginInventory/list 只读清单,grilling 共识三组 官方/MCP/社区,社区行徽标+UI 注入未实现说明,组头计数+搜索+状态点+展开);fixture 补三 ns + pluginInventory 端点;probe-plugin-settings fixture 8/8 + real 8/8;settings 回归 fixture 11/11;CONTEXT 补「插件类别」词条
+- **插件设置分区(对齐官方 ui-settings-plugins)** ✅ 移除多余「插件清单」导航项;「插件」页 = 两 tab(插件配置:终端/Agent 循环/网页搜索三卡可编辑(settings.mutate+revision 栅栏,网页搜索 API key 走 credentials.set);插件列表:pluginInventory/list 只读清单,grilling 共识三组 官方/MCP/社区,社区行徽标+UI 注入未实现说明,组头计数+搜索+状态点+展开);fixture 补三 ns + pluginInventory 端点;probe-plugin-settings fixture 8/8 + real 8/8;settings 回归 fixture 11/11;CONTEXT 补「插件类别」词条- **插件计数会波动(已知现象,非 bug)**:pluginInventory 的 `include:agent-presets:*` 组是「当前生效预设展开的 Loader 条目」,随 agentPresets.select 切换/懒加载变化(如 27→6 条,总数 168→147);其它组(官方 include 137 + 非 include 4)恒定。用户看到计数变化时先看 agent-presets 组,别误判为插件丢失。2026-08-20 核验:dsh-agent-presets 8/19 被重写过(同版本 rc.7),3080 9:55 启动,与 zion 代码修改无关。
 
 ---
 
