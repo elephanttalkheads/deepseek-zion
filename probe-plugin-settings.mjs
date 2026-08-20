@@ -118,6 +118,18 @@ app.whenReady().then(async () => {
   mark('p5', toList && groupsShown && groupTags.includes('official') && groupTags.includes('mcp') && groupTags.includes('community'),
     'P5 插件列表三组渲染', JSON.stringify(groupHeads))
 
+  // ---- P5b: 总数标题(官方 catalogHeading 同构:「插件列表 N」= 三组之和) ----
+  const totalHead = await js(win, `(() => {
+    const h = document.querySelector('.plugin-inventory-catalog-head')
+    if (!h) return null
+    const title = h.querySelector('h3')?.innerText ?? ''
+    const count = h.querySelector('[data-plugin-count]')?.getAttribute('data-plugin-count')
+    return { title, count: count === undefined ? null : Number(count) }
+  })()`)
+  const groupSum = await js(win, `[...document.querySelectorAll('.plugin-inventory-group [data-count]')].reduce((a, e) => a + Number(e.getAttribute('data-count') || 0), 0)`)
+  mark('p5b', totalHead !== null && totalHead.title === '插件列表' && totalHead.count === groupSum && totalHead.count > 0,
+    'P5b 插件列表总数标题 = 三组之和', JSON.stringify(totalHead))
+
   // ---- P6: 社区徽标 + 展开社区行 → UI 注入说明 ----
   const communityTag = await js(win, `[...document.querySelectorAll('.plugin-inventory-community-tag')].map(t => t.innerText.trim())`)
   const openedCommunity = await js(win, `(() => {

@@ -357,6 +357,7 @@ function InventoryTab({ wire }: { wire: Wire }): JSX.Element {
   useEffect(() => { load() }, [load, request])
 
   const q = query.trim().toLocaleLowerCase()
+  const filteredCount = entries.filter(e => matches(e, q)).length
   const groups = useMemo(() => {
     const result: Record<InventoryGroup, PluginInventoryEntry[]> = { official: [], mcp: [], community: [] }
     for (const entry of entries) {
@@ -392,6 +393,10 @@ function InventoryTab({ wire }: { wire: Wire }): JSX.Element {
               onChange={e => { setQuery(e.currentTarget.value) }}
             />
           </label>
+          <div className="plugin-inventory-catalog-head">
+            <h3>插件列表</h3>
+            <span data-plugin-count={filteredCount}>{filteredCount}</span>
+          </div>
           {entries.length === 0 && <p className="plugin-inventory-status">暂无插件。</p>}
           {(Object.keys(GROUP_LABEL) as InventoryGroup[]).map(group => {
             const rows = groups[group]

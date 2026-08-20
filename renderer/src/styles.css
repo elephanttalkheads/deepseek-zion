@@ -806,3 +806,7 @@ body {
 .plugin-inventory-details dt { opacity: .6; min-width: 84px; }
 .plugin-inventory-details dd { margin: 0; }
 .plugin-inventory-community-note dd { color: #d29922; }
+
+.plugin-inventory-catalog-head { display: flex; align-items: center; gap: 8px; margin: 10px 0 2px; }
+.plugin-inventory-catalog-head h3 { margin: 0; font-size: 13px; font-weight: 600; }
+.plugin-inventory-catalog-head [data-plugin-count] { font-size: 12px; opacity: .7; background: rgba(128,128,128,.15); border-radius: 8px; padding: 0 8px; }
