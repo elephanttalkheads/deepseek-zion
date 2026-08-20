@@ -71,7 +71,8 @@ async function main() {
       if (r.rect) console.log(`  rect: ${JSON.stringify(r.rect)}  selector: ${r.selector}`)
       if (has(rest, '--shot')) {
         const name = flag(rest, '--name') || r.recipeId || id
-        const shot = await api('POST', '/api/inspector/shot', { name, selector: r.selector || null })
+        // 传回 summon 算好的 rect(多选择器并集时 elementRect 只取首个匹配,不可靠)
+        const shot = await api('POST', '/api/inspector/shot', { name, selector: r.selector || null, rect: r.rect || null })
         if (!shot.ok) throw new Error(shot.error)
         console.log(`  截图: ${shot.path}`)
       }
@@ -90,7 +91,7 @@ async function main() {
       if (r.rect) console.log(`  rect: ${JSON.stringify(r.rect)}`)
       if (has(rest, '--shot')) {
         const name = flag(rest, '--name') || `${component}-raw`
-        const shot = await api('POST', '/api/inspector/shot', { name, selector: r.selector || null })
+        const shot = await api('POST', '/api/inspector/shot', { name, selector: r.selector || null, rect: r.rect || null })
         if (!shot.ok) throw new Error(shot.error)
         console.log(`  截图: ${shot.path}`)
       }
@@ -105,7 +106,8 @@ async function main() {
       if (r.rect) console.log(`  rect: ${JSON.stringify(r.rect)}  selector: ${r.selector}`)
       if (has(rest, '--shot')) {
         const name = flag(rest, '--name') || r.recipeId || id
-        const shot = await api('POST', '/api/inspector/shot', { name, selector: r.selector || null })
+        // 传回 summon 算好的 rect(多选择器并集时 elementRect 只取首个匹配,不可靠)
+        const shot = await api('POST', '/api/inspector/shot', { name, selector: r.selector || null, rect: r.rect || null })
         if (!shot.ok) throw new Error(shot.error)
         console.log(`  截图: ${shot.path}`)
       }

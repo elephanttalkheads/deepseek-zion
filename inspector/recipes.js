@@ -112,6 +112,34 @@ window.__ZION_RECIPES__ = (() => {
     if (reject) { reject.click(); await core.sleep(700) }
   }
 
+  /** 真实配方:conversation.input.dock 槽整区(真实条目 = TodoPanel + GoalBar + QueueDock)。 */
+  const realInputDock = async (core) => {
+    await selectSidebarSession(core, /alpha/i)
+    await dismissComposerTakeover(core)
+    // 确保 goal 条目存在(槽内三条之一)
+    if (!document.querySelector('[data-goal-bar]')) {
+      const ta = core.pickComposerTextarea()
+      if (ta) {
+        core.setNativeValue(ta, '/goal 槽位演示目标 — conversation.input.dock 条目')
+        ta.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', code: 'Enter', bubbles: true, cancelable: true }))
+        await core.waitFor('[data-goal-bar]', 15000)
+      }
+    }
+    const entrySel = '[data-testid="todo-panel"], [data-goal-bar], [data-queue-dock]'
+    const first = await core.waitFor(entrySel, 8000)
+    if (!first) throw new Error('input.dock 槽条目未出现(需 fx-alpha 会话 + 目标;QueueDock 仅在有排队行时渲染)')
+    for (const el of document.querySelectorAll(entrySel)) {
+      if (el.getBoundingClientRect().width > 0) el.style.outline = '2px dashed #ff3b6b'
+      setTimeout(() => { el.style.outline = '' }, 2500)
+    }
+    const rect = core.unionRect(entrySel)
+    return {
+      selector: entrySel,
+      rect,
+      note: '官方 conversation.input.dock 槽:当前真实条目 = TodoPanel(任务条)+ GoalBar(目标条)+ QueueDock(队列行,有排队才渲染);社区插件在官方 3080 未注册此槽,故无第三方卡片',
+    }
+  }
+
   /** 真实配方:todo plan strip(?fixture 的 fx-alpha 会话自带 todo/write 投影)。 */
   const realTodoDock = async (core) => {
     await selectSidebarSession(core, /alpha/i)
@@ -176,6 +204,26 @@ window.__ZION_RECIPES__ = (() => {
       name: 'TodoDock plan strip(真实)',
       kind: 'real',
       run: realTodoDock,
+    },
+    'input-dock': {
+      id: 'input-dock',
+      name: 'conversation.input.dock 槽(真实·全部条目)',
+      kind: 'real',
+      run: realInputDock,
+    },
+    'goal-dock': {
+      id: 'goal-dock',
+      name: 'GoalDock(槽条目适配器·舞台)',
+      kind: 'overlay',
+      module: '@deepseek-ai/dsh-client-ui-goal',
+      component: 'GoalDock',
+      props: () => ({
+        useProjection: (key) => key === 'goal'
+          ? { goal: goalSnapshot('active', 'GoalDock 是 conversation.input.dock 槽的 goal 条目:useProjection 适配器 + 注入动作') }
+          : undefined,
+        onEdit: ok, onPause: ok, onResume: ok, onClear: ok,
+        t: goalT(),
+      }),
     },
 
   }

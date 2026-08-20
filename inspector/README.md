@@ -63,6 +63,8 @@ node inspector/cli.mjs close                        # 关闭舞台
 | `goal-bar` / `goal-bar-paused` / `goal-bar-blocked` | overlay | 官方 GoalBar 三态(mock props + 官方 zh 词表 `t`) |
 | `goal-bar-real` | real | 向 composer 键入 `/goal <目标>` → 官方真实 GoalBar(`data-goal-bar`) |
 | `todo-dock` | real | 选中 fx-alpha 会话 + 关掉常驻审批/问题组 → 官方 TodoPanel plan strip(`data-testid="todo-panel"`) |
+| `input-dock` | real | **`conversation.input.dock` 槽整区**:真实条目并集截图(TodoPanel 任务条 + GoalBar 目标条 + QueueDock 队列行,`data-queue-dock` 有排队才渲染)—— 即 zion `SlotAnchor` 对应物;社区插件在官方 3080 未注册此槽,故无第三方卡片 |
+| `goal-dock` | overlay | 官方 **GoalDock**(ui-goal 导出的真实槽条目适配器,mock `useProjection`)—— 展示槽条目收到的 props 契约(投影适配器 + 注入动作 + t) |
 
 真实配方内部自动处理 fixture 环境的两大障碍:
 

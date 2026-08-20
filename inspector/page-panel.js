@@ -41,6 +41,21 @@
     return { x: Math.round(r.x), y: Math.round(r.y), width: Math.round(r.width), height: Math.round(r.height) }
   }
 
+  /** 多选择器并集矩形(只收可见元素,宽高 > 0)。 */
+  function unionRect(selector) {
+    const els = [...document.querySelectorAll(selector)].filter((el) => {
+      const r = el.getBoundingClientRect()
+      return r.width > 0 && r.height > 0
+    })
+    if (els.length === 0) return null
+    const rs = els.map((el) => el.getBoundingClientRect())
+    const x = Math.min(...rs.map((r) => r.x))
+    const y = Math.min(...rs.map((r) => r.y))
+    const right = Math.max(...rs.map((r) => r.right))
+    const bottom = Math.max(...rs.map((r) => r.bottom))
+    return { x: Math.round(x), y: Math.round(y), width: Math.round(right - x), height: Math.round(bottom - y), count: els.length }
+  }
+
   /** React 受控 textarea 原生 setter + input 事件(探针同款)。 */
   function setNativeValue(el, value) {
     const proto = el instanceof HTMLTextAreaElement
@@ -212,7 +227,7 @@
     if (typeof recipe.run !== 'function') throw new Error('真实配方缺少 run()')
     await dismissWelcomeModal()
     const result = await recipe.run({
-      waitFor, rectOf, setNativeValue, pickComposerTextarea, flash, sleep, tick, dismissWelcomeModal,
+      waitFor, rectOf, unionRect, setNativeValue, pickComposerTextarea, flash, sleep, tick, dismissWelcomeModal,
     })
     return { ok: true, mode: 'real', recipeId: recipe.id, ...result }
   }
@@ -271,7 +286,7 @@
       return el ? { ok: true, selector, rect: rectOf(el) } : { ok: false, error: `selector 无匹配: ${selector}` }
     },
     flash,
-    _core: { makeT, rectOf, waitFor, setNativeValue, pickComposerTextarea, tick, sleep },
+    _core: { makeT, rectOf, unionRect, waitFor, setNativeValue, pickComposerTextarea, tick, sleep, dismissWelcomeModal },
   }
 
   // ---------------- 悬浮面板 ----------------

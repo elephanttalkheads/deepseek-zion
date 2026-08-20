@@ -378,11 +378,11 @@ function startInspectorServer(win) {
       return enqueue(() => readBody().then(async (b) => {
         try {
           let rect = null
-          if (b.selector) {
+          if (b.rect) {
+            rect = b.rect // 优先用召唤/配方算好的 rect(并集);selector 只作回退
+          } else if (b.selector) {
             const r = await pageCall(wc, `window.__zionInspector.elementRect(${JSON.stringify(b.selector)})`)
             rect = r && r.rect ? r.rect : null
-          } else if (b.rect) {
-            rect = b.rect
           }
           const name = String(b.name || 'shot').replace(/[^a-zA-Z0-9._-]/g, '') || 'shot'
           const file = await saveShot(win, rect, name)
