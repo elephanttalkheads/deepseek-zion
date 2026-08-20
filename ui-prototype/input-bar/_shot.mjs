@@ -52,13 +52,19 @@ app.whenReady().then(async () => {
   await shot('risk-modal-on');
   await js(`document.getElementById('riskCancel').click(); 'ok'`);
 
-  // 运行中 + goal + 样例图
+  // 运行中 + goal + 样例图 + 排队一条(queue 行出现在 dock 停靠排)
   await js(`(() => {
     const s = document.getElementById('ctlState');
     s.value = 'RUNNING';
     s.dispatchEvent(new Event('change', { bubbles: true }));
     document.getElementById('ctlGoal').click();
     document.getElementById('ctlImg').click();
+    const el = document.getElementById('cmdline');
+    el.focus();
+    const setter = Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, 'value').set;
+    setter.call(el, '排队:补充第二条指令');
+    el.dispatchEvent(new Event('input', { bubbles: true }));
+    el.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
     return 'ok';
   })()`);
   await sleep(300);

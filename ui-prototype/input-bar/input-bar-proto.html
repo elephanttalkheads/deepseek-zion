@@ -22,6 +22,11 @@
     · 删除 .mi-title(◆ 会话标题);模型菜单锚定 #mModel 正上方;
     · 权限 chip / plan 开关移入输入框下方 .subline 行;
     · Full access 风险确认改为屏幕中心偏左的模态弹窗(知情勾选 + 取消/启用)。
+  理解纠正(2026-08-20,据 ui-component-inventory.md §1.3):
+    · conversation.input.dock 不是「独立插件注入区域」,而是「composer 上方的停靠排」整体——
+      官方条目(todo 任务条 order0 / goal 目标条 / queue 队列行[有排队才渲染])与插件条目
+      同排纵向停靠、按 order 升序;插件卡注入 = 排里多一行(同一条条视觉语言),不是虚线占位框。
+      demo 结构:.dock = tododock + goalbar + queuedock + plugcard(插件面 SlotAnchor 的渲染结果)。
 -->
 <html lang="zh-CN">
 <head>
@@ -82,20 +87,19 @@ body { background: var(--bg); color: var(--text-primary); font-family: var(--fon
 .demo-line b { color: var(--accent); font-weight: 400; }
 @keyframes blockIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
 
-/* ===== A7#4 GoalBar / A7#3 TodoDock / A7#2 dock 槽(缺失入口桩,同令牌)===== */
-.goalbar { display: flex; align-items: center; gap: 8px; padding: 2px 4px 6px; font-size: 12px; color: var(--text-tertiary); }
+/* ===== conversation.input.dock 停靠排(todo/goal/queue 官方条目 + 插件卡同排,同一条条语言)===== */
+.goalbar, .tododock, .queuedock, .plugcard { display: flex; align-items: center; gap: 8px; padding: 2px 4px 6px; font-size: 12px; color: var(--text-tertiary); }
 .goalbar .g-tag { color: var(--warning); letter-spacing: 0.1em; }
-.goalbar button, .dockslot button, .subline .chip {
+.queuedock .q-tag { color: var(--accent); letter-spacing: 0.1em; }
+.plugcard .p-tag { color: var(--accent); }
+.goalbar button, .plugcard button, .queuedock button, .subline .chip {
   background: none; border: 1px solid var(--border); color: var(--text-tertiary); cursor: pointer;
   font-family: var(--font); font-size: 11px; letter-spacing: 0.06em; padding: 2px 8px; transition: color 0.15s, border-color 0.15s;
 }
-.goalbar button:hover, .dockslot button:hover, .subline .chip:hover { color: var(--accent); border-color: rgba(61,255,143,0.5); }
+.goalbar button:hover, .plugcard button:hover, .queuedock button:hover, .subline .chip:hover { color: var(--accent); border-color: rgba(61,255,143,0.5); }
 .goalbar input { background: none; border: none; border-bottom: 1px solid var(--border); outline: none;
   color: var(--text-primary); font-family: var(--font); font-size: 12px; width: 220px; caret-color: var(--accent); }
-.tododock { display: flex; align-items: center; gap: 10px; padding: 2px 4px 6px; font-size: 12px; color: var(--text-tertiary); }
 .tododock .t-dot { color: var(--accent); } .tododock .t-doing { color: var(--warning); }
-.dockslot { border: 1px dashed var(--border); margin: 0 4px 6px; padding: 4px 8px; font-size: 11px;
-  color: var(--text-tertiary); letter-spacing: 0.06em; display: flex; align-items: center; gap: 8px; }
 
 /* ===== A7#12 AttachmentRail(输入盒顶部)===== */
 .rail { display: flex; gap: 8px; padding: 8px 4px 0; }
@@ -234,12 +238,15 @@ body { background: var(--bg); color: var(--text-primary); font-family: var(--fon
     <div class="inputbar">
       <!-- 弹层(.palette / .cmd-panel / .model-menu)由 JS 渲染 -->
 
-      <!-- A7#4 GoalBar(zion-add) -->
-      <div class="goalbar" id="goalbar"></div>
-      <!-- A7#3 TodoDockSeat(plan strip) -->
-      <div class="tododock" id="tododock"></div>
-      <!-- A7#2 conversation.input.dock 插件槽(平时完全隐藏,插件注入内容才出现) -->
-      <div class="dockslot" id="dockslot" hidden></div>
+      <!-- conversation.input.dock 停靠排(ui-component-inventory §1.3):
+           官方条目(todo 任务条 order0 / goal 目标条 / queue 队列行[有排队才渲染])
+           与插件条目同排纵向停靠;插件卡注入 = 排里多一行,不是独立区域 -->
+      <div class="dock" id="dock">
+        <div class="tododock" id="tododock"></div>
+        <div class="goalbar" id="goalbar"></div>
+        <div class="queuedock" id="queuedock" hidden></div>
+        <div class="plugcard" id="plugcard" hidden></div>
+      </div>
       <!-- .micro(§13 视觉;ctx 占用 = #mCtxbar 胶囊条唯一展示;模型名 = A7#7 可点入口) -->
       <div class="micro">
         <span class="mi-cluster">
@@ -325,7 +332,7 @@ const state = {
   sessionState: 'READY', sessionTitle: '会话 3fa2',
   model: 'deepseek-v4-flash', contextWindow: 204800, ctxInput: 86016, thinkingLevel: 'medium',
   permission: 'default', planOn: false,
-  goal: null, todosOn: true, images: [],
+  goal: null, todosOn: true, images: [], queued: [],
 };
 let menuOpen = null;   // 'cmd' | 'model' | 'perm' | null
 let riskFrom = null;   // 'palette' | 'chip' —— Full access 确认来源
@@ -592,6 +599,7 @@ function send() {
   } else if (m) {
     logLine(`<b>[CMD]</b> /${m[1]}${m[2] ? ' ' + esc(m[2]) : ''} <span style="color:var(--text-tertiary)">→ session.command(demo)</span>`);
   } else if (busy()) {
+    state.queued.push(value); // 排队 → dock 停靠排出 queue 行(有排队才渲染,§1.3)
     logLine(`<b>[QUEUE]</b> ${esc(value)} <span style="color:var(--text-tertiary)">运行中,已排队(session.prompt parts,'queue')</span>`);
   } else {
     logLine(`<b>[PROMPT]</b> ${esc(value)}${state.images.length ? ` <span style="color:var(--text-tertiary)">(+${state.images.length} 图)</span>` : ''}`);
@@ -603,6 +611,7 @@ function send() {
 function abort() {
   logLine('<b style="color:var(--warning)">[INT]</b> 停止(session.cancel,demo)');
   state.sessionState = 'READY';
+  state.queued = []; // 中断清空队列 → queue 行消失
   $('ctlState').value = 'READY';
   renderAll();
 }
@@ -696,16 +705,27 @@ $('permChip').addEventListener('click', () => { menuOpen = menuOpen === 'perm' ?
 $('planChip').addEventListener('click', () => { state.planOn = !state.planOn; if (!state.planOn) logLine('<b>[CMD]</b> /plan off <span style="color:var(--text-tertiary)">→ session.command(demo)</span>'); renderAll(); });
 stopBtn.addEventListener('click', abort);
 goBtn.addEventListener('click', send);
-/* A7#2 插件槽:平时完全隐藏;仅「注入插件卡」后出现注入内容,卸载即隐 */
+/* dock 停靠排 §1.3:插件卡 = 排里一行(与 todo/goal/queue 同一条条语言),不是独立区域 */
 let dockInjected = false;
 function renderDock() {
-  const d = $('dockslot');
-  d.hidden = !dockInjected;
+  // 插件面(SlotAnchor 注入的条目,平时无注册即无行)
+  const p = $('plugcard');
+  p.hidden = !dockInjected;
   if (dockInjected)
-    d.innerHTML = '<span style="color:var(--accent)">▣</span><span>插件测试卡 · host.call demo(conversation.input.dock 注入)</span><button id="dockFire">触发 host.call</button>';
+    p.innerHTML = '<span class="p-tag">▣</span><span>插件测试卡 · host.call demo(conversation.input.dock 注入)</span><button id="dockFire">触发 host.call</button>';
+  // 官方面 queue 条目(有排队才渲染)
+  const q = $('queuedock');
+  q.hidden = state.queued.length === 0;
+  if (state.queued.length) {
+    q.innerHTML = `<span class="q-tag">QUEUE ${state.queued.length}</span><span></span><button id="qCancel">取消排队</button>`;
+    q.children[1].textContent = state.queued[0];
+  }
 }
-$('dockslot').addEventListener('click', (e) => {
+$('plugcard').addEventListener('click', (e) => {
   if (e.target.id === 'dockFire') logLine('<b>[SLOT]</b> 插件卡 host.call(demo)');
+});
+$('queuedock').addEventListener('click', (e) => {
+  if (e.target.id === 'qCancel') { state.queued = []; logLine('<b>[QUEUE]</b> 取消排队(updateQueue,demo)'); renderAll(); }
 });
 
 /* 点击弹层外关闭 */
