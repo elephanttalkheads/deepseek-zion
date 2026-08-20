@@ -34,12 +34,14 @@
 - P3 **cordis 插件面板增强** ✅ probe-cordis-panel fixture 6/6 + real 6/6(本轮;remote 补 stopFromPanel/undefineFromPanel(3080 已实装)+ hub stopRow/removeRow/setRpc(wire rpc 注入)+ PluginHost 行增强:版本选择器/运行(run|update)/停止/移除/重试下一版本/回滚 + fixture 内存清单端点全链(inventory/runHostHalf/stop/undefine/getClientCode/resolveRequestRun);real:清单读取 + 面板端点对不存在插件确定性业务拒绝)
 - ⑤(部分) 消息复制/分支 ✅ real 6/6
 - ④ 会话导出按钮 → **已核定为 N/A**(官方 web 客户端无该按钮,`downloads` 是 host-only 通道;见 §3)
+- **归档过滤修复(bugfix)** ✅ 归档的会话从侧边栏消失(官方 ui-workspace 语义;真实后端只发 host/archived-sessions-changed、zion 此前未过滤 → 归档后行不消失 + 官方 3080 隐藏的那批会话全显示);probe-archive-filter real 4/4 + fixture 4/4,workspace-actions fixture 回归 8/8
 
 ---
 
 ## 1. 最近提交链(自本会话;`main` 最新行在前)
 
 | 提交 | 内容 |
+| `bf486e1` | 归档过滤修复:runtime 捕获 workspace.list 的 archivedSessionIds(此前被丢弃)+ onHost 消费 host/archived-sessions-changed + 选中会话被归档后清空选择;Sidebar rows 排除已归档会话(flat + 分组同源,官方 deriveFlat/sessionVisible 语义)+ 行 data-session-id;新 probe-archive-filter(真后端 8 个已归档不进侧边栏/归档行消失/清空回归/入口保留 4-4);typecheck 基线 172 行不新增;gitignore 补 probe-archive-filter-out/
 | `(本轮,见 git log)` | cordis 插件面板增强 ⑪:remote 补 stopFromPanel/undefineFromPanel + hub stopRow/removeRow/setRpc(wire rpc 注入)+ PluginHost 行增强(版本选择器/运行 run|update/停止/移除/重试下一版本/回滚)+ fixture 内存清单端点全链;probe-cordis-panel fixture 6/6 + real 6/6 |
 | `(本轮,见 git log)` | 子代理目录树 + 只读 composer ⑩:vendor ui-subagent(目录树/只读 composer)+ ts-types dsh-subagent 占位(subagentTiming 投影 merge)+ 会话头目录树座位(openChild=selectSession)+ ComposerSeat 只读分支(priority -10 语义)+ fixture subagents.list 目录样本;probe-subagent fixture 6/6 + real 6/6 |
 | `(本轮,见 git log)` | Miller 目录浏览弹窗 ⑨:vendor ui-directory-picker-browse(DirectoryBrowser;Translate 改从 ui-slots 导入)+ zion 适配(host.listDirectory/createDirectory → workspace.create)+ WorkspaceMenu 新建工作区改开应用内弹窗;probe-directory fixture 9/9 + real 9/9 |
