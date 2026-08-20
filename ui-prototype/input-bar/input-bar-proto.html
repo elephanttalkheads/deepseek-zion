@@ -1,0 +1,774 @@
+<!DOCTYPE html>
+<!--
+  PROTOTYPE — throwaway, not production.
+  迁移目标:zion-ui-visual-inventory.md §13「输入栏:微簇状态条 + 输入行 + 命令面板」
+  流程:AGENTS.md §8「UI 迁移阶段规则」——已完成对位 + 入口差集 + 多余入口问询(2026-08-20)。
+
+  ===== 入口差集比对(源仓 pi-martix-ui-dev InputBar × ui-component-inventory.md A7)=====
+  共有入口(迁移视觉保留语义):
+    · .palette 命令面板(/ 触发/过滤/↑↓/Enter/Tab/Esc) ≈ A7#1 触发管线
+    · ❯ 输入行 + Enter 发送 ≈ A7#9;go-btn ↑/✕ ≈ A7#14+#13
+    · /cmd 回车走 runCommand、/clear 本地清视图 ≈ A7#14 submit '/' 分支
+    · .micro 模型名/ctx 胶囊条 ≈ A7#7 模型席 / A7#15 上下文展示
+  缺失入口(A7 有、源块没有)→ 本 demo 补齐:#2 dock 槽 / #3 TodoDock / #4 GoalBar / #5 PermissionChip /
+    #6 PlanSeat / #7 模型两列菜单 / #8「+」命令列表 / #9 Shift+Enter 换行与贴图 / #10 📎 / #11 DropOverlay /
+    #12 AttachmentRail+Lightbox / #13 独立停止钮 / #1 /permission popupSelect。
+  多余入口(源块有、A7 没有)→ 用户已裁决(2026-08-20):
+    · QUICK_CMDS 快捷指令按钮行 → 删除;· Ctrl+P 快捷键 → 删除;
+    · skill 选中插「运行技能 X:」模板 → 按清单语义 /name 回填;
+    · 生成中 Enter=中断 → 按清单语义(Enter 恒发送/排队,中断只走 #13 停止钮)。
+  用户评审后调整(2026-08-20):
+    · 去除 ContextMeter 环(ctx 占用只留 .micro 的 #mCtxbar 胶囊条);
+    · 删除 .mi-title(◆ 会话标题);模型菜单锚定 #mModel 正上方;
+    · 权限 chip / plan 开关移入输入框下方 .subline 行;
+    · Full access 风险确认改为屏幕中心偏左的模态弹窗(知情勾选 + 取消/启用)。
+-->
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<title>proto · 输入栏合并形态(§13 视觉 × A7 全入口)— 迁移 demo</title>
+<style>
+/* ===== 设计令牌(照源仓 styles.css:28-42 原样)===== */
+:root {
+  --bg: #010a04;
+  --surface: rgba(2, 18, 9, 0.92);
+  --surface-2: rgba(3, 26, 13, 0.94);
+  --text-primary: #3dff8f;
+  --text-secondary: #23c468;
+  --text-tertiary: #1da754;
+  --accent: #00ff41;
+  --accent-muted: #14b850;
+  --bright: #c2ffd9;
+  --warning: #ffb000;
+  --danger: #ff5555;
+  --border: rgba(61, 255, 143, 0.18);
+  --font: "Share Tech Mono", ui-monospace, "Cascadia Mono", "Courier New", "Sarasa Term SC", "Microsoft YaHei", monospace;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+[hidden] { display: none !important; }
+html, body { height: 100%; }
+body { background: var(--bg); color: var(--text-primary); font-family: var(--font); overflow: hidden; }
+:focus-visible { outline: 1px solid var(--accent); outline-offset: 2px; }
+
+#rain { position: fixed; inset: 0; z-index: -1; }
+.scanlines { position: fixed; inset: 0; z-index: 40; pointer-events: none;
+  background: repeating-linear-gradient(0deg, rgba(0,0,0,0.10) 0px, rgba(0,0,0,0.10) 1px, transparent 1px, transparent 4px); }
+
+#stage { position: relative; z-index: 5; height: 100vh; display: flex; flex-direction: column; }
+.console { flex: 1; min-width: 0; display: flex; flex-direction: column; background: var(--surface); }
+
+/* ===== .micro 微簇状态条(照 styles.css:456-474 原样;.mi-title 已按评审删除)===== */
+.micro { position: relative; flex: none; display: flex; align-items: center; gap: 10px; padding: 2px 4px 8px; font-size: 12px; font-variant-numeric: tabular-nums; }
+.mi-cluster { margin-left: auto; display: flex; align-items: center; gap: 8px; color: var(--text-tertiary); }
+.mi-model { color: var(--accent); cursor: pointer; border: none; background: none; font: inherit; letter-spacing: inherit; }
+.mi-model:hover { text-shadow: 0 0 6px rgba(61, 255, 143, 0.5); }
+.ctxbar { position: relative; width: 56px; height: 6px; border-radius: 3px; background: rgba(0, 255, 102, 0.08); overflow: hidden; }
+.ctxbar > i { position: absolute; inset: 0 auto 0 0; width: var(--ctx, 0%); border-radius: 3px; background: #00ff66; transition: width 0.6s ease; }
+.ctxbar:hover > i { background: #66ff99; }
+.tl-minimal { color: #1da754; } .tl-low { color: #23c468; } .tl-medium { color: #3dff8f; } .tl-high { color: #66ff99; }
+.tl-xhigh, .tl-max { color: var(--warning); }
+.mi-state { color: var(--accent); } .mi-state.run { color: var(--warning); }
+
+*::-webkit-scrollbar { width: 6px; height: 6px; }
+*::-webkit-scrollbar-track { background: transparent; }
+*::-webkit-scrollbar-thumb { background: #00ff66; border-radius: 3px; }
+*::-webkit-scrollbar-thumb:hover { background: #66ff99; }
+*::-webkit-scrollbar-corner { background: transparent; }
+::selection { background: rgba(0, 255, 102, 0.22); color: #ffffff; }
+
+#feed { flex: 1; overflow-y: auto; padding: 20px 26px 12px; }
+.feed-empty { font-size: 12px; color: var(--text-tertiary); letter-spacing: 0.08em; }
+.demo-line { font-size: 13px; color: var(--text-secondary); margin-bottom: 6px; animation: blockIn 0.2s ease-out; }
+.demo-line b { color: var(--accent); font-weight: 400; }
+@keyframes blockIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+
+/* ===== A7#4 GoalBar / A7#3 TodoDock / A7#2 dock 槽(缺失入口桩,同令牌)===== */
+.goalbar { display: flex; align-items: center; gap: 8px; padding: 2px 4px 6px; font-size: 12px; color: var(--text-tertiary); }
+.goalbar .g-tag { color: var(--warning); letter-spacing: 0.1em; }
+.goalbar button, .dockslot button, .subline .chip {
+  background: none; border: 1px solid var(--border); color: var(--text-tertiary); cursor: pointer;
+  font-family: var(--font); font-size: 11px; letter-spacing: 0.06em; padding: 2px 8px; transition: color 0.15s, border-color 0.15s;
+}
+.goalbar button:hover, .dockslot button:hover, .subline .chip:hover { color: var(--accent); border-color: rgba(61,255,143,0.5); }
+.goalbar input { background: none; border: none; border-bottom: 1px solid var(--border); outline: none;
+  color: var(--text-primary); font-family: var(--font); font-size: 12px; width: 220px; caret-color: var(--accent); }
+.tododock { display: flex; align-items: center; gap: 10px; padding: 2px 4px 6px; font-size: 12px; color: var(--text-tertiary); }
+.tododock .t-dot { color: var(--accent); } .tododock .t-doing { color: var(--warning); }
+.dockslot { border: 1px dashed var(--border); margin: 0 4px 6px; padding: 4px 8px; font-size: 11px;
+  color: var(--text-tertiary); letter-spacing: 0.06em; display: flex; align-items: center; gap: 8px; }
+
+/* ===== A7#12 AttachmentRail(输入盒顶部)===== */
+.rail { display: flex; gap: 8px; padding: 8px 4px 0; }
+.rail .thumb { position: relative; width: 48px; height: 48px; border: 1px solid var(--border); cursor: zoom-in; overflow: hidden; }
+.rail .thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.rail .thumb .rm { position: absolute; top: 0; right: 0; width: 14px; height: 14px; border: none; cursor: pointer;
+  background: rgba(1,10,4,0.8); color: var(--danger); font-size: 10px; line-height: 1; padding: 0; }
+
+/* ===== 输入区(照 styles.css:710-745 原样;.input-box 壳承接发丝边框,支持多行撑高)===== */
+.inputbar { flex: none; background: transparent; padding: 6px 20px 8px; position: relative; }
+.input-box { border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); transition: border-color 0.15s; }
+.input-box:focus-within { border-bottom-color: var(--accent); }
+.input-row { position: relative; display: flex; align-items: center; gap: 10px; padding: 8px 4px; }
+.prompt-sign { color: var(--accent); font-size: 15px; flex: none; }
+/* 多行:JS 按 scrollHeight 向上撑高,超 MAX_H(≈5 行)出滚动条 */
+#cmdline { flex: 1; background: none; border: none; outline: none; resize: none; overflow-y: hidden;
+  color: var(--text-primary); font-family: var(--font); font-size: 15px; caret-color: var(--accent); line-height: 1.5; }
+#cmdline::placeholder { color: var(--text-tertiary); }
+#cmdline:disabled { opacity: 0.5; }
+.go-btn { flex: none; width: 26px; height: 26px; display: grid; place-items: center;
+  background: none; border: 1px solid var(--border); border-radius: 4px;
+  color: var(--accent); font-size: 14px; cursor: pointer;
+  transition: border-color 0.15s, box-shadow 0.15s, color 0.15s; }
+.go-btn:hover { border-color: var(--accent-muted); box-shadow: 0 0 8px rgba(61, 255, 143, 0.25); }
+.go-btn:disabled { opacity: 0.35; cursor: default; box-shadow: none; }
+.go-btn.stop { color: var(--danger); border-color: rgba(255, 85, 85, 0.4); }
+.go-btn.stop:hover { border-color: var(--danger); box-shadow: 0 0 8px rgba(255, 85, 85, 0.25); }
+.go-btn.ghost { color: var(--text-tertiary); }
+/* A7#5 PermissionChip / A7#6 PlanSeat 移入 .subline(评审调整) */
+.subline { display: flex; gap: 8px; align-items: center; padding-top: 6px; flex-wrap: wrap; }
+.subline .chip.on { color: var(--warning); border-color: rgba(255, 176, 0, 0.4); }
+.subline .hint { margin-left: auto; font-size: 11px; color: var(--text-tertiary); letter-spacing: 0.06em; }
+
+/* ===== 命令面板(样式照 styles.css:746-776;锚点按评审改为紧贴 .input-row 正上方,z 高于输入框上方全部元素)===== */
+.palette { position: absolute; bottom: calc(100% - 4px); left: 0; right: 0;
+  max-height: 320px; overflow-y: auto; background: var(--surface-2);
+  border: 1px solid var(--border); border-bottom: none;
+  box-shadow: 0 -6px 18px rgba(0, 0, 0, 0.45); z-index: 35; }
+.palette-empty { padding: 10px 12px; font-size: 15px; color: var(--text-tertiary); letter-spacing: 0.08em; }
+.palette-row { display: flex; align-items: baseline; gap: 10px; padding: 7px 12px; cursor: pointer; font-size: 15px; }
+.palette-row:hover { background: rgba(61, 255, 143, 0.06); }
+.palette-row.active { background: rgba(61, 255, 143, 0.12); }
+.palette-row .p-kind { flex: none; font-size: 12px; letter-spacing: 0.1em; color: var(--accent-muted); }
+.palette-row .p-kind.command { color: var(--accent-muted); opacity: 0.8; }
+.palette-row .p-name { flex: none; min-width: 150px; color: var(--text-primary); letter-spacing: 0.04em; }
+.palette-row .p-desc { flex: 1; color: var(--text-secondary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.palette-row .p-src { flex: none; font-size: 12px; color: var(--text-tertiary); letter-spacing: 0.06em; }
+.palette-row .p-risk { color: var(--warning); }
+
+/* ===== A7#8 「+」命令面板(锚 inputbar 上方,复用 palette 视觉)===== */
+.cmd-panel { position: absolute; bottom: calc(100% - 4px); left: 20px; max-height: 260px; overflow-y: auto;
+  background: var(--surface-2); border: 1px solid var(--border); border-bottom: none;
+  box-shadow: 0 -6px 18px rgba(0, 0, 0, 0.45); z-index: 30; min-width: 260px; }
+.cmd-panel .palette-row { font-size: 13px; padding: 6px 12px; }
+
+/* ===== A7#7 模型两列菜单(锚 #mModel 正上方:append 进 .micro,右对齐)===== */
+.model-menu { position: absolute; bottom: calc(100% - 2px); right: 0; display: flex;
+  max-height: 260px; overflow-y: auto;
+  background: var(--surface-2); border: 1px solid var(--border);
+  box-shadow: 0 -6px 18px rgba(0, 0, 0, 0.45); z-index: 30; }
+.model-menu .col { min-width: 170px; }
+.model-menu .col + .col { border-left: 1px solid var(--border); }
+.model-menu .col-head { padding: 6px 12px; font-size: 11px; color: var(--text-tertiary); letter-spacing: 0.1em; }
+.model-menu .palette-row { font-size: 13px; padding: 6px 12px; }
+.model-menu .palette-row.sel .p-name { color: var(--accent); }
+
+/* ===== Full access 风险确认模态(评审:屏幕中心偏左;内容照官方确认框)===== */
+.risk-mask { position: fixed; inset: 0; z-index: 85; display: none; place-items: center; background: rgba(1, 10, 4, 0.6); }
+.risk-mask.show { display: grid; }
+.risk-panel { width: 430px; transform: translateX(-8%); position: relative;
+  background: var(--surface-2); border: 1px solid var(--border);
+  box-shadow: 0 0 24px rgba(0, 0, 0, 0.6), 0 0 8px rgba(61, 255, 143, 0.12); padding: 18px 20px 16px; }
+.risk-title { font-size: 15px; color: var(--bright); letter-spacing: 0.04em; margin-bottom: 14px; }
+.risk-close { position: absolute; top: 10px; right: 12px; background: none; border: none; cursor: pointer;
+  color: var(--text-tertiary); font-size: 14px; font-family: var(--font); }
+.risk-close:hover { color: var(--danger); }
+.risk-warn { display: flex; gap: 10px; align-items: flex-start; font-size: 13px; line-height: 1.8;
+  color: var(--text-secondary); margin-bottom: 14px; }
+.risk-warn .rw-ico { flex: none; color: var(--danger); border: 1px solid var(--danger); border-radius: 50%;
+  width: 16px; height: 16px; display: grid; place-items: center; font-size: 11px; margin-top: 3px; }
+.risk-check { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--text-primary);
+  margin-bottom: 16px; cursor: pointer; user-select: none; }
+.risk-check input { accent-color: var(--accent); cursor: pointer; }
+.risk-actions { display: flex; justify-content: flex-end; gap: 10px; }
+.risk-actions button { font-family: var(--font); font-size: 13px; padding: 5px 16px; cursor: pointer;
+  background: none; border: 1px solid var(--border); color: var(--text-secondary); border-radius: 3px;
+  transition: color 0.15s, border-color 0.15s, background 0.15s; }
+.risk-actions .rk-cancel:hover { color: var(--text-primary); border-color: rgba(61,255,143,0.5); }
+.risk-actions .rk-ok { color: var(--warning); border-color: rgba(255, 176, 0, 0.5); }
+.risk-actions .rk-ok:hover:not(:disabled) { background: rgba(255, 176, 0, 0.1); box-shadow: 0 0 8px rgba(255, 176, 0, 0.2); }
+.risk-actions .rk-ok:disabled { opacity: 0.35; cursor: default; }
+
+/* ===== A7#11 DropOverlay / A7#12 Lightbox ===== */
+.drop-overlay { position: fixed; inset: 0; z-index: 80; display: none; place-items: center;
+  background: rgba(1, 10, 4, 0.85); border: 2px dashed var(--accent-muted); }
+.drop-overlay.show { display: grid; }
+.drop-overlay span { color: var(--accent); font-size: 15px; letter-spacing: 0.2em; }
+.lightbox { position: fixed; inset: 0; z-index: 90; display: none; place-items: center; background: rgba(1, 10, 4, 0.92); cursor: zoom-out; }
+.lightbox.show { display: grid; }
+.lightbox img { max-width: 86vw; max-height: 86vh; border: 1px solid var(--border); }
+
+/* ===== demo 操控条 ===== */
+.demo-controls { position: fixed; right: 12px; top: 12px; z-index: 20; /* 位于 #stage 内:须低于 .palette 家族 30,避免遮挡弹层 */
+  display: flex; align-items: center; gap: 10px; flex-wrap: wrap; max-width: 70vw;
+  font-size: 11px; color: var(--text-tertiary);
+  background: rgba(1, 10, 4, 0.85); border: 1px dashed var(--border); padding: 6px 10px; }
+.demo-controls label { display: inline-flex; align-items: center; gap: 4px; }
+.demo-controls select, .demo-controls input[type="range"] { background: var(--surface-2); color: var(--text-primary);
+  border: 1px solid var(--border); font-family: var(--font); font-size: 11px; }
+.demo-controls .dc-tag { color: var(--warning); letter-spacing: 0.1em; }
+.demo-controls button { background: none; border: 1px solid var(--border); color: var(--text-tertiary);
+  font-family: var(--font); font-size: 11px; padding: 1px 8px; cursor: pointer; }
+.demo-controls button:hover { color: var(--accent); }
+</style>
+</head>
+<body>
+<canvas id="rain" aria-hidden="true"></canvas>
+<div class="scanlines" aria-hidden="true"></div>
+
+<div id="stage">
+  <div class="demo-controls">
+    <span class="dc-tag">PROTO 控制</span>
+    <label>state <select id="ctlState"><option>READY</option><option>RUNNING</option><option>STREAMING</option></select></label>
+    <label>thinking <select id="ctlThink"><option>minimal</option><option>low</option><option selected>medium</option><option>high</option><option>xhigh</option><option>max</option><option value="">--</option></select></label>
+    <label>ctx <input type="range" id="ctlCtx" min="0" max="100" value="42" /> <span id="ctlCtxVal">42%</span></label>
+    <button id="ctlGoal">切换 goal</button>
+    <button id="ctlTodos">切换 todos</button>
+    <button id="ctlImg">贴入样例图</button>
+    <button id="ctlDock">注入插件卡</button>
+  </div>
+  <div class="console">
+    <div id="feed">
+      <div class="feed-empty">// demo 占位 feed —— 迁移对象 = 底部输入栏合并形态(§13 视觉 × A7 全入口)</div>
+    </div>
+
+    <div class="inputbar">
+      <!-- 弹层(.palette / .cmd-panel / .model-menu)由 JS 渲染 -->
+
+      <!-- A7#4 GoalBar(zion-add) -->
+      <div class="goalbar" id="goalbar"></div>
+      <!-- A7#3 TodoDockSeat(plan strip) -->
+      <div class="tododock" id="tododock"></div>
+      <!-- A7#2 conversation.input.dock 插件槽(平时完全隐藏,插件注入内容才出现) -->
+      <div class="dockslot" id="dockslot" hidden></div>
+      <!-- .micro(§13 视觉;ctx 占用 = #mCtxbar 胶囊条唯一展示;模型名 = A7#7 可点入口) -->
+      <div class="micro">
+        <span class="mi-cluster">
+          <button class="mi-model" id="mModel" title="模型 / 推理等级(A7#7)">deepseek-v4-flash</button>
+          <span class="ctxbar" id="mCtxbar" style="--ctx: 42%" title="上下文占用 86016 / 204800"><i></i></span>
+          <span class="mi-ctx" id="mCtxPct">42%</span>
+          <span class="mi-think tl-medium" id="mThink">medium</span>
+          <span class="mi-state" id="mState">READY</span>
+        </span>
+      </div>
+
+      <!-- 输入盒:发丝边框壳;附件缩略图在盒顶部(A7#12),textarea 多行向上撑高,超 5 行出滚动条 -->
+      <div class="input-box">
+        <div class="rail" id="rail" hidden></div>
+        <div class="input-row">
+          <button class="go-btn ghost" id="addBtn" title="命令列表(A7#8)">+</button>
+          <button class="go-btn ghost" id="attachBtn" title="附件(A7#10)">📎</button>
+          <input type="file" id="fileInput" accept="image/*" multiple hidden />
+          <span class="prompt-sign">❯</span>
+          <textarea id="cmdline" rows="1" aria-label="指令输入" placeholder="输入 / 查看 skills 与命令 · 指令给 会话 3fa2 …" spellcheck="false"></textarea>
+          <button class="go-btn stop" id="stopBtn" aria-label="停止" title="停止(A7#13)" hidden>✕</button>
+          <button class="go-btn" id="goBtn" aria-label="发送" title="发送(A7#14)" disabled>↑</button>
+        </div>
+      </div>
+      <div class="subline">
+        <button class="chip" id="permChip" title="权限预设(A7#5)">权限: default</button>
+        <button class="chip" id="planChip" title="Plan 模式(A7#6)">plan: off</button>
+        <span class="hint">Enter 发送 · Shift+Enter 换行 · / 命令 · + 命令列表</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Full access 风险确认(屏幕中心偏左模态;知情勾选后才可启用) -->
+<div class="risk-mask" id="riskMask">
+  <div class="risk-panel" role="dialog" aria-modal="true" aria-label="确认启用 Full access">
+    <div class="risk-title">确认启用 Full access?</div>
+    <button class="risk-close" id="riskClose" aria-label="关闭">✕</button>
+    <div class="risk-warn">
+      <span class="rw-ico">!</span>
+      <span>启用 Full access 后,agent 将减少确认步骤,并且可以直接执行更多操作,包括敏感操作、文件修改或外部命令。仅建议在你信任当前任务时使用。</span>
+    </div>
+    <label class="risk-check"><input type="checkbox" id="riskCheck" /> 我已了解风险,并愿意继续</label>
+    <div class="risk-actions">
+      <button class="rk-cancel" id="riskCancel">取消</button>
+      <button class="rk-ok" id="riskOk" disabled>启用 Full access</button>
+    </div>
+  </div>
+</div>
+
+<div class="drop-overlay" id="dropOverlay"><span>释放以附加图片(A7#11 DropOverlay)</span></div>
+<div class="lightbox" id="lightbox"><img id="lightboxImg" alt="" /></div>
+
+<script>
+/* ================= mock 数据 ================= */
+const ITEMS = [
+  { kind: 'command', name: 'clear',   description: '清空本地会话视图',   source: 'builtin' },
+  { kind: 'command', name: 'hotkeys', description: '快捷键速查面板',     source: 'builtin' },
+  { kind: 'command', name: 'import',  description: '导入会话',           source: 'builtin', argumentHint: '<path>' },
+  { kind: 'command', name: 'model',   description: '切换模型',           source: 'builtin' },
+  { kind: 'command', name: 'new',     description: '新建会话',           source: 'builtin' },
+  { kind: 'command', name: 'permission', description: '设置权限预设',    source: 'builtin', argumentHint: '<id>' },
+  { kind: 'command', name: 'resume',  description: '恢复会话',           source: 'builtin', argumentHint: '<id>' },
+  { kind: 'command', name: 'settings',description: '打开设置面板',       source: 'builtin' },
+  { kind: 'command', name: 'status',  description: '系统状态',           source: 'builtin' },
+  { kind: 'command', name: 'trace',   description: '回放链路',           source: 'builtin' },
+  { kind: 'skill',   name: 'code-review',     description: '对改动做 Standards/Spec 双维评审', source: 'user' },
+  { kind: 'skill',   name: 'diagnosing-bugs', description: '硬 bug 诊断回环',     source: 'user' },
+  { kind: 'skill',   name: 'frontend-design', description: 'UI 视觉设计指引',     source: 'user' },
+  { kind: 'skill',   name: 'handoff',         description: '重写交接文档',        source: 'project' },
+  { kind: 'skill',   name: 'prototype',       description: '一次性原型回答设计问题', source: 'user' },
+];
+const MODELS = ['deepseek-v4-flash', 'deepseek-v4-pro', 'opencode-go'];
+const EFFORTS = ['minimal', 'low', 'medium', 'high', 'xhigh', 'max'];
+const PERMS = [
+  { id: 'default', label: 'default(建议)' },
+  { id: 'workspace-write', label: 'workspace-write' },
+  { id: 'full-access', label: 'Full access', risk: true },
+];
+
+const state = {
+  text: '', open: false, active: 0,
+  sessionState: 'READY', sessionTitle: '会话 3fa2',
+  model: 'deepseek-v4-flash', contextWindow: 204800, ctxInput: 86016, thinkingLevel: 'medium',
+  permission: 'default', planOn: false,
+  goal: null, todosOn: true, images: [],
+};
+let menuOpen = null;   // 'cmd' | 'model' | 'perm' | null
+let riskFrom = null;   // 'palette' | 'chip' —— Full access 确认来源
+
+const $ = (id) => document.getElementById(id);
+const cmdline = $('cmdline'), goBtn = $('goBtn'), stopBtn = $('stopBtn');
+const inputbar = document.querySelector('.inputbar');
+const inputRow = document.querySelector('.input-row');
+const microEl = document.querySelector('.micro');
+let popupEl = null;
+
+const busy = () => state.sessionState !== 'READY';
+
+function logLine(html) {
+  const feed = $('feed');
+  feed.querySelector('.feed-empty')?.remove();
+  const div = document.createElement('div');
+  div.className = 'demo-line'; div.innerHTML = html;
+  feed.appendChild(div); feed.scrollTop = feed.scrollHeight;
+}
+const esc = (s) => s.replace(/</g, '&lt;');
+
+/* ================= .palette 过滤/排序(源仓语义原样) ================= */
+function filtered() {
+  const query = state.text.startsWith('/') ? state.text.slice(1) : '';
+  let list = ITEMS;
+  if (query) {
+    const q = query.toLowerCase();
+    list = ITEMS.filter((i) => i.name.toLowerCase().startsWith(q) || i.name.toLowerCase().includes(q));
+  }
+  return [...list].sort((a, b) => {
+    if (a.kind !== b.kind) return a.kind === 'command' ? -1 : 1;
+    return a.name.localeCompare(b.name);
+  });
+}
+const isPermQuery = () => /^\/permission(\s|$)/.test(state.text);
+
+/* ================= 弹层渲染 ================= */
+function closePopup() { if (popupEl) { popupEl.remove(); popupEl = null; } }
+
+function renderPopup() {
+  closePopup();
+  if (menuOpen === 'cmd') return renderCmdPanel();
+  if (menuOpen === 'model') return renderModelMenu();
+  if (menuOpen === 'perm') return renderPermMenu();
+  if (!state.open) return;
+  if (isPermQuery()) return renderPermSelect(); // A7#1 popupSelect
+
+  const list = filtered();
+  popupEl = document.createElement('div');
+  popupEl.className = 'palette';
+  popupEl.setAttribute('role', 'listbox');
+  popupEl.setAttribute('aria-label', '命令面板');
+  if (list.length === 0) {
+    popupEl.innerHTML = '<div class="palette-empty">无匹配 skill / 命令</div>';
+  } else {
+    list.forEach((item, idx) => {
+      const row = document.createElement('div');
+      row.className = 'palette-row' + (idx === state.active ? ' active' : '');
+      row.setAttribute('role', 'option');
+      row.setAttribute('aria-selected', idx === state.active ? 'true' : 'false');
+      row.innerHTML = `<span class="p-kind ${item.kind}">${item.kind === 'skill' ? 'S' : '/'}</span>` +
+        `<span class="p-name"></span><span class="p-desc"></span><span class="p-src"></span>`;
+      row.children[1].textContent = item.name;
+      row.children[2].textContent = item.description;
+      row.children[3].textContent = item.source;
+      row.addEventListener('mousedown', (e) => e.preventDefault());
+      row.addEventListener('click', () => pick(item));
+      row.addEventListener('mouseenter', () => { state.active = idx; renderPopup(); });
+      popupEl.appendChild(row);
+    });
+  }
+  inputRow.appendChild(popupEl); // 紧贴 .input-row 正上方(评审调整)
+  popupEl.querySelector('.palette-row.active')?.scrollIntoView({ block: 'nearest' });
+}
+
+/* A7#1 popupSelect:/permission → 预设选择;Full access → 中心偏左风险确认模态 */
+function renderPermSelect() {
+  popupEl = document.createElement('div');
+  popupEl.className = 'palette';
+  popupEl.setAttribute('role', 'listbox');
+  popupEl.setAttribute('aria-label', '权限预设');
+  PERMS.forEach((p) => {
+    const row = document.createElement('div');
+    row.className = 'palette-row';
+    row.innerHTML = `<span class="p-kind command">◇</span><span class="p-name${p.risk ? ' p-risk' : ''}"></span><span class="p-desc">${p.risk ? '需要风险确认' : '设为当前会话权限'}</span>`;
+    row.querySelector('.p-name').textContent = p.label;
+    row.addEventListener('mousedown', (e) => e.preventDefault());
+    row.addEventListener('click', () => { p.risk ? openRisk('palette') : applyPerm(p.id, true); });
+    popupEl.appendChild(row);
+  });
+  inputRow.appendChild(popupEl); // 紧贴 .input-row 正上方(评审调整)
+}
+function applyPerm(id, clearText) {
+  state.permission = id;
+  if (clearText) setText(''); else renderAll();
+  logLine(`<b>[CMD]</b> /permission ${id} <span style="color:var(--text-tertiary)">→ session.command(demo)</span>`);
+}
+
+/* Full access 风险确认模态 */
+function openRisk(from) {
+  riskFrom = from;
+  $('riskCheck').checked = false;
+  $('riskOk').disabled = true;
+  $('riskMask').classList.add('show');
+}
+function closeRisk(reopenPalette) {
+  $('riskMask').classList.remove('show');
+  if (reopenPalette && riskFrom === 'palette') { state.open = true; renderPopup(); }
+  riskFrom = null;
+}
+$('riskCheck').addEventListener('change', (e) => { $('riskOk').disabled = !e.target.checked; });
+$('riskOk').addEventListener('click', () => {
+  const from = riskFrom;
+  $('riskMask').classList.remove('show'); riskFrom = null;
+  applyPerm('full-access', from === 'palette');
+});
+$('riskCancel').addEventListener('click', () => closeRisk(true));
+$('riskClose').addEventListener('click', () => closeRisk(true));
+$('riskMask').addEventListener('mousedown', (e) => { if (e.target === $('riskMask')) closeRisk(true); });
+
+/* A7#8 「+」命令列表 → pickCommand(/name 入草稿) */
+function renderCmdPanel() {
+  popupEl = document.createElement('div');
+  popupEl.className = 'cmd-panel';
+  ITEMS.filter((i) => i.kind === 'command').forEach((item) => {
+    const row = document.createElement('div');
+    row.className = 'palette-row command-panel-item';
+    row.innerHTML = `<span class="p-kind command">/</span><span class="p-name"></span><span class="p-desc"></span>`;
+    row.children[1].textContent = item.name;
+    row.children[2].textContent = item.description;
+    row.addEventListener('mousedown', (e) => e.preventDefault());
+    row.addEventListener('click', () => { menuOpen = null; setText(`/${item.name} `); cmdline.focus(); });
+    popupEl.appendChild(row);
+  });
+  inputbar.insertBefore(popupEl, inputbar.firstChild);
+}
+
+/* A7#7 模型/推理等级两列菜单(锚 #mModel 正上方 → append 进 .micro) */
+function renderModelMenu() {
+  popupEl = document.createElement('div');
+  popupEl.className = 'model-menu';
+  const mk = (head, arr, cur, onPick) => {
+    const col = document.createElement('div'); col.className = 'col';
+    col.innerHTML = `<div class="col-head">${head}</div>`;
+    arr.forEach((v) => {
+      const row = document.createElement('div');
+      row.className = 'palette-row' + (v === cur ? ' sel' : '');
+      row.innerHTML = `<span class="p-name"></span>`;
+      row.children[0].textContent = v;
+      row.addEventListener('mousedown', (e) => e.preventDefault());
+      row.addEventListener('click', () => { onPick(v); menuOpen = null; renderAll(); });
+      col.appendChild(row);
+    });
+    return col;
+  };
+  popupEl.append(
+    mk('模型', MODELS, state.model, (v) => { state.model = v; logLine(`<b>[MODEL]</b> ${v}`); }),
+    mk('推理等级', EFFORTS, state.thinkingLevel, (v) => { state.thinkingLevel = v; logLine(`<b>[EFFORT]</b> ${v}`); }));
+  microEl.appendChild(popupEl);
+}
+
+/* A7#5 PermissionChip 菜单(与 popupSelect 同数据源) */
+function renderPermMenu() {
+  popupEl = document.createElement('div');
+  popupEl.className = 'cmd-panel';
+  PERMS.forEach((p) => {
+    const row = document.createElement('div');
+    row.className = 'palette-row';
+    row.innerHTML = `<span class="p-name${p.risk ? ' p-risk' : ''}"></span><span class="p-desc">${p.id === state.permission ? '当前' : ''}</span>`;
+    row.querySelector('.p-name').textContent = p.label;
+    row.addEventListener('mousedown', (e) => e.preventDefault());
+    row.addEventListener('click', () => {
+      menuOpen = null; closePopup();
+      if (p.risk && p.id !== state.permission) openRisk('chip');
+      else applyPerm(p.id, false);
+    });
+    popupEl.appendChild(row);
+  });
+  inputbar.insertBefore(popupEl, inputbar.firstChild);
+}
+
+/* ================= 渲染 ================= */
+function renderMicro() {
+  $('mModel').textContent = state.model ?? '--';
+  const pct = state.ctxInput != null && state.contextWindow
+    ? Math.min(100, Math.round((state.ctxInput / state.contextWindow) * 100)) : null;
+  const bar = $('mCtxbar');
+  bar.style.setProperty('--ctx', `${pct ?? 0}%`);
+  bar.title = pct != null ? `上下文占用 ${state.ctxInput} / ${state.contextWindow}` : '上下文占用未知';
+  $('mCtxPct').textContent = pct != null ? `${pct}%` : '--';
+  const th = $('mThink');
+  th.textContent = state.thinkingLevel || '--';
+  th.className = 'mi-think' + (state.thinkingLevel ? ` tl-${state.thinkingLevel}` : '');
+  const st = $('mState');
+  st.textContent = state.sessionState;
+  st.className = 'mi-state' + (busy() ? ' run' : '');
+  cmdline.placeholder = `输入 / 查看 skills 与命令 · 指令给 ${state.sessionTitle} …`;
+}
+
+function renderGoal() {
+  const g = $('goalbar');
+  if (!state.goal) {
+    g.innerHTML = '<span class="g-tag">GOAL</span><button id="gSet">设定目标</button>';
+    $('gSet').addEventListener('click', () => {
+      g.innerHTML = '<span class="g-tag">GOAL</span><input id="gInput" placeholder="objective…" /><button id="gOk">设定</button><button id="gNo">取消</button>';
+      $('gOk').addEventListener('click', () => { state.goal = $('gInput').value || '未命名目标'; logLine(`<b>[GOAL]</b> create: ${esc(state.goal)}`); renderAll(); });
+      $('gNo').addEventListener('click', renderGoal);
+      $('gInput').focus();
+    });
+  } else {
+    g.innerHTML = `<span class="g-tag">GOAL</span><span></span><button data-a="edit">edit</button><button data-a="pause">pause</button><button data-a="complete">complete</button><button data-a="clear">clear</button>`;
+    g.children[1].textContent = state.goal;
+    g.querySelectorAll('button').forEach((b) => b.addEventListener('click', () => {
+      logLine(`<b>[GOAL]</b> ${b.dataset.a}(demo)`);
+      if (b.dataset.a === 'clear' || b.dataset.a === 'complete') state.goal = null;
+      renderAll();
+    }));
+  }
+}
+
+function renderTodos() {
+  const t = $('tododock');
+  t.hidden = !state.todosOn;
+  if (state.todosOn)
+    t.innerHTML = '<span class="t-dot">◆</span><span>plan:</span><span>✓ 盘点入口</span><span class="t-doing">▸ 生成合并 demo</span><span>□ 落真组件</span>';
+}
+
+function renderRail() {
+  const rail = $('rail');
+  rail.hidden = state.images.length === 0;
+  rail.innerHTML = '';
+  state.images.forEach((img) => {
+    const d = document.createElement('div');
+    d.className = 'thumb';
+    d.innerHTML = `<img src="${img.url}" alt="" /><button class="rm" title="移除">✕</button>`;
+    d.querySelector('img').addEventListener('click', () => { $('lightboxImg').src = img.url; $('lightbox').classList.add('show'); });
+    d.querySelector('.rm').addEventListener('click', () => { state.images = state.images.filter((x) => x.id !== img.id); renderAll(); });
+    rail.appendChild(d);
+  });
+}
+
+function renderInput() {
+  if (cmdline.value !== state.text) { cmdline.value = state.text; autosize(); }
+  cmdline.disabled = false; // 清单语义:运行中可排队输入
+  stopBtn.hidden = !busy(); // A7#13 独立停止钮(运行中出现,与发送并存:可排队)
+  goBtn.disabled = state.text.trim() === '' && state.images.length === 0;
+  $('permChip').textContent = `权限: ${state.permission}`;
+  $('permChip').classList.toggle('on', state.permission === 'full-access');
+  $('planChip').textContent = `plan: ${state.planOn ? 'on' : 'off'}`;
+  $('planChip').classList.toggle('on', state.planOn);
+}
+
+function renderAll() { renderMicro(); renderGoal(); renderTodos(); renderRail(); renderDock(); renderInput(); renderPopup(); }
+
+/* ================= 行为 ================= */
+function send() {
+  const value = state.text.trim();
+  if (!value && state.images.length === 0) return;
+  const m = /^\/([a-zA-Z0-9-]+)(?:\s+(.*))?$/.exec(value);
+  if (value === '/clear') {
+    $('feed').innerHTML = '<div class="feed-empty">// demo 占位 feed —— 迁移对象 = 底部输入栏合并形态(§13 视觉 × A7 全入口)</div>';
+    logLine('<b>[CMD]</b> 清空会话视图');
+  } else if (m) {
+    logLine(`<b>[CMD]</b> /${m[1]}${m[2] ? ' ' + esc(m[2]) : ''} <span style="color:var(--text-tertiary)">→ session.command(demo)</span>`);
+  } else if (busy()) {
+    logLine(`<b>[QUEUE]</b> ${esc(value)} <span style="color:var(--text-tertiary)">运行中,已排队(session.prompt parts,'queue')</span>`);
+  } else {
+    logLine(`<b>[PROMPT]</b> ${esc(value)}${state.images.length ? ` <span style="color:var(--text-tertiary)">(+${state.images.length} 图)</span>` : ''}`);
+  }
+  state.text = ''; state.images = []; state.open = false;
+  renderAll();
+}
+
+function abort() {
+  logLine('<b style="color:var(--warning)">[INT]</b> 停止(session.cancel,demo)');
+  state.sessionState = 'READY';
+  $('ctlState').value = 'READY';
+  renderAll();
+}
+
+/* pick:A7#8 语义 —— 一律回填 /name 入草稿(skill 同,用户已裁决) */
+function pick(item) {
+  state.open = false;
+  setText(`/${item.name} `);
+  cmdline.focus();
+}
+
+function setText(v) {
+  state.text = v;
+  const shouldOpen = v.startsWith('/') && v.length <= 48;
+  state.open = shouldOpen;
+  if (shouldOpen) state.active = 0;
+  renderAll();
+}
+
+/* 多行撑高:换行(Shift+Enter)或折行使内容超一行时,输入框向上长一行;超 MAX_H 出滚动条 */
+const LINE_H = 22.5;          // font-size 15 × line-height 1.5
+const MAX_H = LINE_H * 5;     // 5 行封顶
+function autosize() {
+  cmdline.style.height = 'auto';
+  const h = Math.min(cmdline.scrollHeight, MAX_H);
+  cmdline.style.height = `${h}px`;
+  cmdline.style.overflowY = cmdline.scrollHeight > MAX_H ? 'auto' : 'hidden';
+}
+
+cmdline.addEventListener('input', () => {
+  state.text = cmdline.value;
+  autosize();
+  const shouldOpen = state.text.startsWith('/') && state.text.length <= 48;
+  state.open = shouldOpen; if (shouldOpen) state.active = 0; renderAll();
+});
+
+cmdline.addEventListener('keydown', (e) => {
+  const list = filtered();
+  if (state.open && !isPermQuery() && list.length > 0) {
+    if (e.key === 'ArrowDown') { e.preventDefault(); state.active = (state.active + 1) % list.length; renderPopup(); return; }
+    if (e.key === 'ArrowUp')   { e.preventDefault(); state.active = (state.active - 1 + list.length) % list.length; renderPopup(); return; }
+    if (e.key === 'Tab' || (e.key === 'Enter' && !e.shiftKey)) { e.preventDefault(); pick(list[state.active]); return; }
+  }
+  if (e.key === 'Escape') {
+    if (state.open || menuOpen) { e.preventDefault(); state.open = false; menuOpen = null; renderPopup(); return; }
+  }
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); } // Shift+Enter 换行(A7#9)
+});
+
+/* A7#9 粘贴图片 */
+cmdline.addEventListener('paste', (e) => {
+  const files = [...(e.clipboardData?.files ?? [])].filter((f) => f.type.startsWith('image/'));
+  if (!files.length) return;
+  e.preventDefault();
+  files.forEach((f) => readImg(f));
+});
+
+/* A7#10 附件按钮 */
+$('attachBtn').addEventListener('click', () => $('fileInput').click());
+$('fileInput').addEventListener('change', (e) => { [...e.target.files].forEach(readImg); e.target.value = ''; });
+
+function readImg(file) {
+  const r = new FileReader();
+  r.onload = () => { state.images.push({ id: Math.random().toString(36).slice(2), url: r.result }); renderAll(); };
+  r.readAsDataURL(file);
+}
+
+/* A7#11 整页拖放 + DropOverlay */
+let dragDepth = 0;
+document.addEventListener('dragenter', (e) => { e.preventDefault(); if (++dragDepth === 1) $('dropOverlay').classList.add('show'); });
+document.addEventListener('dragover', (e) => e.preventDefault());
+document.addEventListener('dragleave', () => { if (--dragDepth <= 0) { dragDepth = 0; $('dropOverlay').classList.remove('show'); } });
+document.addEventListener('drop', (e) => {
+  e.preventDefault(); dragDepth = 0; $('dropOverlay').classList.remove('show');
+  [...(e.dataTransfer?.files ?? [])].filter((f) => f.type.startsWith('image/')).forEach(readImg);
+});
+
+/* A7#12 Lightbox 关闭 */
+$('lightbox').addEventListener('click', () => $('lightbox').classList.remove('show'));
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') {
+    $('lightbox').classList.remove('show');
+    if ($('riskMask').classList.contains('show')) closeRisk(true);
+  }
+});
+
+/* 按钮:A7#7 / #8 / #5 / #6 / #13 / #14 */
+$('mModel').addEventListener('click', () => { menuOpen = menuOpen === 'model' ? null : 'model'; state.open = false; renderPopup(); });
+$('addBtn').addEventListener('click', () => { menuOpen = menuOpen === 'cmd' ? null : 'cmd'; state.open = false; renderPopup(); });
+$('permChip').addEventListener('click', () => { menuOpen = menuOpen === 'perm' ? null : 'perm'; state.open = false; renderPopup(); });
+$('planChip').addEventListener('click', () => { state.planOn = !state.planOn; if (!state.planOn) logLine('<b>[CMD]</b> /plan off <span style="color:var(--text-tertiary)">→ session.command(demo)</span>'); renderAll(); });
+stopBtn.addEventListener('click', abort);
+goBtn.addEventListener('click', send);
+/* A7#2 插件槽:平时完全隐藏;仅「注入插件卡」后出现注入内容,卸载即隐 */
+let dockInjected = false;
+function renderDock() {
+  const d = $('dockslot');
+  d.hidden = !dockInjected;
+  if (dockInjected)
+    d.innerHTML = '<span style="color:var(--accent)">▣</span><span>插件测试卡 · host.call demo(conversation.input.dock 注入)</span><button id="dockFire">触发 host.call</button>';
+}
+$('dockslot').addEventListener('click', (e) => {
+  if (e.target.id === 'dockFire') logLine('<b>[SLOT]</b> 插件卡 host.call(demo)');
+});
+
+/* 点击弹层外关闭 */
+document.addEventListener('mousedown', (e) => {
+  if (popupEl && !popupEl.contains(e.target) && !['mModel','addBtn','permChip'].includes(e.target.id)) {
+    menuOpen = null; state.open = false; renderPopup();
+  }
+});
+
+/* ================= demo 操控条 ================= */
+$('ctlState').addEventListener('change', (e) => { state.sessionState = e.target.value; renderAll(); });
+$('ctlThink').addEventListener('change', (e) => { state.thinkingLevel = e.target.value || null; renderMicro(); });
+$('ctlCtx').addEventListener('input', (e) => {
+  const pct = Number(e.target.value);
+  $('ctlCtxVal').textContent = `${pct}%`;
+  state.ctxInput = Math.round((pct / 100) * state.contextWindow);
+  renderMicro();
+});
+$('ctlGoal').addEventListener('click', () => { state.goal = state.goal ? null : '示例目标:完成输入栏迁移'; renderAll(); });
+$('ctlTodos').addEventListener('click', () => { state.todosOn = !state.todosOn; renderAll(); });
+$('ctlImg').addEventListener('click', () => {
+  const svg = `<svg xmlns='http://www.w3.org/2000/svg' width='96' height='96'><rect width='96' height='96' fill='%23010a04'/><text x='48' y='54' fill='%2300ff41' font-size='14' text-anchor='middle' font-family='monospace'>IMG</text></svg>`;
+  state.images.push({ id: Math.random().toString(36).slice(2), url: `data:image/svg+xml,${svg}` });
+  renderAll();
+});
+$('ctlDock').addEventListener('click', function () {
+  dockInjected = !dockInjected;
+  this.textContent = dockInjected ? '卸载插件卡' : '注入插件卡';
+  logLine(`<b>[SLOT]</b> conversation.input.dock ${dockInjected ? '注入' : '卸载'}测试卡(demo)`);
+  renderAll();
+});
+
+/* ================= 氛围:极简数字雨(demo 语境,非迁移对象) ================= */
+const REDUCED = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const rain = $('rain'), rctx = rain.getContext('2d');
+const CHARS = 'アイウエオカキクケコサシスセソタチツテトナニヌネノ012345789*+<>:|';
+let cols = [], lastRain = 0;
+function sizeRain() {
+  rain.width = innerWidth; rain.height = innerHeight;
+  cols = Array.from({ length: Math.ceil(innerWidth / 18) }, () => Math.random() * -innerHeight / 18);
+  rctx.font = '18px monospace';
+}
+function drawRain(ts) {
+  if (ts - lastRain < 90) return requestAnimationFrame(drawRain);
+  lastRain = ts;
+  rctx.fillStyle = 'rgba(1, 10, 4, 0.035)'; rctx.fillRect(0, 0, rain.width, rain.height);
+  rctx.fillStyle = 'rgba(0, 255, 65, 0.5)';
+  cols.forEach((y, i) => {
+    rctx.fillText(CHARS[(Math.random() * CHARS.length) | 0], i * 18, y * 18);
+    cols[i] = y * 18 > innerHeight && Math.random() > 0.98 ? 0 : y + 1;
+  });
+  if (!REDUCED) requestAnimationFrame(drawRain);
+}
+addEventListener('resize', sizeRain);
+sizeRain();
+if (REDUCED) {
+  rctx.fillStyle = 'rgba(1, 10, 4, 1)'; rctx.fillRect(0, 0, rain.width, rain.height);
+  rctx.fillStyle = 'rgba(0, 255, 65, 0.18)';
+  cols.forEach((_, i) => { for (let j = 0; j < innerHeight / 18; j++) if (Math.random() > 0.85) rctx.fillText(CHARS[(Math.random() * CHARS.length) | 0], i * 18, j * 18); });
+} else requestAnimationFrame(drawRain);
+
+renderAll();
+cmdline.focus();
+</script>
+</body>
+</html>
