@@ -1,0 +1,395 @@
+{
+  "generatedAt": "2026-08-20T10:27:00.302Z",
+  "source": "docs/ui-component-inventory.md",
+  "entries": [
+    {
+      "id": "A1-appframe",
+      "name": "AppFrame",
+      "part": "A",
+      "desc": "UI 根壳",
+      "mount": "",
+      "entries": [],
+      "data": "",
+      "tag": "mixed",
+      "official": null
+    },
+    {
+      "id": "A2-sidebar",
+      "name": "Sidebar",
+      "part": "A",
+      "desc": "会话列表(入口最密集之二)",
+      "mount": "",
+      "entries": [
+        "1. `input.sidebar-search-input` 搜索 → 本地过滤(标题/sessionId)[official]",
+        "2. `button.sidebar-view-options` 视图选项 → Menu: 按工作区/单列表/手动排序/最近更新(本地 view state)[official]",
+        "3. `button.sidebar-new`「+」→ `createSession()`[official]",
+        "4. `button.sidebar-caret`(有子会话时)→ 展开/收起子会话行 [official]",
+        "5. `button.sidebar-row` 整行 → `selectSession(id)`[official]",
+        "6. `button.sidebar-row-menu`(⋯)→ 行菜单: **重命名**(→ Modal)/ **分叉会话**(→ `sessionRowActions.fork(id)`,成功选子代)/ **归档会话**(→ `sessionRowActions.archive(id)`)[official]",
+        "7. RenameSessionModal(vendor `Modal`): 输入 + 取消 + 保存(`sessionRowActions.rename`;Enter/Escape)[official]",
+        "8. 会话行拖拽(仅「按工作区」分组非未分组行)→ drop 上/下半 → `workspaceActions.insertSessionBefore`[official]",
+        "9. 工作区组头拖拽 → `workspaceActions.insertBefore`[official]",
+        "10. `button.sidebar-group-more`「+N 个更多…」→ 展开折叠组(COLLAPSED=5)[official]",
+        "11. `button.sidebar-settings-trigger`「⚙」→ 打开 `SettingsShell`[official]",
+        "12. `SlotAnchor slot=\"sidebar.footer.action\"` (插件可注入)[slot]"
+      ],
+      "data": "",
+      "tag": "mixed",
+      "official": null
+    },
+    {
+      "id": "A3-conversationdock",
+      "name": "ConversationDock",
+      "part": "A",
+      "desc": "会话主区",
+      "mount": "",
+      "entries": [],
+      "data": "",
+      "tag": "mixed",
+      "official": null
+    },
+    {
+      "id": "A4-chatview",
+      "name": "ChatView",
+      "part": "A",
+      "desc": "消息流",
+      "mount": "",
+      "entries": [
+        "1. 消息 `MessageIconActions`(vendor): 复制(正文 text)、分支(assistant,`forkNode`→`forkSession(node.anchorSeq)`)、hover 时间戳钟[official]",
+        "2. assistant 消息 `SlotAnchor slot=\"conversation.chat.assistant-actions\"` (插件可注入按钮)[slot]",
+        "3. 图片 `ImageGallery`(vendor ui-attachment): 点击 → `ImageLightbox` 原图(`wire.sessions.get(id).readAttachment(attachmentId)`)[official]",
+        "4. tool-call 节点: `ToolCallCard`(折叠)+ `toolName==='skill'` → `SkillRowSeat`;每工具 `SlotAnchor slot=\"tool.call.toolview\"` (keyed,ownerProps={tool,key})[slot]",
+        "5. turn-tail: `ProducedFilesSeat`(产物 chip → `wire.api.host.openPath`)[official]",
+        "6. workflow-run 节点: `WorkflowRunSeat`(openSession → `selectSession(id)`)[official]"
+      ],
+      "data": "",
+      "tag": "mixed",
+      "official": null
+    },
+    {
+      "id": "A5-detailspanel",
+      "name": "DetailsPanel",
+      "part": "A",
+      "desc": "右栏",
+      "mount": "",
+      "entries": [],
+      "data": "",
+      "tag": "mixed",
+      "official": null
+    },
+    {
+      "id": "A6-goalbar",
+      "name": "GoalBar",
+      "part": "A",
+      "desc": "目标条",
+      "mount": "",
+      "entries": [],
+      "data": "",
+      "tag": "mixed",
+      "official": {
+        "module": "@deepseek-ai/dsh-client-ui-goal",
+        "component": "GoalBar",
+        "modes": [
+          "overlay",
+          "real"
+        ]
+      }
+    },
+    {
+      "id": "A7-inputbar",
+      "name": "InputBar",
+      "part": "A",
+      "desc": "输入栏(入口最密集)",
+      "mount": "",
+      "entries": [
+        "1. 触发管线 `trigger.render()`(→ MenuView + PopupSelectView):输入 `/` 弹命令/技能菜单;`/permission` → popupSelect(Full access 风险确认 → `session.command('/permission <id>')`);↑/↓/Enter/Escape 仲裁 [official]",
+        "2. `SlotAnchor slot=\"conversation.input.dock\"` (插件可注入状态卡/host.call 测试)[slot]",
+        "3. `TodoDockSeat`(composer 上方 plan strip)[official]",
+        "4. `GoalBar`(A6)[zion-add]",
+        "5. `PermissionChip`(B8)→ 预设菜单 → `/permission <id>` [official]",
+        "6. `PlanSeat`(B9)→ `session.command('/plan off')`[official]",
+        "7. `ModelSelectAdapter`(B6,模型/推理等级两列菜单 → sessions.selectModel)[official]",
+        "8. `button.input-bar-add`「+」→ 命令列表;`command-panel-item` → `pickCommand`(`/name ` 入草稿)[official]",
+        "9. textarea:Enter 发送 / Shift+Enter 换行;触发管线 track/arbitrate;粘贴图片 [official]",
+        "10. `button.input-bar-attach`「📎」→ 隐藏 file input → `readFiles`(FileReader→base64 PendingImage)[official]",
+        "11. 整页拖放摄入:document 级 dragenter/over/leave/drop + `DropOverlay` 覆盖层 [official]",
+        "12. `AttachmentRail`(vendor):点击缩略图 → `ImageLightbox`;移除按钮 → 删本地图 [official]",
+        "13. `button.input-bar-stop`「停止」(running)→ `stop()`(session.cancel)[official]",
+        "14. `button.input-bar-send`「发送」→ submit():以 `/` 开头 → `runCommand(text)`(session.command);否则 `sendPrompt(parts)`(session.prompt(parts,'queue');运行中亦可排队)[official]",
+        "15. `ContextMeterSeat`(composer 尾部上下文环)[official]"
+      ],
+      "data": "",
+      "tag": "mixed",
+      "official": null
+    },
+    {
+      "id": "A8-pluginhost",
+      "name": "PluginHost",
+      "part": "A",
+      "desc": "插件控制台(zion 附加)",
+      "mount": "",
+      "entries": [],
+      "data": "",
+      "tag": "mixed",
+      "official": null
+    },
+    {
+      "id": "A9-subagentpanel",
+      "name": "SubagentPanel",
+      "part": "A",
+      "desc": "子代理面板(zion 附加)",
+      "mount": "",
+      "entries": [],
+      "data": "",
+      "tag": "mixed",
+      "official": null
+    },
+    {
+      "id": "A10-toolcallcard",
+      "name": "ToolCallCard",
+      "part": "A",
+      "desc": "工具调用卡",
+      "mount": "",
+      "entries": [],
+      "data": "",
+      "tag": "mixed",
+      "official": null
+    },
+    {
+      "id": "A11-workspacemenu",
+      "name": "WorkspaceMenu",
+      "part": "A",
+      "desc": "工作区切换",
+      "mount": "",
+      "entries": [],
+      "data": "",
+      "tag": "mixed",
+      "official": null
+    },
+    {
+      "id": "A12-settingsshell",
+      "name": "SettingsShell",
+      "part": "A",
+      "desc": "设置",
+      "mount": "",
+      "entries": [
+        "- **插件分区**(`PluginsSettingsSection`,复刻官方 ui-settings-plugins 形态):标题「插件」+ intro + 两 tab[official];「插件配置」tab 三卡片(终端 shell / Agent 循环 agent-loop / 网页搜索 web-search-deepseek)——展开/字段编辑(已覆盖徽标+恢复默认)/保存(settings.mutate,revision 栅栏;网页搜索 API key 走 credentials.set)/放弃修改[official];「插件列表」tab 只读清单(pluginInventory/list)——三组(官方/MCP/社区)+ 组头计数 + 搜索(组内过滤)+ 状态点 + 已启用/已停用标签 + 展开详情(entryId/配置状态/Cordis 状态),社区行带「社区」徽标 + 展开说明「UI 注入面在复刻 UI 中未实现」[official 分组为 zion-add]。"
+      ],
+      "data": "",
+      "tag": "official",
+      "official": null
+    },
+    {
+      "id": "A13-queuedock",
+      "name": "QueueDock",
+      "part": "A",
+      "desc": "队列",
+      "mount": "",
+      "entries": [],
+      "data": "",
+      "tag": "mixed",
+      "official": null
+    },
+    {
+      "id": "b-agent-preset-四表面",
+      "name": "agent-preset 四表面",
+      "part": "B",
+      "desc": "表格行(座位/适配层)",
+      "mount": "",
+      "entries": [],
+      "data": "agent-preset 四表面 | `agent-preset.tsx` | AgentPresetRow/Label/Seat/Section | controller store 经 bindSnapshotSelector | Row 默认预设选择;Seat chip 选择+introduced;Section 查看/复制两段/删除/设默认/打开目录/创作 → sessions.create | wire.api、useSessions、selectedSessionId;等位 SlotMap settings.general.item/settings.section",
+      "tag": "mixed",
+      "official": null
+    },
+    {
+      "id": "b-composer-stats-三-seat",
+      "name": "composer-stats 三 seat",
+      "part": "B",
+      "desc": "表格行(座位/适配层)",
+      "mount": "",
+      "entries": [],
+      "data": "composer-stats 三 seat | `composer-stats.tsx` | ContextMeter/StatsLine/TodoDock | useProjection/useSession/sessionId/t | 上下文环+面板;统计条;todo strip(缺投影不渲染) | contextPressure/contextBreakdown/sessionStats/tokenUsage/todos",
+      "tag": "mixed",
+      "official": {
+        "module": "@deepseek-ai/dsh-client-ui-conversation",
+        "component": null,
+        "modes": [
+          "real"
+        ],
+        "aliases": [
+          "TodoDock",
+          "TodoPanel"
+        ]
+      }
+    },
+    {
+      "id": "b-composerseat",
+      "name": "ComposerSeat",
+      "part": "B",
+      "desc": "表格行(座位/适配层)",
+      "mount": "",
+      "entries": [],
+      "data": "ComposerSeat | `composer-takeover.tsx` | ApprovalPanel / QuestionComposer / SubagentReadOnly | 选举 approval>question>只读>InputBar | 审批允许/拒绝;问答流+PlanReview;只读接管提示 | useConversation(pending/subagent/running)",
+      "tag": "mixed",
+      "official": null
+    },
+    {
+      "id": "b-workspacedirectorybrowser",
+      "name": "WorkspaceDirectoryBrowser",
+      "part": "B",
+      "desc": "表格行(座位/适配层)",
+      "mount": "",
+      "entries": [],
+      "data": "WorkspaceDirectoryBrowser | `directory-browser.tsx` | DirectoryBrowser(ui-directory-picker-browse) | open/busy/listDirectory/createDirectory/onOpen/onClose/t | Miller 导航/新建文件夹/编辑路径/隐藏文件/打开→workspace.create | host.listDirectory/createDirectory、workspace.create",
+      "tag": "mixed",
+      "official": null
+    },
+    {
+      "id": "b-joblistactionseat",
+      "name": "JobListActionSeat",
+      "part": "B",
+      "desc": "表格行(座位/适配层)",
+      "mount": "",
+      "entries": [],
+      "data": "JobListActionSeat | `job-list-action.tsx` | JobListAction(ui-jobs) | sessionId/useSessions/t | 后台任务 badge + 任务列表 | useSessions jobsBySession",
+      "tag": "mixed",
+      "official": {
+        "module": "@deepseek-ai/dsh-client-ui-jobs",
+        "component": null,
+        "modes": []
+      }
+    },
+    {
+      "id": "b-modelselectadapter",
+      "name": "ModelSelectAdapter",
+      "part": "B",
+      "desc": "表格行(座位/适配层)",
+      "mount": "",
+      "entries": [],
+      "data": "ModelSelectAdapter | `model-select.tsx` | ModelSelect(ui-model-selection) | directory(每会话 ModelDirectory)/load/select/available/locked/t | 两列菜单(模型/推理等级)+ Retry | sessions.models/selectModel",
+      "tag": "mixed",
+      "official": null
+    },
+    {
+      "id": "b-permissionsettingsrow-permissionchip",
+      "name": "PermissionSettingsRow / PermissionChip",
+      "part": "B",
+      "desc": "表格行(座位/适配层)",
+      "mount": "",
+      "entries": [],
+      "data": "PermissionSettingsRow / PermissionChip | `permission-ui.tsx` | PermissionRow(ui-permission-presets) / PermissionSelectChip | controller(bindSnapshotSelector);usePermissions/useConversation | 默认预设选择(Full access 风险确认);chip → /permission | settings.describe/mutate;permissions 投影",
+      "tag": "mixed",
+      "official": null
+    },
+    {
+      "id": "b-planseat",
+      "name": "PlanSeat",
+      "part": "B",
+      "desc": "表格行(座位/适配层)",
+      "mount": "",
+      "entries": [],
+      "data": "PlanSeat | `plan-seat.tsx` | PlanChip(ui-plan) | useProjection('plan')/locked/exitPlanMode/t | plan chip → /plan off | plan 投影",
+      "tag": "mixed",
+      "official": null
+    },
+    {
+      "id": "b-producedfilesseat-workflowrunseat",
+      "name": "ProducedFilesSeat / WorkflowRunSeat",
+      "part": "B",
+      "desc": "表格行(座位/适配层)",
+      "mount": "",
+      "entries": [],
+      "data": "ProducedFilesSeat / WorkflowRunSeat | `run-surfaces.tsx` | ProducedFiles(ui-deliverables) / WorkflowRunPanel(ui-workflow-run) | matched/openFile(host.openPath)/openSession(selectSession)/t | 产物 chip → 打开路径;workflow → 打开会话 | host.openPath、deliverables 累积、useSessions",
+      "tag": "mixed",
+      "official": null
+    },
+    {
+      "id": "b-skillrowseat",
+      "name": "SkillRowSeat",
+      "part": "B",
+      "desc": "表格行(座位/适配层)",
+      "mount": "",
+      "entries": [],
+      "data": "SkillRowSeat | `skill-row.tsx` | SkillRow(ui-skill) | block/t | skill 工具行(无 Inspect,无 trajectory inspect 台账) | ToolCallBlock",
+      "tag": "mixed",
+      "official": null
+    },
+    {
+      "id": "b-subagentcatalogactionseat-subagentreadonlyseat",
+      "name": "SubagentCatalogActionSeat / SubagentReadOnlySeat",
+      "part": "B",
+      "desc": "表格行(座位/适配层)",
+      "mount": "",
+      "entries": [],
+      "data": "SubagentCatalogActionSeat / SubagentReadOnlySeat | `subagent.tsx` | SubagentCatalogAction / SubagentReadOnlyComposer(ui-subagent) | openChild(selectSession)/refresh/setCatalogOpen/t | 目录树展开/打开子会话/刷新;只读提示 | subagentsByParent、wire.sessions.refreshSubagents",
+      "tag": "mixed",
+      "official": null
+    },
+    {
+      "id": "b-usetriggerpipeline",
+      "name": "useTriggerPipeline",
+      "part": "B",
+      "desc": "表格行(座位/适配层)",
+      "mount": "",
+      "entries": [],
+      "data": "useTriggerPipeline | `trigger-menu.tsx` | InputTriggerController/MenuView(ui-input-trigger) + PopupSelectController/View(ui-commands) | roster 每会话(/命令 + /技能);usePermissions | MenuView 候选点击 → /name 落草稿;PopupSelect `/permission` → session.command | commands.list、skills.list、permissions 投影",
+      "tag": "mixed",
+      "official": null
+    },
+    {
+      "id": "b-trajectorypane",
+      "name": "TrajectoryPane",
+      "part": "B",
+      "desc": "表格行(座位/适配层)",
+      "mount": "",
+      "entries": [],
+      "data": "TrajectoryPane | `trajectory-pane.tsx` | TrajectoryView(ui-trajectory) | useSession/useDuration/loadOlder/setActualDuration/t | 轨迹视图(loadOlder/时长开关) | views.get('trajectory')",
+      "tag": "mixed",
+      "official": null
+    },
+    {
+      "id": "b-conversationdock-汇编",
+      "name": "ConversationDock 汇编",
+      "part": "B",
+      "desc": "表格行(座位/适配层)",
+      "mount": "",
+      "entries": [],
+      "data": "ConversationDock 汇编 | `conversation.ts`(非 UI) | 注册 chat/轨迹/deliverables/workflow-run Definitions | — | — | ConversationEventRegistry/ViewRegistry",
+      "tag": "mixed",
+      "official": null
+    },
+    {
+      "id": "c-anchors-tsx",
+      "name": "`anchors.tsx`",
+      "part": "C",
+      "desc": "表格行(座位/适配层)",
+      "mount": "",
+      "entries": [],
+      "data": "`anchors.tsx` | `SlotAnchor` | 附加型槽渲染器(list/keyed/single);**渲染面挂载的 6 槽**:`shell.overlay`、`conversation.input.dock`、`sidebar.footer.action`、`tool.call.toolview`(keyed)、`conversation.chat.assistant-actions`、`settings.plugin.item`(keyed)——不入删除范围",
+      "tag": "mixed",
+      "official": null
+    },
+    {
+      "id": "c-hub-tsx",
+      "name": "`hub.tsx`",
+      "part": "C",
+      "desc": "表格行(座位/适配层)",
+      "mount": "",
+      "entries": [],
+      "data": "`hub.tsx` | `PluginProvider` / `usePlugins` / `getPluginRuntimeHandle` | React hub;PluginRuntime+SlotRegistry+CordisRunOrchestrator;`__zionProbeHandleRemoteEvent` 探针钩子;setRpc 用 wire rpc 重建 remote",
+      "tag": "mixed",
+      "official": null
+    },
+    {
+      "id": "c-remote-ts",
+      "name": "`remote.ts`",
+      "part": "C",
+      "desc": "表格行(座位/适配层)",
+      "mount": "",
+      "entries": [],
+      "data": "`remote.ts` | `createCordisRunnerRemote` | dynamicCordisRunner 桥(rpc.call /api/dynamicCordisRunner/<method>):inventory/runHostHalf/getClientCode/resolveRequestRun/settleUserRun/stopFromPanel/undefineFromPanel/invoke",
+      "tag": "mixed",
+      "official": null
+    }
+  ]
+}

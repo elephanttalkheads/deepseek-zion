@@ -8,6 +8,9 @@
   "main": "main.mjs",
   "scripts": {
     "start": "electron .",
+    "start:inspector": "electron . --inspector",
+    "start:inspector:fixture": "electron . --inspector --fixture",
+    "inspector:gen": "node inspector/gen-manifest.mjs",
     "start:replica": "electron . --replica",
     "dev": "electron . --dev",
     "dev:web": "vite --config renderer/vite.config.ts",

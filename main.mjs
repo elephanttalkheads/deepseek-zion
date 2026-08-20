@@ -19,6 +19,7 @@
 import { BrowserWindow, app, shell } from 'electron'
 import { spawn } from 'node:child_process'
 import fs from 'node:fs'
+import http from 'node:http'
 import net from 'node:net'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -31,6 +32,17 @@ const DEFAULT_PORT = 3080
 const PROBE_TIMEOUT = 1200 // ms per single port probe
 const SPAWN_WAIT_LIMIT = 60_000 // give dsh up to 60s to boot
 const SPAWN_PROBE_INTERVAL = 800
+
+// --- inspector mode (组件召唤器,官方原版 UI 应用内) ----------------
+// `electron . --inspector`:加载官方 3080 UI 后注入组件召唤面板(悬浮按钮+舞台),
+// 并在 127.0.0.1:5198 起本地控制口(CLI: node inspector/cli.mjs …)。
+// `--fixture`:页面 URL 带 ?fixture(官方 in-process 假后端,真实配方零副作用)。
+// `--hidden`:窗口不显示(适合 AI 无头验收;截图仍可用 capturePage)。
+const INSPECTOR_MODE = process.argv.includes('--inspector')
+const FIXTURE_MODE = process.argv.includes('--fixture')
+const HIDDEN_MODE = process.argv.includes('--hidden')
+const INSPECTOR_PORT = 5198
+const INSPECTOR_SHOT_DIR = path.join(__dirname, 'inspector', 'shot-out')
 
 // --- replica mode (electron shell for OUR renderer) -----------
 // `electron . --replica` 加载复刻界面(renderer/dist 经 vite preview 服务):
@@ -185,6 +197,9 @@ function createWindow(url) {
     backgroundColor: '#0b0f0b',
     title: 'DeepSeek Zion',
     autoHideMenuBar: true,
+    // --hidden:窗口移到屏外而非隐藏 —— capturePage 对「显示中」窗口最稳,
+    // 屏外位置保证截图可用又不打扰桌面。
+    ...(HIDDEN_MODE ? { x: -32000, y: -32000 } : {}),
     webPreferences: {
       contextIsolation: true,
       nodeIntegration: false,
@@ -207,8 +222,185 @@ function createWindow(url) {
   win.loadURL(url)
   win.webContents.once('did-finish-load', () => {
     console.log(`[zion] window loaded: ${url}`)
+    if (INSPECTOR_MODE) void installInspector(win)
   })
   return win
+}
+
+// --- inspector (组件召唤器) --------------------------------------
+// 注入:manifest(JSON) + page-panel.js + recipes.js → 页面 boot 完成后执行。
+// 控制口:127.0.0.1:5198(仅 --inspector;回环绑定,dev 工具)。
+let inspectorServer = null
+let inspectorQueue = Promise.resolve() // 页面操作串行化(挂载/截图不打架)
+
+const INSPECTOR_MANIFEST_FILE = path.join(__dirname, 'inspector', 'manifest.json')
+const INSPECTOR_PANEL_JS = path.join(__dirname, 'inspector', 'page-panel.js')
+const INSPECTOR_RECIPES_JS = path.join(__dirname, 'inspector', 'recipes.js')
+
+/** 轮询等待页面 boot 完成(window.__DSH_MODULES__ 出现)。 */
+async function waitForPageBoot(wc, limitMs = 60_000) {
+  const start = Date.now()
+  for (;;) {
+    try {
+      const ready = await wc.executeJavaScript('!!window.__DSH_MODULES__')
+      if (ready) return true
+    } catch { /* page mid-load */ }
+    if (Date.now() - start > limitMs) return false
+    await new Promise((r) => setTimeout(r, 500))
+  }
+}
+
+async function installInspector(win) {
+  const wc = win.webContents
+  // 屏外/隐藏窗口会被节流(rAF/定时器暂停)→ 挂载/等待永不完成;关掉节流。
+  wc.setBackgroundThrottling(false)
+  const booted = await waitForPageBoot(wc)
+  if (!booted) {
+    console.error('[zion-inspector] 页面 60s 内未暴露 window.__DSH_MODULES__ —— 不注入召唤器')
+    return
+  }
+  let bundle = 'window.__ZION_INSPECTOR_MANIFEST__ = ' + fs.readFileSync(INSPECTOR_MANIFEST_FILE, 'utf8') + ';\n'
+  bundle += fs.readFileSync(INSPECTOR_PANEL_JS, 'utf8') + '\n'
+  bundle += fs.readFileSync(INSPECTOR_RECIPES_JS, 'utf8') + '\n'
+  bundle += 'void 0;\n' // 完成值必须是可克隆的(undefined);否则 IPC 报 "could not be cloned"
+  try {
+    await wc.executeJavaScript(bundle)
+    console.log('[zion-inspector] 召唤面板已注入(悬浮按钮:右下角「⿻ 组件」;控制口 127.0.0.1:' + INSPECTOR_PORT + ')')
+  } catch (err) {
+    console.error('[zion-inspector] 注入失败:', err?.message ?? err)
+    return
+  }
+  startInspectorServer(win)
+}
+
+/** 页内执行一段 JS,把返回值(必须是 JSON 安全值)取回主进程。 */
+async function pageCall(wc, expr) {
+  const result = await wc.executeJavaScript(`(async () => {
+    try { return { __ok: true, value: await (${expr}) } }
+    catch (e) { return { __ok: false, error: String(e && e.message || e) } }
+  })()`)
+  if (!result || result.__ok !== true) {
+    const msg = (result && result.error) || 'page call failed'
+    throw new Error(msg)
+  }
+  return result.value
+}
+
+/** 保存 capturePage 结果为 PNG;rect 存在则只截该区域(DIP)。 */
+async function saveShot(win, rect, name) {
+  fs.mkdirSync(INSPECTOR_SHOT_DIR, { recursive: true })
+  const image = rect
+    ? await win.webContents.capturePage({ x: rect.x, y: rect.y, width: rect.width, height: rect.height })
+    : await win.webContents.capturePage()
+  const file = path.join(INSPECTOR_SHOT_DIR, `${name || 'shot'}.png`)
+  fs.writeFileSync(file, image.toPNG())
+  return file
+}
+
+function startInspectorServer(win) {
+  if (inspectorServer) return
+  fs.mkdirSync(INSPECTOR_SHOT_DIR, { recursive: true })
+  const send = (res, code, obj) => {
+    res.writeHead(code, {
+      'Content-Type': 'application/json; charset=utf-8',
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'GET,POST,OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type',
+    })
+    res.end(JSON.stringify(obj))
+  }
+  inspectorServer = http.createServer((req, res) => {
+    if (req.method === 'OPTIONS') return send(res, 204, {})
+    const url = new URL(req.url ?? '/', 'http://127.0.0.1')
+    const route = url.pathname
+    const wc = win.webContents
+    const readBody = () => new Promise((resolve) => {
+      let data = ''
+      req.on('data', (c) => { data += c })
+      req.on('end', () => { try { resolve(JSON.parse(data || '{}')) } catch { resolve({}) } })
+    })
+    const enqueue = (fn) => {
+      const task = inspectorQueue.then(fn, fn) // 上一任务失败不阻塞后续
+      inspectorQueue = task.catch(() => {})
+      return task
+    }
+    if (route === '/api/inspector/status' || route === '/') {
+      return send(res, 200, {
+        ok: true,
+        app: 'deepseek-zion inspector',
+        controlPort: INSPECTOR_PORT,
+        url: wc.getURL(),
+        fixture: wc.getURL().includes('fixture'),
+        hidden: HIDDEN_MODE,
+      })
+    }
+    if (route === '/api/inspector/list') {
+      return enqueue(() => pageCall(wc, 'window.__zionInspector.list()')
+        .then((entries) => send(res, 200, { ok: true, entries }))
+        .catch((e) => send(res, 200, { ok: false, error: String(e.message || e) })))
+    }
+    if (route === '/api/inspector/summon') {
+      return enqueue(() => readBody().then((b) =>
+        pageCall(wc, `window.__zionInspector.summon(${JSON.stringify(b.id)}, ${JSON.stringify(b.opts || {})})`)
+          .then((r) => send(res, 200, { ok: true, ...r }))
+          .catch((e) => send(res, 200, { ok: false, error: String(e.message || e) }))))
+    }
+    if (route === '/api/inspector/raw') {
+      return enqueue(() => readBody().then((b) =>
+        pageCall(wc, `window.__zionInspector.summonRaw(${JSON.stringify(b.module)}, ${JSON.stringify(b.component)}, ${JSON.stringify(b.props ?? {})})`)
+          .then((r) => send(res, 200, { ok: true, ...r }))
+          .catch((e) => send(res, 200, { ok: false, error: String(e.message || e) }))))
+    }
+    if (route === '/api/inspector/recipe') {
+      return enqueue(() => readBody().then((b) =>
+        pageCall(wc, `window.__zionInspector.recipe(${JSON.stringify(b.id)})`)
+          .then((r) => send(res, 200, { ok: true, ...r }))
+          .catch((e) => send(res, 200, { ok: false, error: String(e.message || e) }))))
+    }
+    if (route === '/api/inspector/close') {
+      return enqueue(() => pageCall(wc, 'window.__zionInspector.close()')
+        .then(() => send(res, 200, { ok: true }))
+        .catch((e) => send(res, 200, { ok: false, error: String(e.message || e) })))
+    }
+    if (route === '/api/inspector/eval') {
+      // 原始 JS 执行(dev 探针;仅回环绑定)。表达式求值为 JSON 安全值。
+      return enqueue(() => readBody().then((b) => {
+        const code = String(b.code ?? '')
+        return wc.executeJavaScript(`(async () => {
+          try { return { __ok: true, value: await (${code}) } }
+          catch (e) { return { __ok: false, error: String(e && e.message || e) } }
+        })()`)
+          .then((r) => send(res, 200, r && r.__ok === true ? { ok: true, value: r.value } : { ok: false, error: (r && r.error) || 'eval failed' }))
+          .catch((e) => send(res, 200, { ok: false, error: String(e.message || e) }))
+      }))
+    }
+    if (route === '/api/inspector/shot') {
+      return enqueue(() => readBody().then(async (b) => {
+        try {
+          let rect = null
+          if (b.selector) {
+            const r = await pageCall(wc, `window.__zionInspector.elementRect(${JSON.stringify(b.selector)})`)
+            rect = r && r.rect ? r.rect : null
+          } else if (b.rect) {
+            rect = b.rect
+          }
+          const name = String(b.name || 'shot').replace(/[^a-zA-Z0-9._-]/g, '') || 'shot'
+          const file = await saveShot(win, rect, name)
+          send(res, 200, { ok: true, path: file, rect })
+        } catch (e) {
+          send(res, 200, { ok: false, error: String(e.message || e) })
+        }
+      }))
+    }
+    send(res, 404, { ok: false, error: `unknown route: ${route}` })
+  })
+  inspectorServer.on('error', (err) => {
+    console.error(`[zion-inspector] 控制口 127.0.0.1:${INSPECTOR_PORT} 启动失败:`, err.message)
+    inspectorServer = null
+  })
+  inspectorServer.listen(INSPECTOR_PORT, '127.0.0.1', () => {
+    console.log(`[zion-inspector] 控制口就绪: http://127.0.0.1:${INSPECTOR_PORT} (CLI: node inspector/cli.mjs status)`)
+  })
 }
 
 // --- lifecycle ------------------------------------------------
@@ -219,7 +411,7 @@ app.whenReady().then(async () => {
       url = await startReplica()
     } else {
       await ensureServer(PORT)
-      url = `http://127.0.0.1:${PORT}`
+      url = FIXTURE_MODE ? `http://127.0.0.1:${PORT}/?fixture` : `http://127.0.0.1:${PORT}`
     }
     createWindow(url)
   } catch (err) {

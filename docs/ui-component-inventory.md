@@ -305,6 +305,8 @@ npx electron probe-trajectory-real.mjs    # 轨迹视图
 按 §3 总索引逐行确认存在且可操作;视觉/布局改动另跑截图对照(vision-skills)。
 ```
 
+> 想「亲眼看」官方组件的真实运行状态(而非读文字):`npm run start:inspector:fixture` 启动官方原版 UI + 组件召唤器(右下角「⿻ 组件」面板;AI 用 `node inspector/cli.mjs summon|recipe|raw|shot`),见 `inspector/README.md`。舞台 overlay 只支持官方模块**导出值**组件(如 ui-goal 的 GoalBar);未导出组件(TodoDock/TodoPanel、JobListAction)走真实配方(如 `/goal` 命令、fx-alpha 会话 todo 投影)。
+
 > AGENTS.md 铁律:若本次重构包含删除既有展示元素/入口,先建 `ui-change-log/YYYY-MM-DD--<name>.md` 记录(删什么/为何/替代/验证)再删。
 
 ---

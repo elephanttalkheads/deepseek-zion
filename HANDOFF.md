@@ -36,12 +36,17 @@
 - ④ 会话导出按钮 → **已核定为 N/A**(官方 web 客户端无该按钮,`downloads` 是 host-only 通道;见 §3)
 - **归档过滤修复(bugfix)** ✅ 归档的会话从侧边栏消失(官方 ui-workspace 语义;真实后端只发 host/archived-sessions-changed、zion 此前未过滤 → 归档后行不消失 + 官方 3080 隐藏的那批会话全显示);probe-archive-filter real 4/4 + fixture 4/4,workspace-actions fixture 回归 8/8
 - **插件设置分区(对齐官方 ui-settings-plugins)** ✅ 移除多余「插件清单」导航项;「插件」页 = 两 tab(插件配置:终端/Agent 循环/网页搜索三卡可编辑(settings.mutate+revision 栅栏,网页搜索 API key 走 credentials.set);插件列表:pluginInventory/list 只读清单,grilling 共识三组 官方/MCP/社区,社区行徽标+UI 注入未实现说明,组头计数+搜索+状态点+展开);fixture 补三 ns + pluginInventory 端点;probe-plugin-settings fixture 8/8 + real 8/8;settings 回归 fixture 11/11;CONTEXT 补「插件类别」词条- **插件计数会波动(已知现象,非 bug)**:pluginInventory 的 `include:agent-presets:*` 组是「当前生效预设展开的 Loader 条目」,随 agentPresets.select 切换/懒加载变化(如 27→6 条,总数 168→147);其它组(官方 include 137 + 非 include 4)恒定。用户看到计数变化时先看 agent-presets 组,别误判为插件丢失。2026-08-20 核验:dsh-agent-presets 8/19 被重写过(同版本 rc.7),3080 9:55 启动,与 zion 代码修改无关。
+- **组件召唤器 inspector(官方原版 UI 内呼出真实组件)** ✅ 
+pm run start:inspector[:fixture]:官方 3080 页面注入悬浮面板(右下角「⿻ 组件」)+ 控制口 5198 + 
+ode inspector/cli.mjs。原理:官方页面暴露 window.__DSH_MODULES__(ClientModuleSystem)→ 动态 import 官方 client 模块拿真实组件(React 同实例挂载,舞台 overlay),或真实配方驱动官方 UI 状态(composer 键入 /goal → 真实 GoalBar;选 fx-alpha + 驳回常驻审批 → 真实 TodoDock plan strip)。已验:GoalBar 三态舞台 + 真实 goal + TodoDock 真实 + raw/eval/shot/close 全通(截图进 inspector/shot-out/)。fixture 环境两坑已自动处理:「内测声明」弹窗(fixture 无法持久化确认 → 移除 dialog)与 composer 接管(常驻审批点「拒绝」/问题组「放弃整组问题」)。manifest 由 docs/ui-component-inventory.md 生成(
+pm run inspector:gen);overlay 仅限**模块导出值**组件(ui-goal 导出 GoalBar/GoalDock;TodoPanel/JobListAction 未导出 → 只能真实配方)。
 
 ---
 
 ## 1. 最近提交链(自本会话;`main` 最新行在前)
 
 | 提交 | 内容 |
+| `(本轮)` | 组件召唤器 inspector:main.mjs 加 --inspector/--fixture/--hidden(官方原版 UI 注入召唤面板 + 127.0.0.1:5198 控制口 + capturePage 区域截图);inspector/page-panel.js(舞台挂载引擎:window.__DSH_MODULES__ 动态 import 官方模块 + React 同实例 + 悬浮面板)+ recipes.js(GoalBar 三态舞台 / 真实 /goal / TodoDock 真实:选 fx-alpha + 驳回常驻审批 + 移除内测声明 dialog)+ cli.mjs(status/list/summon/raw/recipe/shot/eval/close)+ gen-manifest.mjs(解析 ui-component-inventory.md → manifest.json)+ npm scripts start:inspector[:fixture]/inspector:gen;验证:GoalBar 三态+真实、TodoDock 真实、raw、eval、close 全通,截图清晰(inspector/shot-out/ 已 gitignore);README+HANDOFF 同步 |
 | `(本轮)` | 插件设置分区:SettingsShell 移除「插件清单」导航项(官方无独立导航项);新增 PluginsSettingsSection(插件配置三卡 + 插件列表三组 官方/MCP/社区,社区徽标+UI 注入未实现说明);fixture 补 shell/agent-loop/web-search-deepseek ns + mutate + pluginInventory/list 端点;probe-plugin-settings fixture 8/8 + real 8/8;probe-settings S3 断言更新(导航无插件清单);ui-component-inventory/CONTEXT/HANDOFF 同步
 | `bf486e1` | 归档过滤修复:runtime 捕获 workspace.list 的 archivedSessionIds(此前被丢弃)+ onHost 消费 host/archived-sessions-changed + 选中会话被归档后清空选择;Sidebar rows 排除已归档会话(flat + 分组同源,官方 deriveFlat/sessionVisible 语义)+ 行 data-session-id;新 probe-archive-filter(真后端 8 个已归档不进侧边栏/归档行消失/清空回归/入口保留 4-4);typecheck 基线 172 行不新增;gitignore 补 probe-archive-filter-out/
 | `(本轮,见 git log)` | cordis 插件面板增强 ⑪:remote 补 stopFromPanel/undefineFromPanel + hub stopRow/removeRow/setRpc(wire rpc 注入)+ PluginHost 行增强(版本选择器/运行 run|update/停止/移除/重试下一版本/回滚)+ fixture 内存清单端点全链;probe-cordis-panel fixture 6/6 + real 6/6 |
