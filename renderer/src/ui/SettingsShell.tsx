@@ -10,9 +10,10 @@ import { useCallback, useEffect, useState } from 'react'
 import { useRuntime } from '../app/runtime.tsx'
 import { PermissionSettingsRow } from '../app/permission-ui.tsx'
 import { AgentPresetRowSeat, AgentPresetSectionSeat } from '../app/agent-preset.tsx'
+import { PluginsSettingsSection } from './PluginsSettingsSection.tsx'
 import type { SettingsNamespaceView, ConfigurableProviderView } from '@deepseek-ai/dsh-host-apiproxy/api'
 
-type SectionId = 'general' | 'models' | 'agent' | 'plugins' | 'inventory'
+type SectionId = 'general' | 'models' | 'agent' | 'plugins'
 
 const THEME_CHOICES = [
   { id: 'light', label: '浅色' },
@@ -115,7 +116,6 @@ export function SettingsShell({ open, onClose }: { open: boolean; onClose: () =>
               ['models', '模型'],
               ['agent', 'Agent 预设'],
               ['plugins', '插件'],
-              ['inventory', '插件清单'],
             ] as const).map(([id, label]) => (
               <button
                 key={id}
@@ -182,15 +182,7 @@ export function SettingsShell({ open, onClose }: { open: boolean; onClose: () =>
 
             {section === 'plugins' && (
               <div className="settings-section">
-                <h2 className="settings-section-title">插件</h2>
-                <p className="settings-hint">可配置插件卡片(Bash / AgentLoop / WebSearch)下一期接入。</p>
-              </div>
-            )}
-
-            {section === 'inventory' && (
-              <div className="settings-section">
-                <h2 className="settings-section-title">插件清单</h2>
-                <p className="settings-hint">pluginInventory 只读清单下一期接入。</p>
+                <PluginsSettingsSection wire={wire} onError={(m) => setWriteError(m)} />
               </div>
             )}
           </div>

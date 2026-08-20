@@ -738,3 +738,71 @@ body {
 .plugin-console-row[data-cordis-status="running"] .plugin-console-name::after { content: ' ●'; color: var(--dsw-alias-state-success-primary, #22c55e); font-size: 10px; }
 .plugin-console-danger { color: var(--dsw-alias-state-error-primary, #ff6b6b) !important; }
 .plugin-console-transition { display: inline-flex; align-items: center; gap: 6px; }
+
+/* ===== 插件设置分区(插件配置三卡 + 插件列表三组) ===== */
+.plugins-section { display: flex; flex-direction: column; gap: 10px; }
+.plugins-tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--border, rgba(128,128,128,.25)); }
+.plugins-tab { background: none; border: none; color: var(--text, #d8d8d8); padding: 6px 12px; cursor: pointer; font-size: 13px; opacity: .75; border-bottom: 2px solid transparent; }
+.plugins-tab:hover { opacity: 1; }
+.plugins-tab[data-active] { opacity: 1; border-bottom-color: var(--accent, #4a6cf7); color: var(--accent, #4a6cf7); }
+
+.plugin-cards { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.plugin-card { border: 1px solid var(--border, rgba(128,128,128,.3)); border-radius: 8px; overflow: hidden; }
+.plugin-card-header { display: flex; align-items: center; gap: 10px; width: 100%; background: none; border: none; color: var(--text, #d8d8d8); padding: 10px 12px; cursor: pointer; text-align: left; font: inherit; }
+.plugin-card-header:hover { background: rgba(128,128,128,.08); }
+.plugin-card-headtext { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.plugin-card-name { font-weight: 600; font-size: 13px; }
+.plugin-card-description { font-size: 12px; opacity: .65; }
+.plugin-card-pending { font-size: 11px; color: #d29922; }
+.plugin-card-chevron { font-size: 12px; opacity: .6; transition: transform .15s; }
+.plugin-card-chevron[data-open] { transform: rotate(180deg); }
+.plugin-card-body { padding: 4px 12px 12px; border-top: 1px solid var(--border, rgba(128,128,128,.15)); display: flex; flex-direction: column; gap: 10px; }
+.plugin-card-readonly { font-size: 12px; color: #d29922; margin: 6px 0 0; }
+.plugin-field { display: flex; flex-direction: column; gap: 3px; }
+.plugin-field-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.plugin-field-label { font-size: 12px; opacity: .9; }
+.plugin-field-badges { display: inline-flex; align-items: center; gap: 6px; }
+.plugin-field-badge { font-size: 11px; color: #3fb950; }
+.plugin-field-badge-muted { color: var(--text, #d8d8d8); opacity: .55; }
+.plugin-field-reset { background: none; border: none; color: var(--accent, #4a6cf7); font-size: 11px; cursor: pointer; padding: 0; }
+.plugin-field-input { background: var(--surface-2, #262933); color: var(--text, #d8d8d8); border: 1px solid var(--border, rgba(128,128,128,.3)); border-radius: 6px; padding: 6px 8px; font: inherit; font-size: 12px; }
+.plugin-field-input-invalid { border-color: #e5484d; }
+.plugin-field-input:disabled { opacity: .55; }
+.plugin-field-hint { font-size: 11px; opacity: .6; margin: 0; }
+.plugin-field-invalid { font-size: 11px; color: #e5484d; margin: 0; }
+.plugin-card-footer { display: flex; align-items: center; justify-content: flex-end; gap: 8px; }
+.plugin-card-failed { font-size: 11px; color: #e5484d; margin: 0; margin-right: auto; }
+.plugin-card-discard, .plugin-card-save { background: var(--surface-2, #262933); border: 1px solid var(--border, rgba(128,128,128,.35)); border-radius: 6px; color: var(--text, #d8d8d8); padding: 4px 10px; cursor: pointer; font-size: 12px; }
+.plugin-card-save { background: var(--accent, #4a6cf7); border-color: var(--accent, #4a6cf7); color: #fff; }
+.plugin-card-discard:disabled, .plugin-card-save:disabled { opacity: .5; cursor: default; }
+
+.plugin-inventory { display: flex; flex-direction: column; gap: 8px; }
+.plugin-inventory-status { font-size: 12px; opacity: .65; margin: 6px 0; }
+.plugin-inventory-failure { display: flex; align-items: center; gap: 8px; font-size: 12px; color: #e5484d; }
+.plugin-inventory-failure button { background: none; border: 1px solid var(--border, rgba(128,128,128,.3)); border-radius: 6px; color: var(--text, #d8d8d8); cursor: pointer; font-size: 12px; padding: 2px 8px; }
+.plugin-inventory-search input { width: 100%; box-sizing: border-box; background: var(--surface-2, #262933); color: var(--text, #d8d8d8); border: 1px solid var(--border, rgba(128,128,128,.3)); border-radius: 6px; padding: 6px 8px; font: inherit; font-size: 12px; }
+.plugin-inventory-group { display: flex; flex-direction: column; gap: 4px; margin-top: 4px; }
+.plugin-inventory-group-head { display: flex; align-items: center; gap: 8px; margin: 8px 0 2px; font-size: 12px; font-weight: 600; opacity: .85; }
+.plugin-inventory-group-count { font-size: 11px; opacity: .55; font-weight: 400; background: rgba(128,128,128,.15); border-radius: 8px; padding: 0 7px; }
+.plugin-inventory-cards { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+.plugin-inventory-card { border: 1px solid var(--border, rgba(128,128,128,.3)); border-radius: 8px; overflow: hidden; }
+.plugin-inventory-card-content { display: flex; align-items: center; gap: 8px; width: 100%; background: none; border: none; color: var(--text, #d8d8d8); padding: 8px 12px; cursor: pointer; text-align: left; font: inherit; }
+.plugin-inventory-card-content:hover { background: rgba(128,128,128,.08); }
+.plugin-inventory-card-title { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13px; font-weight: 500; }
+.plugin-inventory-community-tag { font-size: 10px; color: #d29922; border: 1px solid rgba(210,153,34,.5); border-radius: 8px; padding: 0 6px; }
+.plugin-inventory-card-trailing { display: inline-flex; align-items: center; gap: 6px; }
+.plugin-inventory-status-dot { width: 8px; height: 8px; border-radius: 50%; background: #888; }
+.plugin-inventory-status-dot[data-phase='active'] { background: #3fb950; }
+.plugin-inventory-status-dot[data-phase='loading'], .plugin-inventory-status-dot[data-phase='pending'] { background: #d29922; }
+.plugin-inventory-status-dot[data-phase='failed'] { background: #e5484d; }
+.plugin-inventory-config-tag { font-size: 11px; padding: 1px 7px; border-radius: 10px; background: rgba(128,128,128,.18); }
+.plugin-inventory-config-tag[data-enabled='true'] { background: rgba(46,160,67,.2); color: #3fb950; }
+.plugin-inventory-chevron { font-size: 12px; opacity: .6; transition: transform .15s; }
+.plugin-inventory-chevron[data-open] { transform: rotate(180deg); }
+.plugin-inventory-card-details { padding: 8px 12px; border-top: 1px solid var(--border, rgba(128,128,128,.15)); display: flex; flex-direction: column; gap: 6px; }
+.plugin-inventory-entry-value { font-size: 11px; opacity: .6; }
+.plugin-inventory-details { margin: 0; display: flex; flex-direction: column; gap: 3px; }
+.plugin-inventory-details > div { display: flex; gap: 8px; font-size: 12px; }
+.plugin-inventory-details dt { opacity: .6; min-width: 84px; }
+.plugin-inventory-details dd { margin: 0; }
+.plugin-inventory-community-note dd { color: #d29922; }

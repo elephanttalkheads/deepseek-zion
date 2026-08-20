@@ -1598,6 +1598,30 @@ function createFixtureWorld(options: FixtureOptions): FixtureWorld {
   /** Permission default-preset state (the settings row + Full access gate surface). */
   let fixturePermissionPreset = 'workspace-write'
   let fixturePermissionRevision = 0
+  // zion: 插件设置分区三 ns(shell / agent-loop / web-search-deepseek)的可变值。
+  const fixturePluginNs: Record<string, { value: Record<string, unknown>; revision: number }> = {
+    shell: { value: { timeoutMs: 120000, maxTimeoutMs: 600000, maxOutputBytes: 64000, maxSpillBytes: 67108864, graceMs: 3000 }, revision: 0 },
+    'agent-loop': { value: { maxParallelToolCalls: 10 }, revision: 0 },
+    'web-search-deepseek': { value: { apiKeyEnv: 'DEEPSEEK_API_KEY', maxUses: 5 }, revision: 0 },
+  }
+  const fixturePluginNsView = (ns: string): SettingsNamespaceView => {
+    const s = fixturePluginNs[ns]
+    return { ns, schema: {}, value: s.value, applies: 'live', secrets: [], revision: s.revision }
+  }
+  // zion: pluginInventory/list 只读清单(三组样本:官方 / MCP 实例 / 社区)。
+  const fixturePluginInventory = [
+    { entryId: 'include:tools', moduleName: '@deepseek-ai/dsh-tools', enabled: true, fiberPhase: 'active' as const },
+    { entryId: 'include:agent-loop', moduleName: '@deepseek-ai/dsh-agent-loop', enabled: true, fiberPhase: 'active' as const },
+    { entryId: 'include:web-search-deepseek', moduleName: '@deepseek-ai/dsh-web-search-deepseek', enabled: true, fiberPhase: 'active' as const },
+    { entryId: 'include:web', moduleName: '@deepseek-ai/dsh-web', enabled: true, fiberPhase: 'active' as const },
+    { entryId: 'include:ui-settings', moduleName: '@deepseek-ai/dsh-client-ui-settings', enabled: true, fiberPhase: 'active' as const },
+    { entryId: 'include:plan-mode', moduleName: '@deepseek-ai/dsh-plan-mode', enabled: false, fiberPhase: null },
+    { entryId: 'include:mcp-github', moduleName: '@deepseek-ai/dsh-mcp-client', enabled: true, fiberPhase: 'active' as const },
+    { entryId: 'include:mcp-context7', moduleName: '@deepseek-ai/dsh-mcp-client', enabled: true, fiberPhase: 'active' as const },
+    { entryId: 'include:mcp-gitee', moduleName: '@deepseek-ai/dsh-mcp-client', enabled: false, fiberPhase: null },
+    { entryId: 'include:vision-toolkit', moduleName: '@anionex/dsh-vision-toolkit', enabled: true, fiberPhase: 'active' as const },
+    { entryId: 'include:mcp-ctl', moduleName: 'dsh-mcp-ctl', enabled: true, fiberPhase: 'active' as const },
+  ]
   // zion: 面板级 cordis 动态插件清单(fixture 内存;P3-⑪ 控制台行动词/版本/过渡)。
   interface FixtureCordisPackage { packageId: string; name: string; purpose: string; hasClientHalf: boolean }
   interface FixtureCordisRow {
@@ -3090,6 +3114,10 @@ function createFixtureWorld(options: FixtureOptions): FixtureWorld {
             revision: 0,
           },
           permissionNamespaceView(),
+          // zion: 插件设置分区三 ns(终端 / Agent 循环 / 网页搜索卡片)。
+          fixturePluginNsView('shell'),
+          fixturePluginNsView('agent-loop'),
+          fixturePluginNsView('web-search-deepseek'),
           // zion: agent-presets 命名空间(默认预设 = agentPresets.select 的当前默认,
           // 供 General 行的 settings.describe 读 writable 与行值回显)。
           {
@@ -3150,6 +3178,17 @@ function createFixtureWorld(options: FixtureOptions): FixtureWorld {
           fixturePermissionPreset = op.value
           fixturePermissionRevision += 1
           return ok(request, permissionNamespaceView())
+        }
+        // zion: 插件设置分区三 ns 的 path 编辑(set / unset)。
+        if (fixturePluginNs[request.payload.ns] !== undefined) {
+          const s = fixturePluginNs[request.payload.ns]
+          for (const op of request.payload.ops) {
+            const field = op.path.join('.')
+            if (op.op === 'set') s.value[field] = op.value
+            else delete s.value[field]
+          }
+          s.revision += 1
+          return ok(request, fixturePluginNsView(request.payload.ns))
         }
         return err(request, {
           code: 'settings-rejected',
@@ -3257,6 +3296,9 @@ function createFixtureWorld(options: FixtureOptions): FixtureWorld {
         // 与其它 case 同形:返回 RpcResult(remotes 面),rpcId 由上层信封回填。
         case 'dynamicCordisRunner/inventory':
           return Promise.resolve({ ok: true as const, value: fixtureCordisInventory() })
+        // zion: 插件列表 tab 的只读清单端点(三组样本;real 轨同形)。
+        case 'pluginInventory/list':
+          return Promise.resolve({ ok: true as const, value: { entries: fixturePluginInventory.map(e => ({ ...e })) } })
         case 'dynamicCordisRunner/runHostHalf': {
           const pluginId = (args as { pluginId?: string }).pluginId
           const packageId = (args as { packageId?: string }).packageId

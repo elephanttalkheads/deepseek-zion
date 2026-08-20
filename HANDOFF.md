@@ -35,12 +35,14 @@
 - ⑤(部分) 消息复制/分支 ✅ real 6/6
 - ④ 会话导出按钮 → **已核定为 N/A**(官方 web 客户端无该按钮,`downloads` 是 host-only 通道;见 §3)
 - **归档过滤修复(bugfix)** ✅ 归档的会话从侧边栏消失(官方 ui-workspace 语义;真实后端只发 host/archived-sessions-changed、zion 此前未过滤 → 归档后行不消失 + 官方 3080 隐藏的那批会话全显示);probe-archive-filter real 4/4 + fixture 4/4,workspace-actions fixture 回归 8/8
+- **插件设置分区(对齐官方 ui-settings-plugins)** ✅ 移除多余「插件清单」导航项;「插件」页 = 两 tab(插件配置:终端/Agent 循环/网页搜索三卡可编辑(settings.mutate+revision 栅栏,网页搜索 API key 走 credentials.set);插件列表:pluginInventory/list 只读清单,grilling 共识三组 官方/MCP/社区,社区行徽标+UI 注入未实现说明,组头计数+搜索+状态点+展开);fixture 补三 ns + pluginInventory 端点;probe-plugin-settings fixture 8/8 + real 8/8;settings 回归 fixture 11/11;CONTEXT 补「插件类别」词条
 
 ---
 
 ## 1. 最近提交链(自本会话;`main` 最新行在前)
 
 | 提交 | 内容 |
+| `(本轮)` | 插件设置分区:SettingsShell 移除「插件清单」导航项(官方无独立导航项);新增 PluginsSettingsSection(插件配置三卡 + 插件列表三组 官方/MCP/社区,社区徽标+UI 注入未实现说明);fixture 补 shell/agent-loop/web-search-deepseek ns + mutate + pluginInventory/list 端点;probe-plugin-settings fixture 8/8 + real 8/8;probe-settings S3 断言更新(导航无插件清单);ui-component-inventory/CONTEXT/HANDOFF 同步
 | `bf486e1` | 归档过滤修复:runtime 捕获 workspace.list 的 archivedSessionIds(此前被丢弃)+ onHost 消费 host/archived-sessions-changed + 选中会话被归档后清空选择;Sidebar rows 排除已归档会话(flat + 分组同源,官方 deriveFlat/sessionVisible 语义)+ 行 data-session-id;新 probe-archive-filter(真后端 8 个已归档不进侧边栏/归档行消失/清空回归/入口保留 4-4);typecheck 基线 172 行不新增;gitignore 补 probe-archive-filter-out/
 | `(本轮,见 git log)` | cordis 插件面板增强 ⑪:remote 补 stopFromPanel/undefineFromPanel + hub stopRow/removeRow/setRpc(wire rpc 注入)+ PluginHost 行增强(版本选择器/运行 run|update/停止/移除/重试下一版本/回滚)+ fixture 内存清单端点全链;probe-cordis-panel fixture 6/6 + real 6/6 |
 | `(本轮,见 git log)` | 子代理目录树 + 只读 composer ⑩:vendor ui-subagent(目录树/只读 composer)+ ts-types dsh-subagent 占位(subagentTiming 投影 merge)+ 会话头目录树座位(openChild=selectSession)+ ComposerSeat 只读分支(priority -10 语义)+ fixture subagents.list 目录样本;probe-subagent fixture 6/6 + real 6/6 |

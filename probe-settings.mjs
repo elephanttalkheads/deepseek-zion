@@ -52,7 +52,7 @@ app.whenReady().then(async () => {
   mark('s2', shell, 'S2 SettingsShell 挂载(遮罩+面板)')
   const nav = await js(win, `[...document.querySelectorAll('.settings-nav-item')].map(b => b.innerText)`)
   out(`nav: ${JSON.stringify(nav)}`)
-  mark('s3', ['通用', '模型', '插件', '插件清单'].every(x => nav.includes(x)), 'S3 左侧导航含 通用/模型/插件/插件清单', JSON.stringify(nav))
+  mark('s3', ['通用', '模型', 'Agent 预设', '插件'].every(x => nav.includes(x)) && !nav.includes('插件清单'), 'S3 左侧导航含 通用/模型/Agent 预设/插件,无独立「插件清单」项', JSON.stringify(nav))
 
   // 通用:外观三 cube
   const cubes = await js(win, `[...document.querySelectorAll('.settings-cube')].map(b => ({ t: b.innerText, a: !!b.getAttribute('data-active') }))`)

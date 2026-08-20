@@ -61,6 +61,10 @@ _Avoid_: 插件走 /plugins/ HTTP 构建管线
 插件 client 半经 `ctx.slots.inject(key, cb)` + `ctx.slots.register({name,...}, Component)` 注册 UI。本工程向插件开放的槽位策略（Q20A）：只开放"附加型"槽（shell.overlay / conversation.chat.assistant-actions / conversation.input.dock / tool.call.toolview 新 key / settings.plugin.item / sidebar.footer.action 等）；root/conversation/sidebar 主机位由复刻 UI 独占，插件注册到即报错。
 _Avoid_: 插件抢占 root/conversation/sidebar 主体
 
+**插件类别（plugin category,插件列表三组）**：
+pluginInventory/list 的条目按 moduleName 分三类:①**官方插件**(`@deepseek-ai/*` scope,随 dsh 发行);②**MCP 实例**(moduleName 全为 `@deepseek-ai/dsh-mcp-client` 的配置实例——一个 MCP 服务 = 一条 `cordis.patch.yml` insert,领域上**不是插件**而是"配置的 MCP 服务",插件列表单独成组,行名取 entryId 的 serverName);③**社区插件**(其它,如 `@anionex/dsh-vision-toolkit`、`dsh-mcp-ctl`)。社区插件的 client 半会向官方 UI 注入设置分区(如 vision-toolkit 的「视觉工具」)/命令面板(如 mcp-ctl 的 `/mcp`),复刻 UI 未实现这些注入面(settings.section 等槽位未渲染),插件列表以「社区」徽标 + 展开说明如实标注。
+_Avoid_: 把 MCP 实例当插件显示(行名互相混淆);声称社区插件的 UI 注入面在复刻里可用
+
 ## Rules
 
 - 复刻范围限定在本词表；ZION 视觉语汇（数雨/培育仓/神经线缆/feed）不进入复刻 UI。

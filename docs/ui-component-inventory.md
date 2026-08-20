@@ -39,7 +39,7 @@ main.tsx Root
          ├─ header 顶栏: 「新会话」按钮 + WorkspaceMenu(含 Miller 目录弹窗)
          ├─ aside.app-sidebar → Sidebar
          │    ├─ SlotAnchor slot="sidebar.footer.action"
-         │    └─ SettingsShell(⚙ 触发;通用/模型/Agent 预设/插件/插件清单 五分区)
+         │    └─ SettingsShell(⚙ 触发;通用/模型/Agent 预设/插件 四分区;插件页=配置三卡+列表三组)
          ├─ main.app-conversation → ConversationDock
          │    ├─ hero(无会话): AgentPresetSeat
          │    ├─ 会话态: 会话头(agent-preset Label + SubagentCatalogAction + JobListAction)
@@ -173,8 +173,9 @@ main.tsx Root
 
 #### A12. SettingsShell — 设置
 - **挂载**:Sidebar 页脚「⚙」触发;props `{ open, onClose }`。
-- **交互入口**:关闭(✕/backdrop/Escape);分区导航 5 项(通用/模型/Agent 预设/插件/插件清单);通用区 外观三 cube(→ settings.mutate ui-theme + applyTheme)/语言 select(mutate locale)/`PermissionSettingsRow`/`AgentPresetRowSeat`;模型区 Provider 行「编辑」→ ProviderEditPanel(API key 密码框+保存+清除 → credentials.set/unset;模型目录 添加/移除 → settings.mutate op set models;探活「探测」+「采用」→ llm.discoverModels)[official]。
-- **数据**:`wire`(settings.describe/mutate、credentials.*、llm.providers/discoverModels)。
+- **交互入口**:关闭(✕/backdrop/Escape);分区导航 4 项(通用/模型/Agent 预设/插件);通用区 外观三 cube(→ settings.mutate ui-theme + applyTheme)/语言 select(mutate locale)/`PermissionSettingsRow`/`AgentPresetRowSeat`;模型区 Provider 行「编辑」→ ProviderEditPanel(API key 密码框+保存+清除 → credentials.set/unset;模型目录 添加/移除 → settings.mutate op set models;探活「探测」+「采用」→ llm.discoverModels)[official]。
+- **插件分区**(`PluginsSettingsSection`,复刻官方 ui-settings-plugins 形态):标题「插件」+ intro + 两 tab[official];「插件配置」tab 三卡片(终端 shell / Agent 循环 agent-loop / 网页搜索 web-search-deepseek)——展开/字段编辑(已覆盖徽标+恢复默认)/保存(settings.mutate,revision 栅栏;网页搜索 API key 走 credentials.set)/放弃修改[official];「插件列表」tab 只读清单(pluginInventory/list)——三组(官方/MCP/社区)+ 组头计数 + 搜索(组内过滤)+ 状态点 + 已启用/已停用标签 + 展开详情(entryId/配置状态/Cordis 状态),社区行带「社区」徽标 + 展开说明「UI 注入面在复刻 UI 中未实现」[official 分组为 zion-add]。
+- **数据**:`wire`(settings.describe/mutate、credentials.*、llm.providers/discoverModels、rpc pluginInventory/list)。
 
 #### A13. QueueDock — 队列
 - **挂载**:ConversationDock(有队列或 lastAgentError 时)。
@@ -264,10 +265,10 @@ main.tsx Root
 | 右栏 | `SlotAnchor settings.plugin.item` | 插件设置卡 | slot |
 | 底部 | PluginHost 载入/卸载/审批三键/控制台六操作 | runtime.* | zion-add |
 | 设置 | 关闭(✕/backdrop/Esc) | onClose | official |
-| 设置 | 分区 5 项 | setSection | official |
+| 设置 | 分区 4 项 | setSection | official |
 | 设置 | 外观三 cube / 语言 / 权限行 / Agent 预设行 | settings.mutate / credentials / agentPreset | official |
 | 设置 | Provider 编辑(API key/模型目录/探活) | credentials.* / settings.mutate / llm.discoverModels | official |
-| 设置 | `SlotAnchor settings.plugin.item`(插件设置区) | 插件 | slot |
+| 设置 | 插件分区:两 tab(配置三卡/列表三组) | settings.mutate / credentials / pluginInventory/list | official |
 | WorkspaceMenu | 新建工作区 → Miller 目录弹窗 | host.listDirectory/createDirectory + workspace.create | official |
 
 ---
@@ -296,6 +297,7 @@ npx electron probe-deliverables.mjs       # 产物/workflow
 npx electron probe-queue-edit.mjs         # 队列行内编辑
 npx electron probe-sidebar-drag.mjs       # 拖拽重排/溢出
 npx electron probe-workspace-actions.mjs  # 行菜单/视图选项
+npx electron probe-plugin-settings.mjs    # 插件设置分区(配置三卡/列表三组)
 npx electron probe-msg-actions.mjs        # 消息复制/分支
 npx electron probe-trajectory-real.mjs    # 轨迹视图
 
