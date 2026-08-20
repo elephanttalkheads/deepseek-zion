@@ -71,3 +71,4 @@ probe-directory-out/
 probe-subagent-out/
 probe-cordis-panel-out/
 docs/_tmp-*.md
+probe-archive-filter-out/

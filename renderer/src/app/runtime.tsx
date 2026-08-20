@@ -128,6 +128,9 @@ export interface AppRuntime {
   imageLimits: ImageLimits
   /** Workspace rows (top-bar selector); empty until loaded. */
   workspaces: readonly WorkspaceView[]
+  /** Registry-global archived session ids (from workspace.list). The sidebar
+   *  filters these rows out — official ui-workspace semantics (归档后从列表消失). */
+  archivedSessionIds: readonly string[]
   /** Workspace management verbs (create = host.pickDirectory → workspace.create; rename/delete). */
   workspaceActions: {
     /** Open the native directory picker, then workspace.create(path); returns the workspace or null. */
@@ -204,17 +207,26 @@ export function RuntimeProvider({ children }: { children: ReactNode }): JSX.Elem
   const [selectedId, setSelectedId] = useState<SessionId | undefined>(undefined)
   const [models, setModels] = useState<SessionModels | null>(null)
   const [workspaces, setWorkspaces] = useState<readonly WorkspaceView[]>([])
+  const [archivedSessionIds, setArchivedSessionIds] = useState<readonly string[]>([])
 
   // Workspace rows (top-bar selector + 侧栏分组账目);host 帧与显式动作后刷新。
   const reloadWorkspaces = useCallback(() => {
     const api = runtime.wire.api
     void api.workspace.list({}).then((res) => {
-      setWorkspaces(res.result.ok ? res.result.value.items : [])
+      if (!res.result.ok) return
+      setWorkspaces(res.result.value.items)
+      setArchivedSessionIds(res.result.value.archivedSessionIds ?? [])
     })
   }, [runtime])
   useEffect(() => {
     reloadWorkspaces()
   }, [reloadWorkspaces])
+
+  // 官方对齐:当前选中会话被归档后清空选择(workspaces service 语义)。
+  useEffect(() => {
+    if (selectedId === undefined) return
+    if (archivedSessionIds.includes(selectedId)) setSelectedId(undefined)
+  }, [selectedId, archivedSessionIds])
 
   useEffect(() => {
     // P3-⑪:面板级 cordis 控制台走 wire 的 rpc(fixture 页 → 内存清单确定性驱动;
@@ -226,7 +238,7 @@ export function RuntimeProvider({ children }: { children: ReactNode }): JSX.Elem
       // 宿主工作区变更帧(建/改/删/归档)驱动账目刷新:分组与手动排序跟着变。
       onHost: (env) => {
         const type = env.payload.type
-        if (type === 'host/workspace-changed' || type === 'host/workspace-removed' || type === 'host/workspace-added') {
+        if (type === 'host/workspace-changed' || type === 'host/workspace-removed' || type === 'host/workspace-added' || type === 'host/archived-sessions-changed') {
           reloadWorkspaces()
         }
       },
@@ -253,6 +265,23 @@ export function RuntimeProvider({ children }: { children: ReactNode }): JSX.Elem
       stop.stop()
     }
   }, [runtime, reloadWorkspaces])
+
+  // Probe seam(both modes):归档过滤路径只读驱动(不触碰后端)。探针用它在真实
+  // 数据上验证「归档会话从侧边栏消失」:Set 直接驱动 Sidebar 的 archivedSessionIds
+  // 过滤;Get 回读当前运行时的归档集合。
+  useEffect(() => {
+    const winAll = window as unknown as Record<string, unknown>
+    winAll.__zionProbeGetArchivedSessionIds = (): readonly string[] => archivedSessionIds
+    winAll.__zionProbeSetArchivedSessionIds = (ids: readonly string[]): void => {
+      setArchivedSessionIds([...ids])
+    }
+    winAll.__zionProbeReloadWorkspaces = (): void => reloadWorkspaces()
+    return () => {
+      delete winAll.__zionProbeGetArchivedSessionIds
+      delete winAll.__zionProbeSetArchivedSessionIds
+      delete winAll.__zionProbeReloadWorkspaces
+    }
+  }, [archivedSessionIds, reloadWorkspaces])
 
   // Model catalog + current selection follows the selected session.
   useEffect(() => {
@@ -472,6 +501,7 @@ export function RuntimeProvider({ children }: { children: ReactNode }): JSX.Elem
       },
       imageLimits: FIXTURE_IMAGE_LIMITS,
       workspaces,
+      archivedSessionIds,
       workspaceActions: {
         create: async () => {
           const picked = await wire.api.host.pickDirectory({}, new AbortController().signal)
@@ -558,7 +588,7 @@ export function RuntimeProvider({ children }: { children: ReactNode }): JSX.Elem
         },
       },
     }
-  }, [runtime, useSessions, useConversation, useGoal, usePlanProjection, usePermissions, useProjection, connectionState, selectedId, models, workspaces, reloadWorkspaces])
+  }, [runtime, useSessions, useConversation, useGoal, usePlanProjection, usePermissions, useProjection, connectionState, selectedId, models, workspaces, archivedSessionIds, reloadWorkspaces])
 
   return <RuntimeContext.Provider value={value}>{children}</RuntimeContext.Provider>
 }

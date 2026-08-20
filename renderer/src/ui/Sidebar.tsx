@@ -67,7 +67,7 @@ interface GroupView {
 }
 
 export function Sidebar({ query, onQueryChange }: { query: string; onQueryChange: (q: string) => void }): JSX.Element {
-  const { useSessions, selectSession, selectedSessionId, createSession, workspaces, sessionRowActions, workspaceActions } = useRuntime()
+  const { useSessions, selectSession, selectedSessionId, createSession, workspaces, archivedSessionIds, sessionRowActions, workspaceActions } = useRuntime()
   const items = useSessions(s => s.items)
   const listState = useSessions(s => s.state)
   const [expanded, setExpanded] = useState<Record<string, boolean>>({})
@@ -83,16 +83,17 @@ export function Sidebar({ query, onQueryChange }: { query: string; onQueryChange
 
   const rows = useMemo(() => {
     const q = query.trim().toLowerCase()
+    const archived = new Set(archivedSessionIds)
     const source = items
     const filtered = q === ''
-      ? source.filter(entry => !entry.blank)
+      ? source.filter(entry => !entry.blank && !archived.has(entry.sessionId))
       : source.filter(entry =>
-        !entry.blank &&
+        !entry.blank && !archived.has(entry.sessionId) &&
         ((entry.title ?? '').toLowerCase().includes(q) || entry.sessionId.toLowerCase().includes(q)),
       )
     if (view.orderBy === 'manual') return filtered
     return [...filtered].sort((a, b) => b.updatedAt - a.updatedAt)
-  }, [items, query, view.orderBy])
+  }, [items, query, view.orderBy, archivedSessionIds])
 
   // 按工作区分组:workspaces 的 sessionIds 账目 → 组;无归属 → 未分组。
   const groups = useMemo(() => {
@@ -187,6 +188,7 @@ export function Sidebar({ query, onQueryChange }: { query: string; onQueryChange
       <div
         key={id}
         className="sidebar-item"
+        data-session-id={id}
         data-selected={isSelected || undefined}
         data-running={entry.running || undefined}
         data-blank={entry.blank || undefined}
