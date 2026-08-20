@@ -134,7 +134,7 @@ main.tsx Root
 - **挂载**:`ComposerSeat`(composer-takeover.tsx 无挂起交互时的回退体)。
 - **交互入口**:
   1. 触发管线 `trigger.render()`(→ MenuView + PopupSelectView):输入 `/` 弹命令/技能菜单;`/permission` → popupSelect(Full access 风险确认 → `session.command('/permission <id>')`);↑/↓/Enter/Escape 仲裁 [official]
-  2. `SlotAnchor slot="conversation.input.dock"` (插件可注入状态卡/host.call 测试)[slot]
+  2. `SlotAnchor slot="conversation.input.dock"` (插件可注入状态卡/host.call 测试)[slot] —— 什么是插件槽/槽里有什么/两条实现路径,详见 §1.3 插件槽详解(防误解必读)
   3. `TodoDockSeat`(composer 上方 plan strip)[official]
   4. `GoalBar`(A6)[zion-add]
   5. `PermissionChip`(B8)→ 预设菜单 → `/permission <id>` [official]
@@ -212,6 +212,60 @@ main.tsx Root
 
 > 槽位白名单与主机位黑名单见 `plugin\slot-registry.ts` 的 `ADDITIVE_SLOT_SPECS`(注意:主机位 `root/conversation/sidebar/conversation.session/details/settings.close` 插件注册即拒,这是刻意的)。
 
+### 1.3 插件槽详解:SlotAnchor slot="conversation.input.dock"(防误解必读)
+
+> 本节回答三个高频误解:**「SlotAnchor 是什么组件」「conversation.input.dock 是什么功能」「插件状态卡从哪来」**。AI 重构/排查任何与 `slot` 标记、插件注入、composer 上方条条有关的问题,先读本节再动手。
+
+**一句话定义**:`SlotAnchor` 是「**插件槽锚点**」——渲染面在某个位置画出一个「插座」;`slot="conversation.input.dock"` 是这个插座的名字(位置)。**插件**(client 半)通过 cordis 槽系统把条目注册进这个名字的插座,`SlotAnchor` 负责把注册进来的条目**按顺序渲染**出来。删掉 `SlotAnchor` = 丢掉**所有**插件往这个位置注入的入口(所以文档标记为 `[slot]`,受 AGENTS.md §8 铁律保护)。
+
+**名字拆解**(英语直译,方便记忆):
+
+| 片段 | 含义 |
+|---|---|
+| `conversation` | 会话(聊天主区域) |
+| `input` | 输入(composer 输入条) |
+| `dock` | 停靠(多条小条条纵向停靠的区域,像码头停船) |
+
+合起来:**「会话输入区(composer 上方)的停靠排」**——官方条目与插件条目都停在这里,纵向按 order 排列。
+
+**它是「锚点 + 列表槽」,本身不是功能组件**:
+
+- 官方 cordis 语义:`conversation.input.dock` 是 `kind: 'list'`、`scope: 'session'` 的槽(官方 `client-ui-conversation/contract/slots.ts`),条目按注册 `order` 升序渲染;每个条目 = `{name, id, order, locale, 组件}`。
+- **官方当前注册的真实条目**(即官方 UI 里这个位置实际显示的内容,也是 inspector `recipe input-dock` 召唤的并集):
+
+| id(order) | 组件(渲染) | 数据来源(投影/注入) | 注册方 |
+|---|---|---|---|
+| `todo`(order 0) | TodoPanel 任务条(`data-testid="todo-panel"`) | `useProjection('todos')` | ui-conversation `todoDockEntry` |
+| `goal` | GoalBar 目标条(`data-goal-bar`)/ GoalDock 适配器 | `useProjection('goal')` + 注入动作(onEdit/onPause/onResume/onClear)+ locale `t` | ui-goal |
+| `queue` | QueueDock 队列行(`data-queue-dock`) | `useSession`(session/queue)+ updateQueue/notify | ui-conversation `queueDockEntry` |
+
+- 条目**不直接持有数据**,一律通过槽系统注入的 props 拿数据:`useProjection(key)`(todos/goal)、`useSession`、注入动作、`t`。投影键缺失(附 A)⇒ 条目**静默消失**。
+- 官方 UI 里这个位置**只有上述三个官方条目**;当前没有社区插件向官方 3080 注册此槽,所以「第三方插件卡片」在官方应用里**不存在真实形态**——它只存在于 zion 复刻(演示插件注入的「状态卡 / host.call 测试」卡,见下)。
+
+**zion 侧的两条实现路径(别混为一谈)**:
+
+1. **插件面(A7.2)**:`renderer/src/ui/InputBar.tsx` 内的 `SlotAnchor slot="conversation.input.dock"` —— 渲染**插件注册**的条目(zion 演示插件/社区插件 client 半,走 `plugin/` 运行时 + `ADDITIVE_SLOT_SPECS` 白名单)。本清单 A7.2 就是这个锚点。
+2. **官方面(A7.3 / A6 / A13)**:官方三个条目的 zion 挂载,不走 SlotAnchor——`TodoDockSeat`(composer-stats 座位包 vendor TodoPanel,读 `todos` 投影)、`GoalBar`(A6,zion 自研,读 `useGoal`)、`QueueDock`(A13,独立组件)。
+
+> 两者是**同一槽位的「插件注入面」与「官方内容」**,互不替代:插件条目经 SlotAnchor 渲染,官方条目经各自座位渲染。重构时**两个面都要保留**。
+
+**插件怎么用这个槽**(给社区插件作者的契约):
+
+- 插件 `apply(ctx)` 里 `ctx.slots.register({ name: 'conversation.input.dock', id: '<唯一id>', order: <数字>, locale: <ns> }, 状态卡组件)` → 卡片出现在输入框上方;
+- 卡片组件拿到槽注入的 props(`useProjection`/`useSession`/注入动作/`t`),可读会话投影、可发起 host.call 测试(演示插件即此用法);
+- zion 插件运行时只允许「附加型」槽(白名单见 `renderer/src/plugin/slot-registry.ts` 的 `ADDITIVE_SLOT_SPECS`);`root`/`conversation`/`sidebar` 等主机位**注册即拒**,这是刻意的(主机位由复刻 UI 独占)。
+
+**怎么亲眼验证(别靠猜)**:
+
+- 官方原版:inspector 真实配方 `node inspector/cli.mjs recipe input-dock --shot`(槽区真实条目并集截图:任务条 + 目标条 + 队列行[有排队才渲染]);`node inspector/cli.mjs summon goal-dock`(挂载官方 GoalDock 槽条目本体,mock `useProjection`,看条目 props 契约)。详见 `inspector/README.md`。
+- zion 复刻:PluginHost「载入演示」后,输入框上方出现演示「状态卡 / host.call 测试」卡 —— 这就是 A7.2 标注的来源。
+
+**重构/删除纪律**:
+
+1. `[slot]` 标记项 = 动态插件槽锚点,**删除即丢失第三方/演示插件入口**;除非明确移除对应插件能力,否则禁止删除(AGENTS.md §8);
+2. 条目渲染依赖投影键(`todos`/`goal`,附 A)——投影键缺一即条目静默消失,排查「条条不见了」先查投影;
+3. 槽位名称/契约**零改动**(R2 wire 契约 + 插件运行时契约);改槽名 = 所有插件条目失效。
+
 ---
 
 ## 3. 交互入口总索引(防丢失 · 抽查对照表)
@@ -247,7 +301,7 @@ main.tsx Root
 | 会话 | QueueDock 编辑/插队/移除 | updateQueue edit/steer/remove | official |
 | 会话 | streaming 提示 | 展示 | official |
 | Composer | 触发管线 `/` 菜单 + popupSelect | session.command | official |
-| Composer | `SlotAnchor conversation.input.dock` | 插件状态卡 | slot |
+| Composer | `SlotAnchor conversation.input.dock` | 插件状态卡(详解见 §1.3) | slot |
 | Composer | TodoDockSeat | vendor 内部 | official |
 | Composer | GoalBar 设定/edit/pause/resume/complete/clear | goalActions.* | zion-add |
 | Composer | PermissionChip → /permission | session.command | official |
