@@ -117,22 +117,32 @@ app.whenReady().then(async () => {
   const afterQuestion = await win.webContents.executeJavaScript(`document.querySelector('[data-question-key]') === null`)
   out(`question gone after response: ${afterQuestion}`)
 
-  // 6. model selector present + switch model then report via prompt
+  // 6. model selector(两级菜单 ModelSelect):选 GPT-5 → 发「report model」看 fixture 回显
+  // (2026-08-21 重写:旧断言的扁平 <select class="input-bar-model-select"> 已随
+  // 官方两级菜单落地退役;菜单交互口径与 probe-model.mjs 一致)
   out('--- model selector ---')
-  const modelSelect = await grab(win, '.input-bar-model-select')
-  out(modelSelect === null ? 'MISSING model selector' : `model options: ${modelSelect.replace(/[\n]+/g, ' / ').slice(0, 300)}`)
-  // switch to OpenAI GPT-5
-  await win.webContents.executeJavaScript(`(() => { const s = document.querySelector('.input-bar-model-select'); if (!s) return false; const opt = [...s.options].find(o => o.value === 'openai/gpt-5'); if (!opt) return false; s.value = opt.value; s.dispatchEvent(new Event('change', { bubbles: true })); return true })()`)
-  await sleep(800)
-  const selValue = await win.webContents.executeJavaScript(`document.querySelector('.input-bar-model-select')?.value ?? 'none'`)
-  out(`selector value after change: ${selValue}`)
-  // send "report model" to see the fixture echo the selection back
+  // fx-alpha is resident-running;选择器运行中锁定,先停一次(同时让 composer 露出发送)
   out(`running now: ${await win.webContents.executeJavaScript(`!!document.querySelector('.input-bar-stop')`)}`)
-  // fx-alpha is resident-running; stop once so the composer exposes 发送
   if (await win.webContents.executeJavaScript(`!!document.querySelector('.input-bar-stop')`)) {
     await clickFirst(win, '.input-bar-stop')
     await sleep(1200)
   }
+  const seatSel = `'.input-bar-model'`
+  const triggerOk = await waitForJS(win, `(() => { const b = document.querySelector(${seatSel} + ' button'); return !!b && !b.disabled && (b.innerText || '').trim() !== '' })()`)
+  const triggerBefore = await win.webContents.executeJavaScript(`document.querySelector(${seatSel} + ' button')?.innerText ?? ''`)
+  out(triggerOk ? `model trigger: ${JSON.stringify(triggerBefore)}` : 'MISSING model selector')
+  // 打开根菜单 → 钻入「模型」→ 选 GPT-5
+  await win.webContents.executeJavaScript(`document.querySelector(${seatSel} + ' button')?.click()`)
+  await sleep(700)
+  await waitForJS(win, `(() => { const c = document.querySelector(${seatSel}); const b = c && [...c.querySelectorAll('button')].find(x => (x.innerText || '').trim().startsWith('模型')); if (b) { b.click(); return true } return false })()`)
+  await sleep(700)
+  const paneButtons = await win.webContents.executeJavaScript(`[...document.querySelectorAll(${seatSel} + ' button')].map(b => (b.innerText || '').trim()).filter(Boolean)`)
+  out(`model pane buttons: ${JSON.stringify(paneButtons)}`)
+  const picked = await win.webContents.executeJavaScript(`(() => { const c = document.querySelector(${seatSel}); const b = [...(c?.querySelectorAll('button') ?? [])].find(x => (x.innerText || '').includes('GPT-5')); if (b) { b.click(); return true } return false })()`)
+  await sleep(900)
+  const triggerAfter = await win.webContents.executeJavaScript(`document.querySelector(${seatSel} + ' button')?.innerText ?? ''`)
+  out(`picked GPT-5: ${picked}; trigger after: ${JSON.stringify(triggerAfter)}`)
+  // send "report model" to see the fixture echo the selection back
   await win.webContents.executeJavaScript(`(() => { const ta = document.querySelector('.input-bar-textarea'); if (!ta) return false; const setter = Object.getOwnPropertyDescriptor(window.HTMLTextAreaElement.prototype, 'value').set; setter.call(ta, 'report model'); ta.dispatchEvent(new Event('input', { bubbles: true })); return true })()`)
   await sleep(300)
   const draftState = await win.webContents.executeJavaScript(`(() => { const ta = document.querySelector('.input-bar-textarea'); const btn = [...document.querySelectorAll('.input-bar-send')][0]; return JSON.stringify({ value: ta?.value ?? null, btnDisabled: btn ? btn.disabled : null, btnExists: !!btn }) })()`)
