@@ -1,0 +1,114 @@
+/* ===== Settings shell (M2) ===== */
+.sidebar-footer { display: flex; gap: 8px; align-items: center; padding: 8px; border-top: 1px solid var(--border, rgba(128,128,128,.25)); }
+.sidebar-settings-trigger { background: none; border: 1px solid var(--border, rgba(128,128,128,.3)); border-radius: 6px; color: var(--text, #d8d8d8); padding: 4px 10px; cursor: pointer; font-size: 12px; }
+.sidebar-settings-trigger[data-open] { background: var(--accent, #4a6cf7); color: #fff; }
+.settings-shell { position: fixed; inset: 0; z-index: 1000; display: flex; align-items: center; justify-content: center; }
+.settings-backdrop { position: absolute; inset: 0; background: rgba(0,0,0,.45); }
+.settings-panel { position: relative; width: min(720px, 92vw); height: min(520px, 86vh); background: var(--surface, #1d1f27); border: 1px solid var(--border, rgba(128,128,128,.3)); border-radius: 10px; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 12px 40px rgba(0,0,0,.5); }
+.settings-header { display: flex; align-items: center; justify-content: space-between; padding: 10px 14px; border-bottom: 1px solid var(--border, rgba(128,128,128,.25)); }
+.settings-title { font-weight: 600; font-size: 14px; }
+.settings-close { background: none; border: none; color: inherit; cursor: pointer; font-size: 14px; opacity: .7; }
+.settings-close:hover { opacity: 1; }
+.settings-body { display: flex; flex: 1; min-height: 0; }
+.settings-nav { width: 140px; border-right: 1px solid var(--border, rgba(128,128,128,.25)); padding: 8px; display: flex; flex-direction: column; gap: 2px; }
+.settings-nav-item { background: none; border: none; text-align: left; color: var(--text, #d8d8d8); padding: 7px 10px; border-radius: 6px; cursor: pointer; font-size: 13px; }
+.settings-nav-item:hover { background: rgba(128,128,128,.12); }
+.settings-nav-item-active { background: var(--accent, #4a6cf7); color: #fff; }
+.settings-content { flex: 1; overflow: auto; padding: 14px 16px; }
+.settings-section-title { margin: 0 0 10px; font-size: 14px; }
+.settings-row { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
+.settings-row-label { width: 64px; font-size: 13px; opacity: .9; }
+.settings-cube { background: none; border: 1px solid var(--border, rgba(128,128,128,.3)); border-radius: 8px; padding: 8px 12px; cursor: pointer; font-size: 12px; color: var(--text, #d8d8d8); }
+.settings-cube[data-active] { background: var(--accent, #4a6cf7); border-color: var(--accent, #4a6cf7); color: #fff; }
+.settings-cube:disabled { opacity: .5; cursor: default; }
+.settings-select { background: var(--surface-2, #262933); color: var(--text, #d8d8d8); border: 1px solid var(--border, rgba(128,128,128,.3)); border-radius: 6px; padding: 6px 8px; }
+.settings-hint { font-size: 12px; opacity: .65; margin: 8px 0; }
+.settings-error { font-size: 12px; color: #e5484d; margin: 6px 0; }
+.settings-provider-list { list-style: none; margin: 0 0 8px; padding: 0; }
+.settings-provider-row { display: flex; align-items: center; gap: 8px; padding: 6px 4px; border-bottom: 1px solid var(--border, rgba(128,128,128,.15)); font-size: 13px; }
+.settings-provider-name { font-weight: 500; }
+.settings-provider-key, .settings-provider-ns { font-size: 11px; opacity: .6; }
+.settings-provider-state { font-size: 11px; padding: 1px 6px; border-radius: 10px; background: rgba(128,128,128,.18); }
+.settings-provider-active { background: rgba(46,160,67,.25); color: #3fb950; }
+.settings-provider-edit { margin-left: auto; background: none; border: 1px solid var(--border, rgba(128,128,128,.3)); border-radius: 6px; color: var(--text, #d8d8d8); padding: 2px 8px; cursor: not-allowed; opacity: .6; font-size: 12px; }
+
+/* ===== Settings — Provider 编辑(二期) ===== */
+.settings-editor-head { display: flex; align-items: baseline; gap: 10px; margin-bottom: 10px; }
+.settings-back { background: none; border: 1px solid var(--border, rgba(128,128,128,.3)); border-radius: 6px; color: var(--text, #d8d8d8); padding: 3px 8px; cursor: pointer; font-size: 12px; }
+.settings-editor-block { margin-bottom: 14px; padding-bottom: 12px; border-bottom: 1px solid var(--border, rgba(128,128,128,.15)); }
+.settings-editor-block-title { margin: 0 0 8px; font-size: 13px; font-weight: 600; }
+.settings-input { background: var(--surface-2, #262933); color: var(--text, #d8d8d8); border: 1px solid var(--border, rgba(128,128,128,.3)); border-radius: 6px; padding: 6px 8px; flex: 1; min-width: 0; }
+.settings-btn { background: var(--surface-2, #262933); border: 1px solid var(--border, rgba(128,128,128,.35)); border-radius: 6px; color: var(--text, #d8d8d8); padding: 5px 10px; cursor: pointer; font-size: 12px; }
+.settings-btn:disabled { opacity: .5; cursor: default; }
+.settings-btn-tiny { padding: 1px 7px; }
+.settings-model-list { list-style: none; margin: 0 0 8px; padding: 0; }
+.settings-model-row { display: flex; align-items: center; gap: 8px; padding: 4px 2px; border-bottom: 1px solid var(--border, rgba(128,128,128,.1)); font-size: 13px; }
+.settings-model-row .settings-btn { margin-left: auto; }
+
+/* ===== PluginHost 运行控制台(cordis ③) ===== */
+.plugin-console { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.plugin-console-label { font-size: 11px; opacity: .7; font-weight: 600; }
+.plugin-console-rows { display: flex; flex-direction: column; gap: 4px; width: 100%; }
+.plugin-console-empty { font-size: 11px; opacity: .6; }
+.plugin-console-row { display: flex; align-items: center; gap: 6px; }
+.plugin-console-name { font-size: 12px; }
+.plugin-console-id, .plugin-console-pkg { font-size: 10px; opacity: .6; }
+.plugin-console .plugin-console-run, .plugin-console-row button { background: none; border: 1px solid var(--border, rgba(128,128,128,.3)); border-radius: 5px; color: var(--text, #d8d8d8); padding: 1px 7px; font-size: 11px; cursor: pointer; }
+.plugin-console-row button:disabled { opacity: .45; cursor: not-allowed; }
+.plugin-console-result { font-size: 11px; opacity: .8; }
+
+/* ===== 消息行动作(复制/分支/时间戳) ===== */
+.chat-node-actions { display: flex; align-items: center; justify-content: flex-end; }
+
+/* ===== Composer 接管(ApprovalPanel / QuestionComposer / PlanReviewPanel) =====
+ * 官方 ConversationRoot 在 root 上声明 --dsh-chat-content-width 等布局令牌,
+ * 并把链输出包进 .composerSeat;zion 直编座位同款:令牌落在座位(链唯一公共
+ * 祖先),面板卡按官方宽度/边距绘制,悬起面板替换 InputBar 时页脚不高出被
+ * 替换的卡片(共享 --dsh-composer-text-max-height 上限)。
+ * 令牌值:官方 ui-theme design-platform.css(light)+ ConversationRoot.module.css。 */
+.composer-seat {
+  --dsh-chat-content-width: 748px;
+  --dsh-composer-side-clearance: 16px;
+  --dsh-composer-text-max-height: 336px;
+  display: flex;
+  flex: none;
+  flex-direction: column;
+}
+
+/* 官方 design-platform.css light 主题补缺令牌 */
+:root {
+  --ds-font-family-code: 'SF Mono', 'JetBrains Mono', 'Fira Code', Consolas, 'Liberation Mono', Menlo, Courier, 'PingFang SC', 'Microsoft YaHei';
+  /* zion 深绿调色板补缺令牌(官方 design-platform.css 对应语义;浅色官方值不适用,
+     已有的 border-l2/l4、scrollbar-bg/hover-l2 以根部深色值为准,不重复声明)。 */
+  --dsw-alias-bg-overlay: #1a281a;
+  --dsw-alias-border-l2-darkmode-thin: rgba(255, 255, 255, 0.06);
+  --dsw-alias-button-info-fill: #5686fe;
+  --dsw-alias-state-business-primary: #5686fe;
+  --dsw-alias-state-warn-secondary: #f7ad31;
+  --dsw-shadow-lv2: 0 4px 12px 0 rgba(0, 0, 0, 0.18), 0 2px 8px 0 rgba(0, 0, 0, 0.24);
+  --dsw-specific-input-major: #131a13;
+  --dsw-specific-sidebar-nav-item-active-accent: #16211a;
+  /* ui-agent-preset 补缺令牌(深绿等位) */
+  --dsw-alias-label-quaternary: #758575;
+  --dsw-alias-fill-tsp-secondary: rgba(255, 255, 255, 0.07);
+  --dsw-alias-bg-layer-1: #0a0e0a;
+  --dsw-alias-bg-layer-3: #131a13;
+  --dsw-alias-brand-primary: #d7e3d7;
+}
+
+/* ===== Agent 预设(ui-agent-preset 四表面) ===== */
+.conversation-hero-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+/* ===== PluginHost 控制台增强(P3-⑪:版本/Stop/Remove/过渡) ===== */
+.plugin-console-version { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; opacity: .85; }
+.plugin-console-version select { background: var(--surface-2, #262933); color: var(--text, #d8d8d8); border: 1px solid var(--border, rgba(128,128,128,.3)); border-radius: 4px; font-size: 11px; padding: 1px 4px; max-width: 180px; }
+.plugin-console-row[data-cordis-status="running"] .plugin-console-name::after { content: ' ●'; color: var(--dsw-alias-state-success-primary, #22c55e); font-size: 10px; }
+.plugin-console-danger { color: var(--dsw-alias-state-error-primary, #ff6b6b) !important; }
+.plugin-console-transition { display: inline-flex; align-items: center; gap: 6px; }
+

@@ -1,0 +1,27 @@
+/* ---- goal bar (functional wiring) ---- */
+.goal-bar {
+  display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+  background: var(--bg-raised); border: 1px solid var(--border); border-radius: 8px;
+  padding: 6px 10px; margin-bottom: 8px; font-size: 13px;
+}
+.goal-bar-phase {
+  font-size: 11px; font-weight: 600; padding: 2px 7px; border-radius: 999px;
+  background: var(--accent-dim); color: #06120a; flex-shrink: 0;
+}
+.goal-bar-phase[data-phase='paused'] { background: #5a4a20; color: #ffe9a8; }
+.goal-bar-phase[data-phase='blocked'] { background: var(--danger); color: #1a0505; }
+.goal-bar-phase[data-phase='complete'] { background: #1e3a2a; color: #9fe8c5; }
+.goal-bar-objective-text { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.goal-bar-controls { display: inline-flex; gap: 6px; flex-shrink: 0; }
+.goal-bar-btn {
+  background: var(--bg-panel); border: 1px solid var(--border); border-radius: 6px;
+  color: var(--fg); font: inherit; font-size: 12px; padding: 3px 10px; cursor: pointer;
+}
+.goal-bar-btn:hover { border-color: var(--accent-dim); }
+.goal-bar-btn:disabled { opacity: 0.5; cursor: default; }
+.goal-bar-btn-ghost { opacity: 0.75; }
+.goal-bar-form { display: flex; align-items: center; gap: 6px; flex: 1; }
+.goal-bar-form-objective { flex: 1; min-width: 150px; background: var(--bg-panel); color: var(--fg); border: 1px solid var(--border); border-radius: 6px; padding: 5px 8px; font: inherit; font-size: 13px; }
+.goal-bar-form-rounds { width: 120px; background: var(--bg-panel); color: var(--fg); border: 1px solid var(--border); border-radius: 6px; padding: 5px 8px; font: inherit; font-size: 12px; }
+.goal-bar-error { color: var(--danger); font-size: 12px; flex-basis: 100%; }
+

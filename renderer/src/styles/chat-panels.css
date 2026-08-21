@@ -1,0 +1,53 @@
+/* ---- conversation hero / placeholder ---- */
+.conversation { padding: 40px; height: 100%; display: flex; flex-direction: column; }
+.conversation-header-title-row { display: flex; align-items: center; gap: 8px; }
+.conversation-header-actions { display: inline-flex; align-items: center; }
+/* 触发菜单锚点:composer 顶缘零高条带;MenuView/PopupSelectView 自行上浮。 */
+.trigger-overlay-anchor { position: relative; height: 0; z-index: 200; }
+.conversation-hero { margin: auto; text-align: center; }
+.conversation-hero-title { font-size: 28px; font-weight: 600; }
+.conversation-hero-sub { color: var(--fg-muted); }
+.conversation-placeholder { color: var(--fg-muted); }
+.conversation-placeholder code { color: var(--accent); }
+.conversation-placeholder-muted { font-size: 13px; }
+
+/* ---- details ---- */
+.details { padding: 16px; }
+.details-muted { color: var(--fg-muted); font-size: 13px; }
+
+/* ---- subagent panel (functional wiring) ---- */
+.subagent-panel { font-size: 13px; display: flex; flex-direction: column; gap: 8px; }
+.subagent-panel-head { display: flex; align-items: center; justify-content: space-between; }
+.subagent-panel-title { font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--fg-muted); }
+.subagent-panel-refresh {
+  background: var(--bg-raised); border: 1px solid var(--border); border-radius: 5px;
+  color: var(--fg); font: inherit; font-size: 11px; padding: 2px 8px; cursor: pointer;
+}
+.subagent-panel-refresh:disabled { opacity: 0.5; cursor: default; }
+.subagent-panel-muted { color: var(--fg-muted); font-size: 12px; }
+.subagent-panel-error { color: var(--danger); }
+.subagent-panel-list { display: flex; flex-direction: column; gap: 4px; }
+.subagent-panel-row {
+  display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
+  background: var(--bg-raised); border: 1px solid var(--border); border-radius: 6px; padding: 5px 8px;
+}
+.subagent-panel-row[data-activity='running'] { border-color: var(--accent-dim); }
+.subagent-panel-row[data-diagnostic] { opacity: 0.6; }
+.subagent-panel-label { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 500; }
+.subagent-panel-badge {
+  font-size: 11px; color: var(--fg-muted); border: 1px solid var(--border); border-radius: 8px; padding: 0 6px;
+}
+.subagent-panel-badge[data-activity='running'] { color: var(--accent); border-color: var(--accent-dim); }
+.subagent-panel-verbs { display: inline-flex; align-items: center; gap: 4px; flex-basis: 100%; margin-top: 2px; }
+.subagent-panel-prompt {
+  flex: 1; min-width: 0; background: var(--bg-panel); color: var(--fg);
+  border: 1px solid var(--border); border-radius: 5px; padding: 3px 6px; font: inherit; font-size: 12px;
+}
+.subagent-panel-btn {
+  background: var(--bg-panel); border: 1px solid var(--border); border-radius: 5px;
+  color: var(--fg); font: inherit; font-size: 11px; padding: 2px 8px; cursor: pointer;
+}
+.subagent-panel-btn:disabled { opacity: 0.5; cursor: default; }
+.subagent-panel-btn-danger:hover { color: var(--danger); border-color: var(--danger); }
+.subagent-panel-notice { color: var(--accent); font-size: 12px; }
+

@@ -1,0 +1,27 @@
+/* ---- queue dock + feedback (M3) ---- */
+.queue-dock { display: flex; flex-direction: column; gap: 6px; margin-top: 10px; }
+.queue-feedback {
+  display: flex; gap: 8px; align-items: baseline; font-size: 13px;
+  border: 1px solid var(--border); border-radius: 6px; padding: 6px 10px; background: var(--bg-panel);
+}
+.queue-feedback--error { border-color: var(--danger); color: var(--danger); }
+.queue-feedback-label { color: var(--fg-muted); flex-shrink: 0; }
+.queue-feedback-text { color: inherit; }
+.queue-list { display: flex; flex-direction: column; gap: 4px; }
+.queue-row {
+  display: flex; align-items: baseline; gap: 8px; font-size: 13px;
+  border: 1px dashed var(--border); border-radius: 6px; padding: 5px 10px;
+}
+.queue-placement { color: var(--accent); flex-shrink: 0; font-size: 12px; }
+.queue-preview { color: var(--fg-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; }
+.queue-actions { display: inline-flex; gap: 4px; flex-shrink: 0; }
+.queue-action {
+  background: var(--bg-raised); color: var(--fg); border: 1px solid var(--border);
+  border-radius: 4px; padding: 0 6px; font: inherit; font-size: 11px; cursor: pointer;
+}
+.plugin-demo-hostcall {
+  align-self: flex-start; background: var(--bg-raised); color: var(--fg);
+  border: 1px solid var(--accent-dim); border-radius: 5px; padding: 2px 10px;
+  font: inherit; font-size: 12px; cursor: pointer; margin-bottom: 6px;
+}
+

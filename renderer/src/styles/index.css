@@ -1,0 +1,34 @@
+/* styles/ — 原 styles.css(1041 行)按域拆分(2026-08-21)。
+ * 规则体逐字未动;@import 顺序 = 原文件自上而下的级联顺序,**不得调换**
+ * (.queue-row 等旧定义靠顺序被 Matrix 覆盖;.sidebar-item/.chat-node-actions
+ *  等在后节有补充定义)。
+ * 域映射:
+ *   tokens          主题令牌 + reset(+ 后段 light 补缺令牌在 settings.css 内原位)
+ *   layout          top bar / workspace menu / 三栏 grid
+ *   sidebar         sidebar 基础;sidebar-menus = 行菜单/视图选项/分组/重命名 Modal
+ *   chat            conversation chat + composer/input bar 基础 + queue edit 行内编辑
+ *   goal-bar        goal bar 基础(Matrix 三态编舞在 dock.css)
+ *   tool-cards      tool card + Matrix diff 烧录卡
+ *   queue-dock      queue dock + feedback(Matrix 条语言在 dock.css)
+ *   plugin          plugin runtime + additive slot anchors
+ *   chat-panels     hero/placeholder + 触发菜单锚点 + details + subagent panel
+ *   settings        Settings shell + Provider 编辑 + PluginHost 控制台 + 消息行动作
+ *                   + Composer 接管 + light 补缺令牌 + agent 预设 + PluginHost 增强
+ *   plugin-settings 插件设置分区(配置三卡 + 列表三组)
+ *   dock            conversation.input.dock 停靠排条语言 + Todo/Goal/Queue Matrix 条
+ *   composer        微簇 .micro/StatsLine + 第二轮 .input-box/.input-row/go-btn/textarea
+ */
+@import './tokens.css';
+@import './layout.css';
+@import './sidebar.css';
+@import './chat.css';
+@import './sidebar-menus.css';
+@import './goal-bar.css';
+@import './tool-cards.css';
+@import './queue-dock.css';
+@import './plugin.css';
+@import './chat-panels.css';
+@import './settings.css';
+@import './plugin-settings.css';
+@import './dock.css';
+@import './composer.css';

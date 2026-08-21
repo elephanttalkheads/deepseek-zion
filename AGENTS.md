@@ -36,9 +36,13 @@ renderer/
   │  │                    以及各官方 UI 包的 zion adapter(model-select/permission-ui/plan-seat/…)。
   │  ├─ plugin/          插件底座:runtime / slot-registry / evaluator(闭包求值)/ guard /
   │  │                    hub / remote / run-orchestrator / anchors / demo。
-  │  └─ ui/              自研复刻组件:AppFrame/Sidebar/ChatView/InputBar/ConversationDock/
-  │                       ToolCallCard/QueueDock/SettingsShell/PluginHost/…(三栏 + 会话 +
-  │                       对话流 + 工具卡 + 审批 + 队列)。
+  │  ├─ ui/              自研复刻组件:AppFrame/Sidebar/ChatView/InputBar/ConversationDock/
+  │  │                    ToolCallCard/QueueDock/SettingsShell/PluginHost/…(三栏 + 会话 +
+  │  │                    对话流 + 工具卡 + 审批 + 队列)。
+  │  └─ styles/          全局样式(原单文件 styles.css 按域拆分,2026-08-21):index.css
+  │                       按原级联顺序 @import 聚合 14 个域文件(tokens/layout/sidebar/
+  │                       chat/dock/composer/settings/plugin/…);**import 顺序不得调换**
+  │                       (queue-row 等靠顺序覆盖),改样式先找对应域文件。
   └─ vendor/             官方 client 包 **TS 源码逐文件拷贝**,Vite 直编(官方发布的是
                          ClientModuleSystem bundle 不可直 import)。现有 15+ 包:
                          client-connection / client-runtime / client-web-react /
