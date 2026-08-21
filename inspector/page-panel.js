@@ -85,6 +85,21 @@
     }
   }
 
+  /** 幂等展开:找 aria-expanded 按钮,false → 点击 → 校验变 true(配方共享,别手写)。 */
+  async function ensureExpanded(selector) {
+    const root = document.querySelector(selector)
+    if (!root) throw new Error(`ensureExpanded: ${selector} 无匹配`)
+    const btn = root.querySelector('button[aria-expanded]')
+    if (!btn) return { ok: true, changed: false, note: '该元素无可展开按钮(aria-expanded)' }
+    if (btn.getAttribute('aria-expanded') === 'true') return { ok: true, changed: false, note: '已处于展开态' }
+    btn.click()
+    await sleep(700)
+    if (btn.getAttribute('aria-expanded') !== 'true') {
+      throw new Error(`点击后 aria-expanded 未变为 true(${selector});展开态未出现`)
+    }
+    return { ok: true, changed: true, note: '已点击展开' }
+  }
+
   /** 高亮某个真实元素(截图辅助)。 */
   function flash(selector, ms = 1500) {
     const el = document.querySelector(selector)
@@ -99,7 +114,8 @@
   async function dismissWelcomeModal() {
     // 先只查 dialog(便宜);innerText 扫全页在长会话下很重,不干。
     let dialog = document.querySelector('[role="dialog"]')
-    if (!dialog || !/内测声明|欢迎|welcome/i.test(dialog.textContent || '')) return false
+    // 文案匹配多锚点:内测声明 / 无法保存确认状态(保存失败提示,很稳定)/ welcome。官方改文案时任一命中仍有效。
+    if (!dialog || !/内测声明|无法保存确认状态|欢迎使用|welcome/i.test(dialog.textContent || '')) return false
     const btn = [...dialog.querySelectorAll('button')].find((b) => {
       const txt = (b.textContent || '').trim()
       const r = b.getBoundingClientRect()
@@ -226,9 +242,12 @@
   // ---------------- 配方执行 ----------------
   async function runReal(recipe) {
     if (typeof recipe.run !== 'function') throw new Error('真实配方缺少 run()')
+    // 真实配方必须先关舞台:舞台里挂载的 mock 组件(如 GoalBar 带 data-goal-bar)
+    // 会污染真实选择器/并集截图(见 input-dock 被舞台撑大事件)。
+    await closeStage()
     await dismissWelcomeModal()
     const result = await recipe.run({
-      waitFor, rectOf, unionRect, setNativeValue, pickComposerTextarea, flash, sleep, tick, dismissWelcomeModal,
+      waitFor, rectOf, unionRect, setNativeValue, pickComposerTextarea, flash, sleep, tick, dismissWelcomeModal, ensureExpanded, closeStage,
     })
     return { ok: true, mode: 'real', recipeId: recipe.id, ...result }
   }
@@ -287,12 +306,13 @@
       return el ? { ok: true, selector, rect: rectOf(el) } : { ok: false, error: `selector 无匹配: ${selector}` }
     },
     flash,
-    _core: { makeT, rectOf, unionRect, waitFor, setNativeValue, pickComposerTextarea, tick, sleep, dismissWelcomeModal },
+    _core: { makeT, rectOf, unionRect, waitFor, setNativeValue, pickComposerTextarea, tick, sleep, dismissWelcomeModal, ensureExpanded },
   }
 
   // ---------------- 悬浮面板 ----------------
   function buildPanel() {
     const css = document.createElement('style')
+    css.id = 'zion-inv-style' // reload 时按 id 移除重建
     css.textContent = `
       .zion-iv-l { position:fixed; right:14px; bottom:14px; z-index:2147483001;
         background:#0c130d; color:#9fffc0; border:1px solid rgba(120,255,180,.4);
@@ -337,6 +357,7 @@
 
     const launcher = document.createElement('button')
     launcher.type = 'button'
+    launcher.id = 'zion-inv-launcher' // reload 时按 id 移除重建
     launcher.className = 'zion-iv-l'
     launcher.textContent = '⿻ 组件'
     launcher.title = '组件召唤器(呼出官方 UI 组件真实状态)'
@@ -384,9 +405,11 @@
         row.className = 'zion-iv-row'
         const tagClass = e.tag === 'official' ? 'off' : e.tag === 'zion-add' ? 'add' : e.tag === 'slot' ? 'slot' : ''
         const mods = e.official?.modes || []
+        const statesLine = e.states && e.states.length ? `<div class="mt">态: ${e.states.join(' · ')}</div>` : ''
         row.innerHTML = `
           <div><span class="nm"></span><span class="id"></span><span class="zion-iv-tag ${tagClass}"></span></div>
           <div class="mt"></div>
+          ${statesLine}
           <div class="acts">
             ${mods.includes('overlay') ? '<button data-act="overlay">舞台</button>' : ''}
             ${mods.includes('real') ? '<button data-act="real">真实</button>' : ''}

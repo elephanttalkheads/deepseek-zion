@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-08-20T10:27:00.302Z",
+  "generatedAt": "2026-08-21T04:24:29.776Z",
   "source": "docs/ui-component-inventory.md",
   "entries": [
     {
@@ -93,7 +93,12 @@
           "overlay",
           "real"
         ]
-      }
+      },
+      "states": [
+        "active",
+        "paused",
+        "blocked"
+      ]
     },
     {
       "id": "A7-inputbar",
@@ -103,7 +108,7 @@
       "mount": "",
       "entries": [
         "1. 触发管线 `trigger.render()`(→ MenuView + PopupSelectView):输入 `/` 弹命令/技能菜单;`/permission` → popupSelect(Full access 风险确认 → `session.command('/permission <id>')`);↑/↓/Enter/Escape 仲裁 [official]",
-        "2. `SlotAnchor slot=\"conversation.input.dock\"` (插件可注入状态卡/host.call 测试)[slot]",
+        "2. `SlotAnchor slot=\"conversation.input.dock\"` (插件可注入状态卡/host.call 测试)[slot] —— 什么是插件槽/槽里有什么/两条实现路径,详见 §1.3 插件槽详解(防误解必读)",
         "3. `TodoDockSeat`(composer 上方 plan strip)[official]",
         "4. `GoalBar`(A6)[zion-add]",
         "5. `PermissionChip`(B8)→ 预设菜单 → `/permission <id>` [official]",
@@ -120,7 +125,14 @@
       ],
       "data": "",
       "tag": "mixed",
-      "official": null
+      "official": null,
+      "states": [
+        "collapsed",
+        "expanded",
+        "active",
+        "paused",
+        "blocked"
+      ]
     },
     {
       "id": "A8-pluginhost",
@@ -220,7 +232,11 @@
           "TodoDock",
           "TodoPanel"
         ]
-      }
+      },
+      "states": [
+        "collapsed",
+        "expanded"
+      ]
     },
     {
       "id": "b-composerseat",

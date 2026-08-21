@@ -74,3 +74,4 @@ docs/_tmp-*.md
 probe-archive-filter-out/
 probe-plugin-settings-out/
 inspector/shot-out/
+inspector/.port

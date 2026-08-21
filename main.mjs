@@ -16,8 +16,8 @@
 // A future iteration will inject the ZION visual layer on top.
 // ============================================================
 
-import { BrowserWindow, app, shell } from 'electron'
-import { spawn } from 'node:child_process'
+import { BrowserWindow, app, nativeImage, shell } from 'electron'
+import { execSync, spawn } from 'node:child_process'
 import fs from 'node:fs'
 import http from 'node:http'
 import net from 'node:net'
@@ -42,7 +42,15 @@ const INSPECTOR_MODE = process.argv.includes('--inspector')
 const FIXTURE_MODE = process.argv.includes('--fixture')
 const HIDDEN_MODE = process.argv.includes('--hidden')
 const INSPECTOR_PORT = 5198
+const INSPECTOR_FALLBACK_PORTS = [5208, 5218, 5228]
 const INSPECTOR_SHOT_DIR = path.join(__dirname, 'inspector', 'shot-out')
+const INSPECTOR_PORT_FILE = path.join(__dirname, 'inspector', '.port')
+
+// P2-8:多实例共用 user-data 时 Chromium 缓存目录互相搬家会刷「拒绝访问」噪音。
+// inspector 是 dev 工具,给独立缓存目录(按模式区分,稳定复用)。
+if (INSPECTOR_MODE) {
+  app.setPath('cache', path.join(app.getPath('userData'), `cache-inspector-${FIXTURE_MODE ? 'fixture' : 'real'}-${process.pid}`))
+}
 
 // --- replica mode (electron shell for OUR renderer) -----------
 // `electron . --replica` 加载复刻界面(renderer/dist 经 vite preview 服务):
@@ -250,6 +258,21 @@ async function waitForPageBoot(wc, limitMs = 60_000) {
   }
 }
 
+/** 组装并注入面板 bundle(manifest + panel + recipes)。返回是否成功。 */
+async function injectInspectorBundle(wc) {
+  let bundle = 'window.__ZION_INSPECTOR_MANIFEST__ = ' + fs.readFileSync(INSPECTOR_MANIFEST_FILE, 'utf8') + ';\n'
+  bundle += fs.readFileSync(INSPECTOR_PANEL_JS, 'utf8') + '\n'
+  bundle += fs.readFileSync(INSPECTOR_RECIPES_JS, 'utf8') + '\n'
+  bundle += 'void 0;\n' // 完成值必须是可克隆的(undefined);否则 IPC 报 "could not be cloned"
+  try {
+    await wc.executeJavaScript(bundle)
+    return true
+  } catch (err) {
+    console.error('[zion-inspector] 注入失败:', err?.message ?? err)
+    return false
+  }
+}
+
 async function installInspector(win) {
   const wc = win.webContents
   // 屏外/隐藏窗口会被节流(rAF/定时器暂停)→ 挂载/等待永不完成;关掉节流。
@@ -259,18 +282,33 @@ async function installInspector(win) {
     console.error('[zion-inspector] 页面 60s 内未暴露 window.__DSH_MODULES__ —— 不注入召唤器')
     return
   }
-  let bundle = 'window.__ZION_INSPECTOR_MANIFEST__ = ' + fs.readFileSync(INSPECTOR_MANIFEST_FILE, 'utf8') + ';\n'
-  bundle += fs.readFileSync(INSPECTOR_PANEL_JS, 'utf8') + '\n'
-  bundle += fs.readFileSync(INSPECTOR_RECIPES_JS, 'utf8') + '\n'
-  bundle += 'void 0;\n' // 完成值必须是可克隆的(undefined);否则 IPC 报 "could not be cloned"
+  const injected = await injectInspectorBundle(wc)
+  if (!injected) return
+  console.log('[zion-inspector] 召唤面板已注入(悬浮按钮:右下角「⿻ 组件」;控制口见下方日志)')
+  await startInspectorServer(win)
+}
+
+/**
+ * P0-1:若 5198 已被「上一个 inspector 实例」占用(常见于 npm 包装进程被杀、
+ * 留下孤儿 electron),直接按端口找 PID 杀掉旧进程树,避免带病启动
+ * (面板注入成功但控制口 EADDRINUSE、cli 打到旧实例)。
+ */
+async function takeoverOldInspector() {
+  if (process.platform !== 'win32') return false
   try {
-    await wc.executeJavaScript(bundle)
-    console.log('[zion-inspector] 召唤面板已注入(悬浮按钮:右下角「⿻ 组件」;控制口 127.0.0.1:' + INSPECTOR_PORT + ')')
-  } catch (err) {
-    console.error('[zion-inspector] 注入失败:', err?.message ?? err)
-    return
-  }
-  startInspectorServer(win)
+    const res = await fetch('http://127.0.0.1:5198/api/inspector/status', { signal: AbortSignal.timeout(1500) })
+    const j = await res.json().catch(() => null)
+    if (!j || j.app !== 'deepseek-zion inspector') return false
+    const out = execSync('netstat -ano -p tcp', { encoding: 'utf8' })
+    const line = out.split(/\r?\n/).find((l) => l.includes('127.0.0.1:5198') && l.includes('LISTENING'))
+    if (!line) return false
+    const pid = line.trim().split(/\s+/).pop()
+    execSync(`taskkill /F /T /PID ${pid}`, { stdio: 'ignore' })
+    console.log(`[zion-inspector] 检测到旧 inspector 实例(PID ${pid})占用 5198 —— 已接管并清场`)
+    await new Promise((r) => setTimeout(r, 1200))
+    return true
+  } catch { /* 无旧实例或已释放 */ }
+  return false
 }
 
 /** 页内执行一段 JS,把返回值(必须是 JSON 安全值)取回主进程。 */
@@ -286,20 +324,64 @@ async function pageCall(wc, expr) {
   return result.value
 }
 
-/** 保存 capturePage 结果为 PNG;rect 存在则只截该区域(DIP)。 */
-async function saveShot(win, rect, name) {
-  fs.mkdirSync(INSPECTOR_SHOT_DIR, { recursive: true })
-  const image = rect
-    ? await win.webContents.capturePage({ x: rect.x, y: rect.y, width: rect.width, height: rect.height })
-    : await win.webContents.capturePage()
-  const file = path.join(INSPECTOR_SHOT_DIR, `${name || 'shot'}.png`)
-  fs.writeFileSync(file, image.toPNG())
-  return file
+/** PNG 亮度均值(0-255)。nativeImage 解码,无需第三方依赖。 */
+function pngMeanBrightness(buffer) {
+  try {
+    const bitmap = nativeImage.createFromBuffer(buffer).toBitmap()
+    if (!bitmap || bitmap.length === 0) return null
+    const step = 4 // BGRA
+    let sum = 0
+    let n = 0
+    for (let i = 0; i < bitmap.length; i += step) {
+      sum += (bitmap[i] + bitmap[i + 1] + bitmap[i + 2]) / 3
+      n += 1
+    }
+    return n > 0 ? Math.round(sum / n) : null
+  } catch { return null }
 }
 
-function startInspectorServer(win) {
+/** 保存 capturePage 结果为 PNG;rect 存在则只截该区域(DIP)。返回 {file, mean, size}。 */
+async function saveShot(win, rect, name) {
+  fs.mkdirSync(INSPECTOR_SHOT_DIR, { recursive: true })
+  const wc = win.webContents
+  wc.invalidate() // 强制重绘,屏外窗口避免抓到旧帧
+  await new Promise((r) => setTimeout(r, 120))
+  const image = rect
+    ? await wc.capturePage({ x: rect.x, y: rect.y, width: rect.width, height: rect.height })
+    : await wc.capturePage()
+  const size = image.getSize()
+  const buffer = image.toPNG()
+  const file = path.join(INSPECTOR_SHOT_DIR, `${name || 'shot'}.png`)
+  fs.writeFileSync(file, buffer)
+  return { file, mean: pngMeanBrightness(buffer), size: { width: size.width, height: size.height } }
+}
+
+async function startInspectorServer(win) {
   if (inspectorServer) return
   fs.mkdirSync(INSPECTOR_SHOT_DIR, { recursive: true })
+  // P0-1:5198 被旧 inspector 实例占用 → 接管清场;非 inspector 占用 → 退避端口。
+  await takeoverOldInspector()
+  const candidates = [INSPECTOR_PORT, ...INSPECTOR_FALLBACK_PORTS]
+  let boundPort = null
+  for (const port of candidates) {
+    const ok = await new Promise((resolve) => {
+      const srv = http.createServer()
+      srv.once('error', () => resolve(false))
+      srv.once('listening', () => { srv.close(() => resolve(true)) })
+      srv.listen(port, '127.0.0.1')
+    })
+    if (ok) { boundPort = port; break }
+  }
+  if (boundPort === null) {
+    console.error('[zion-inspector] 控制口全部被占(5198/5208/5218/5228)—— 面板仍可用,CLI 控制不可用;请 cli kill 清场后重启')
+    return
+  }
+  if (boundPort !== INSPECTOR_PORT) {
+    console.log(`[zion-inspector] 5198 被非 inspector 占用,退避到 ${boundPort}`)
+  }
+  // 机器可读端口文件:cli 未设 ZION_INSPECTOR_URL 时读取。
+  fs.writeFileSync(INSPECTOR_PORT_FILE, String(boundPort))
+
   const send = (res, code, obj) => {
     res.writeHead(code, {
       'Content-Type': 'application/json; charset=utf-8',
@@ -328,11 +410,26 @@ function startInspectorServer(win) {
       return send(res, 200, {
         ok: true,
         app: 'deepseek-zion inspector',
-        controlPort: INSPECTOR_PORT,
+        controlPort: boundPort,
         url: wc.getURL(),
         fixture: wc.getURL().includes('fixture'),
         hidden: HIDDEN_MODE,
       })
+    }
+    if (route === '/api/inspector/reload') {
+      // P0-2:显式重载配方/面板(销毁旧面板 DOM + 重新读盘注入),不依赖页面 reload。
+      return enqueue(() => (async () => {
+        const cleanup = [
+          'window.__zionInspector = undefined',
+          'window.__ZION_RECIPES__ = undefined',
+          "['zion-inv-panel','zion-inv-launcher','zion-inv-style','zion-inv-stage'].forEach((id) => document.getElementById(id)?.remove())",
+          'void 0',
+        ].join('; ')
+        await wc.executeJavaScript(cleanup)
+        const injected = await injectInspectorBundle(wc)
+        if (!injected) return send(res, 200, { ok: false, error: '重注入失败(见主进程日志)' })
+        send(res, 200, { ok: true, note: '面板/配方已从磁盘重新注入' })
+      })().catch((e) => send(res, 200, { ok: false, error: String(e.message || e) })))
     }
     if (route === '/api/inspector/list') {
       return enqueue(() => pageCall(wc, 'window.__zionInspector.list()')
@@ -385,8 +482,17 @@ function startInspectorServer(win) {
             rect = r && r.rect ? r.rect : null
           }
           const name = String(b.name || 'shot').replace(/[^a-zA-Z0-9._-]/g, '') || 'shot'
-          const file = await saveShot(win, rect, name)
-          send(res, 200, { ok: true, path: file, rect })
+          // 屏外窗口合成帧滞后:布局刚稳定就 capturePage 会抓到旧帧/黑帧,先等一拍。
+          await new Promise((r) => setTimeout(r, 800))
+          let shot = await saveShot(win, rect, name)
+          // P0-3:均值亮度自检 —— 疑似空帧/黑帧自动重拍一次并标注。
+          let retried = false
+          if (shot.mean !== null && shot.mean < 10) {
+            await new Promise((r) => setTimeout(r, 600))
+            shot = await saveShot(win, rect, name)
+            retried = true
+          }
+          send(res, 200, { ok: true, path: shot.file, rect, size: shot.size, mean: shot.mean, retried })
         } catch (e) {
           send(res, 200, { ok: false, error: String(e.message || e) })
         }
@@ -395,11 +501,11 @@ function startInspectorServer(win) {
     send(res, 404, { ok: false, error: `unknown route: ${route}` })
   })
   inspectorServer.on('error', (err) => {
-    console.error(`[zion-inspector] 控制口 127.0.0.1:${INSPECTOR_PORT} 启动失败:`, err.message)
+    console.error(`[zion-inspector] 控制口 127.0.0.1:${boundPort} 启动失败:`, err.message)
     inspectorServer = null
   })
-  inspectorServer.listen(INSPECTOR_PORT, '127.0.0.1', () => {
-    console.log(`[zion-inspector] 控制口就绪: http://127.0.0.1:${INSPECTOR_PORT} (CLI: node inspector/cli.mjs status)`)
+  inspectorServer.listen(boundPort, '127.0.0.1', () => {
+    console.log(`[zion-inspector] 控制口就绪: http://127.0.0.1:${boundPort} (CLI: node inspector/cli.mjs status;端口文件 inspector/.port)`)
   })
 }
 
@@ -407,6 +513,8 @@ function startInspectorServer(win) {
 app.whenReady().then(async () => {
   let url
   try {
+    // P0-1:尽早接管旧 inspector 实例(在窗口/renderer 创建前杀旧树,避免缓存重叠期噪音)。
+    if (INSPECTOR_MODE) await takeoverOldInspector()
     if (REPLICA_MODE) {
       url = await startReplica()
     } else {

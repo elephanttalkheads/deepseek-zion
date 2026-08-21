@@ -156,6 +156,17 @@ window.__ZION_RECIPES__ = (() => {
     return { selector: '[data-testid="todo-panel"]', rect: core.rectOf(el), note: '官方 TodoPanel(plan strip,composer 上方;fx-alpha 会话)' }
   }
 
+  /** 真实配方:todo plan strip 的展开态(幂等展开交给 core.ensureExpanded)。 */
+  const realTodoDockExpanded = async (core) => {
+    await selectSidebarSession(core, /alpha/i)
+    await dismissComposerTakeover(core)
+    const el = await core.waitFor('[data-testid="todo-panel"]', 8000)
+    if (!el) throw new Error('todo 条未出现(需 --fixture 的 fx-alpha 会话)')
+    await core.ensureExpanded('[data-testid="todo-panel"]')
+    core.flash('[data-testid="todo-panel"]')
+    return { selector: '[data-testid="todo-panel"]', rect: core.rectOf(el), note: '官方 TodoPanel 展开态(任务列表向上展开,fx-alpha 会话)' }
+  }
+
   return {
     'goal-bar': {
       id: 'goal-bar',
@@ -204,6 +215,12 @@ window.__ZION_RECIPES__ = (() => {
       name: 'TodoDock plan strip(真实)',
       kind: 'real',
       run: realTodoDock,
+    },
+    'todo-dock-expanded': {
+      id: 'todo-dock-expanded',
+      name: 'TodoDock 展开态(真实·任务列表)',
+      kind: 'real',
+      run: realTodoDockExpanded,
     },
     'input-dock': {
       id: 'input-dock',

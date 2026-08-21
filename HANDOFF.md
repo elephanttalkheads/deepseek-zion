@@ -39,7 +39,7 @@
 - **组件召唤器 inspector(官方原版 UI 内呼出真实组件)** ✅ 
 pm run start:inspector[:fixture]:官方 3080 页面注入悬浮面板(右下角「⿻ 组件」)+ 控制口 5198 + 
 ode inspector/cli.mjs。原理:官方页面暴露 window.__DSH_MODULES__(ClientModuleSystem)→ 动态 import 官方 client 模块拿真实组件(React 同实例挂载,舞台 overlay),或真实配方驱动官方 UI 状态(composer 键入 /goal → 真实 GoalBar;选 fx-alpha + 驳回常驻审批 → 真实 TodoDock plan strip)。已验:GoalBar 三态舞台 + 真实 goal + TodoDock 真实 + raw/eval/shot/close 全通(截图进 inspector/shot-out/)。fixture 环境两坑已自动处理:「内测声明」弹窗(fixture 无法持久化确认 → 移除 dialog)与 composer 接管(常驻审批点「拒绝」/问题组「放弃整组问题」)。manifest 由 docs/ui-component-inventory.md 生成(
-pm run inspector:gen);overlay 仅限**模块导出值**组件(ui-goal 导出 GoalBar/GoalDock;TodoPanel/JobListAction 未导出 → 只能真实配方)。
+pm run inspector:gen);overlay 仅限**模块导出值**组件(ui-goal 导出 GoalBar/GoalDock;TodoPanel/JobListAction 未导出 → 只能真实配方)。2026-08-21 使用优化(报告驱动):单实例接管(新实例自动杀旧 inspector 进程树)/端口退避+`.port` 文件/`cli kill`/`cli reload`(改配方不必重启)/`status --wait`/截图亮度自检重拍+尺寸亮度输出/manifest `states` 标记+`core.ensureExpanded`/独立 cache 目录/弹窗匹配多锚点;真实配方执行前先关舞台(mock 组件污染真实选择器)。
 
 ---
 

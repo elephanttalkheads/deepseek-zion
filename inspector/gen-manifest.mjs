@@ -90,6 +90,7 @@ function parse() {
       data: join(field['数据']),
       tag: tagOf(entriesText),
       official: pickOfficial(name, entriesText, false),
+      states: pickStates(name, entriesText),
     })
     current = null
   }
@@ -129,6 +130,7 @@ function parse() {
           data: rowText,
           tag: 'mixed',
           official: pickOfficial(name, rowText),
+          states: pickStates(name, rowText),
         })
       }
       continue
@@ -143,6 +145,25 @@ function tagOf(text) {
   if (text.includes('[zion-add]') && !text.includes('[official]') && !text.includes('[slot]')) return 'zion-add'
   if (text.includes('[slot]') && !text.includes('[official]') && !text.includes('[zion-add]')) return 'slot'
   return 'mixed'
+}
+
+/** 多态组件「状态」curated 标记:配方按状态成对提供(todo-dock / todo-dock-expanded 等)。 */
+const STATES = {
+  TodoDockSeat: ['collapsed', 'expanded'],
+  TodoDock: ['collapsed', 'expanded'],
+  TodoPanel: ['collapsed', 'expanded'],
+  GoalBar: ['active', 'paused', 'blocked'],
+  GoalDock: ['active', 'paused'],
+}
+
+function pickStates(name, text) {
+  const found = []
+  for (const key of Object.keys(STATES)) {
+    if (name === key || name.includes(key) || text.includes(key)) {
+      for (const s of STATES[key]) if (!found.includes(s)) found.push(s)
+    }
+  }
+  return found.length ? found : undefined
 }
 
 /** 按名称/文本匹配 curated 官方映射(header 名优先;文本匹配只用于表格行)。 */

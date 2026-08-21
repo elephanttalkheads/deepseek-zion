@@ -34,7 +34,9 @@ npm run start:inspector:fixture -- --hidden   # 屏外窗口(适合 AI 无头验
 ## AI 用法(CLI)
 
 ```sh
-node inspector/cli.mjs status                       # 状态
+node inspector/cli.mjs status [--wait] [--timeout 60]    # 状态(--wait 阻塞至就绪,启动约 40s)
+node inspector/cli.mjs reload                         # 重载配方/面板(改 recipes.js 后不必重启)
+node inspector/cli.mjs kill                           # 清场:杀掉所有 electron --inspector 进程树
 node inspector/cli.mjs list [--filter xxx]          # 清单(来自 ui-component-inventory.md)
 node inspector/cli.mjs summon goal-bar --shot       # 舞台:GoalBar 进行中态 + 截图
 node inspector/cli.mjs summon goal-bar-paused --shot
@@ -47,7 +49,7 @@ node inspector/cli.mjs shot [--selector '.sel'] [--name n]   # 全窗/选区截�
 node inspector/cli.mjs close                        # 关闭舞台
 ```
 
-截图输出到 `inspector/shot-out/<name>.png`(已 gitignore),AI 可直接读取查看组件真实样子。
+截图输出到 `inspector/shot-out/<name>.png`(已 gitignore),AI 可直接读取查看组件真实样子。`--shot` 输出带图片**尺寸 + 亮度均值 + 是否重拍**(`(1072x80, 亮度 183)`),亮度过低说明抓到黑帧/旧帧(已自动重拍一次并标注 `retried`),AI 可据此快速判读截图有效性,不必先开图。
 
 ### 通用流程(新组件)
 
@@ -56,6 +58,24 @@ node inspector/cli.mjs close                        # 关闭舞台
 3. 有导出 → `raw` 舞台挂载(纯 JSON props;需要函数 props 的组件建议写进 `recipes.js`);
 4. 无导出 → 只能真实配方(写 `run()` 驱动官方 UI,参考现有 `goal-bar-real` / `todo-dock`)。
 
+### 真实配方:探索 → 固化(最常用,别跳过)
+
+真实配方先「在页面上摸清组件怎么出现」,再固化成 `run()`。套路:
+
+1. **eval 探 DOM**:找组件本体与稳定选择器,优先 `data-testid` / `data-*` / `aria-*`,**不要用 class hash**(如 `lXshSW_header` 随构建漂移):
+   ```sh
+   node inspector/cli.mjs eval "(()=>{const el=document.querySelector('[data-testid=\"todo-panel\"]');return el.outerHTML.slice(0,500)})()"
+   node inspector/cli.mjs eval "JSON.stringify([...document.querySelectorAll('button[aria-expanded]')].map(b=>b.getAttribute('aria-expanded')))"
+   ```
+2. **eval 驱动验证**:点按钮、看状态变化(展开/收起、投影出现),确认幂等条件(如 `aria-expanded==='true'` 后不再点):
+   ```sh
+   node inspector/cli.mjs eval "(()=>{const b=document.querySelector('[data-testid=\"todo-panel\"] button[aria-expanded]');b.click();return 'clicked'})()"
+   ```
+3. **固化进 recipes.js**:写 `run(core)`,交互一律用 core 助手(`waitFor` / `setNativeValue` / `ensureExpanded` / `dismissComposerTakeover` 套路),幂等检查抽到 `core.ensureExpanded` 这类共享助手,别在配方里手写。
+4. **截图验收**:`recipe <id> --shot`,看输出的尺寸/亮度判断是否有效帧。
+
+多态组件在 `manifest.json` 里有 `states` 标记(如 TodoDock: `collapsed`/`expanded`),配方按状态成对提供(`todo-dock` / `todo-dock-expanded`)。
+
 ## 配方(recipes.js)
 
 | 配方键 | 形态 | 说明 |
@@ -63,6 +83,7 @@ node inspector/cli.mjs close                        # 关闭舞台
 | `goal-bar` / `goal-bar-paused` / `goal-bar-blocked` | overlay | 官方 GoalBar 三态(mock props + 官方 zh 词表 `t`) |
 | `goal-bar-real` | real | 向 composer 键入 `/goal <目标>` → 官方真实 GoalBar(`data-goal-bar`) |
 | `todo-dock` | real | 选中 fx-alpha 会话 + 关掉常驻审批/问题组 → 官方 TodoPanel plan strip(`data-testid="todo-panel"`) |
+| `todo-dock-expanded` | real | 同上,再点 strip 头部按钮(`aria-expanded`)→ 官方 TodoPanel **展开态**(任务列表向上展开,150px) |
 | `input-dock` | real | **`conversation.input.dock` 槽整区**:真实条目并集截图(TodoPanel 任务条 + GoalBar 目标条 + QueueDock 队列行,`data-queue-dock` 有排队才渲染)—— 即 zion `SlotAnchor` 对应物;社区插件在官方 3080 未注册此槽,故无第三方卡片 |
 | `goal-dock` | overlay | 官方 **GoalDock**(ui-goal 导出的真实槽条目适配器,mock `useProjection`)—— 展示槽条目收到的 props 契约(投影适配器 + 注入动作 + t) |
 
@@ -87,3 +108,6 @@ npm run inspector:gen
 - **`--fixture` 零副作用**;`goal-bar-real` 在**真实后端**会真的创建会话目标(与用户在 UI 里敲 `/goal` 等价),验证完可点清除。
 - 舞台挂载不改动官方应用状态;真实配方只走官方自己的 UI 动作(等价人工操作)。
 - 页面刷新后召唤面板需重新注入(主进程在 `did-finish-load` 时自动重注入)。
+- **重启与占口(已自动处理)**:新实例启动时若发现 5198 已被「旧 inspector 实例」占用(杀 npm 包装进程常见的孤儿 electron),会自动按端口找 PID **杀掉旧进程树并接管**,无需手工清场;若 5198 被非 inspector 占用则退避到 5208/5218/5228,并把实际端口写入 `inspector/.port`(cli 自动读取)。手动清场用 `node inspector/cli.mjs kill`。
+- **配方热更新**:改 `recipes.js` / `page-panel.js` / `manifest.json` 后执行 `node inspector/cli.mjs reload` 即可(主进程显式销毁旧面板 → 重新读盘注入),**不必重启 app**;`eval location.reload()` 的重注入不可靠,别再用了。
+- 多实例共用 user-data 的缓存噪音已处理:inspector 模式使用独立 cache 目录(按 fixture/real 区分)。
