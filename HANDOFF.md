@@ -155,6 +155,7 @@ pm run inspector:gen);overlay 仅限**模块导出值**组件(ui-goal 导出 Goa
 | 探针 | 作用 | 数据源 | 结果 |
 |---|---|---|---|
 | `probe-checklist.mjs` | 24 项真后端回归(模型席断言已按两级菜单更新) | 3080 | 24/24 |
+| probe-queue-activation.mjs | 队列激活探针(真后端:运行中发第二条 → QueueDock 排队行;复用 inspector 配方引擎;探针自清理) | 3080 | 7/7 |
 | `probe-backend-only.mjs` | 真后端专属项(模型守卫/settings/llm/credentials/cordis/export/updateQueue) | 3080 | 26/26 |
 | `probe-trajectory.mjs` | 轨迹视图(tabs/工具栏/搜索/切换) | fixture | 10/10 |
 | `probe-trajectory-real.mjs` | 轨迹视图真实回合账本渲染 | 3080 | 6/6 |

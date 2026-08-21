@@ -352,6 +352,7 @@ npx electron probe-queue-edit.mjs         # 队列行内编辑
 npx electron probe-sidebar-drag.mjs       # 拖拽重排/溢出
 npx electron probe-workspace-actions.mjs  # 行菜单/视图选项
 npx electron probe-plugin-settings.mjs    # 插件设置分区(配置三卡/列表三组)
+npx electron probe-queue-activation.mjs   # 队列激活(真后端;运行中排队 → QueueDock;探针自清理)
 npx electron probe-msg-actions.mjs        # 消息复制/分支
 npx electron probe-trajectory-real.mjs    # 轨迹视图
 
