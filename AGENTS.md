@@ -154,29 +154,7 @@ deepseek-zion 的定位是**复刻 dsh web 的 UI**(原 dsh web 界面)。任何
 
 ### UI 迁移阶段规则(zion-ui-visual-inventory 驱动)
 
-按 [`docs/zion-ui-visual-inventory.md`](./docs/zion-ui-visual-inventory.md) 逐块把 pi-martix-ui-dev 的 UI 迁移进本仓时,**必须**按本节强制流程执行。本节优先级高于任何 skill 或任务模板的默认流程(例如 prototype skill 的「多变体对照」不适用于迁移 demo——迁移 demo 只做一份合并形态)。
-
-**术语**:「功能入口」= 用户可达的任何交互点——按钮、菜单项、输入行为(如键入 `/` 触发菜单)、键盘快捷键、点击/hover 区、拖拽热区、弹层触发点、chip/badge/状态条上的可交互元素。
-
-**强制流程(按序执行,不得跳步)**:
-
-0. **读三处再动手**:① `docs/zion-ui-visual-inventory.md` 对应节(视觉与实现纪律原文);② 源仓 `D:\pi-martix-ui-dev` 中该节给出的精确定位文件(组件 + 样式段,逐行读);③ [`docs/ui-component-inventory.md`](./docs/ui-component-inventory.md) 中该块所属目标组件的**完整交互入口列表**。三处未读完,禁止写任何代码或 demo。
-1. **对位 + 入口差集(必须书面产出)**:把目标组件的入口清单与源仓块的入口做差集比对,在回复或 demo 顶部注释中显式列出三类:
-   - **共有入口**:迁移视觉,保留语义;
-   - **缺失入口**(清单有、源块没有):demo 中**必须补齐**(可先以视觉/交互桩呈现,入口不可缺席);
-   - **多余入口**(源块有、清单没有):进入第 2 步。
-   即使差集为空,也要显式声明「无多余入口 / 无缺失入口」,不得省略本步骤。
-2. **多余入口先问后删**:对每个多余入口,逐条询问用户保留还是删除;**得到答复前,禁止生成 demo、禁止改动真组件**。删除范围仅限从 pi-martix-ui-dev 迁移过来的这些组件上的入口;`ui-component-inventory.md` 中列出的任何功能入口**一律不得删除**。
-3. **生成合并 demo**:迁移视觉 + 目标组件的全部功能入口(含第 1 步补齐的缺失入口、第 2 步确认保留的多余入口),数据可 mock。**demo 与其验证截图/辅助脚本必须按组件放在 `ui-prototype/<组件名>/` 独立目录中**(如 `ui-prototype/input-bar/input-bar-proto.html` + 各态截图),不得散放在 `ui-prototype/` 根级。**截图按来源分两类存放**:官方源 UI 截图(inspector 召唤 / 官方 3080 直接截取,作为对位基准)放 `ui-prototype/<组件名>/official/`,复刻 demo 的各态验证截图放 `ui-prototype/<组件名>/replica/`;截图脚本(如 `_shot.mjs`)的输出路径必须指向 `replica/`。**用户确认 demo 前,禁止改动 `renderer/src/` 真组件**。
-4. **落真组件**:demo 确认后,按 §6 vendor 流程落进真组件。
-
-**硬性判定(违反即返工)**:
-
-- 只迁移视觉、未做入口差集比对 = 违规;
-- 跳过第 2 步直接删掉/保留多余入口 = 违规;
-- 未经 demo 确认直接改真组件 = 违规。
-
-**风格默认 = 保持原样**:除非用户明确要求按 `MatrixDesign-minimal.md` 或 `DESIGN.md` 重新设计,迁移块**尽量保持 pi-martix-ui-dev 中原有的风格**逐样搬入,不做极简/电影化改写(此时上方「未指明默认极简」不适用——迁移任务的默认是原样迁移)。
+迁移 pi-martix-ui-dev 的 UI 块进本仓时,强制流程、官方口径核查与硬性判定见 [`.agents/skills/zion-ui-migration/SKILL.md`](./.agents/skills/zion-ui-migration/SKILL.md)(迁移任务的唯一权威,触发即加载);本铁律与 ui-change-log 记账对迁移同样生效。
 
 ## 9. 文档索引(按必读顺序)
 
