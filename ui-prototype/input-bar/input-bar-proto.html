@@ -27,6 +27,13 @@
       官方条目(todo 任务条 order0 / goal 目标条 / queue 队列行[有排队才渲染])与插件条目
       同排纵向停靠、按 order 升序;插件卡注入 = 排里多一行(同一条条视觉语言),不是虚线占位框。
       demo 结构:.dock = tododock + goalbar + queuedock + plugcard(插件面 SlotAnchor 的渲染结果)。
+  电影风重设计(2026-08-21,对位官方 inspector 截图 todo-dock / todo-dock-expanded / goal-bar 三态):
+    · TodoDock 改为官方 TodoPanel 结构:整头可点(▤ 任务 + 计数汇总 + chevron),
+      点击展开任务列表向上显影(逐行 staggered);✓/◐/○ 状态字形 + 磷光绿/近白绿/暗绿语义。
+    · GoalBar 改为官方结构:靶标 SVG(双环+核心)+ 相位标签(进行中的目标/已暂停的目标/受阻的目标)
+      + 目标文本 + 右侧动作组(⏸/▶ 暂停恢复、✎ 编辑、🗑 清除);
+      active=磷光绿旋转外环,paused=琥珀静止,blocked=橙红 glitch。
+      ✓ complete 为 demo 扩展入口(官方条上无,多余入口待用户裁决,暂保留)。
 -->
 <html lang="zh-CN">
 <head>
@@ -87,19 +94,82 @@ body { background: var(--bg); color: var(--text-primary); font-family: var(--fon
 .demo-line b { color: var(--accent); font-weight: 400; }
 @keyframes blockIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
 
-/* ===== conversation.input.dock 停靠排(todo/goal/queue 官方条目 + 插件卡同排,同一条条语言)===== */
-.goalbar, .tododock, .queuedock, .plugcard { display: flex; align-items: center; gap: 8px; padding: 2px 4px 6px; font-size: 12px; color: var(--text-tertiary); }
-.goalbar .g-tag { color: var(--warning); letter-spacing: 0.1em; }
+/* ===== conversation.input.dock 停靠排(官方条目 + 插件卡同排,同一条条语言)=====
+   2026-08-21 电影风重设计(对位官方 inspector 截图:todo-dock / todo-dock-expanded / goal-bar 三态):
+   条语言 = 暗底 + CRT 细扫描纹 + 左侧能量竖轨 + 状态辉光;结构 1:1 对位官方。 */
+.dock { display: flex; flex-direction: column; gap: 4px; padding-bottom: 6px; }
+.tododock, .goalbar { position: relative; font-size: 12px; color: var(--text-tertiary);
+  border: 1px solid var(--border); border-left: none;
+  background: repeating-linear-gradient(0deg, rgba(0,0,0,0.14) 0 1px, transparent 1px 3px),
+              linear-gradient(180deg, rgba(3,26,13,0.55), rgba(2,18,9,0.78)); }
+.tododock::before, .goalbar::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 2px;
+  background: linear-gradient(180deg, var(--accent), rgba(0,255,65,0.06));
+  box-shadow: 0 0 6px rgba(0,255,65,0.35); }
+
+/* --- TodoDock(对位官方 TodoPanel:整头可点,计数汇总,chevron 展开任务列表向上显影)--- */
+.todo-head { display: flex; align-items: center; gap: 8px; width: 100%; padding: 6px 10px 6px 12px;
+  background: none; border: none; color: inherit; font: inherit; letter-spacing: 0.04em;
+  cursor: pointer; text-align: left; transition: color 0.15s; }
+.todo-head:hover { color: var(--text-secondary); }
+.todo-head .t-ico { flex: none; color: var(--accent); filter: drop-shadow(0 0 4px rgba(0,255,65,0.5)); }
+.todo-head .t-label { color: var(--text-secondary); letter-spacing: 0.1em; }
+.todo-head .t-counts { font-variant-numeric: tabular-nums; }
+.t-counts .c-done { color: var(--text-tertiary); }
+.t-counts .c-doing { color: var(--bright); text-shadow: 0 0 6px rgba(194,255,217,0.45); }
+.t-counts .c-todo { color: var(--text-tertiary); opacity: 0.75; }
+.todo-head .t-chev { margin-left: auto; color: var(--text-tertiary); font-size: 13px;
+  transition: transform 0.25s ease, color 0.25s; }
+.tododock.expanded .t-chev { transform: rotate(180deg); color: var(--accent); }
+.todo-list { display: flex; flex-direction: column; gap: 3px; padding: 0 10px 8px 12px; }
+.todo-item { display: flex; align-items: center; gap: 8px; animation: blockIn 0.28s ease-out backwards; }
+.todo-item .ti { flex: none; width: 14px; text-align: center; }
+.todo-item .ti.done { color: var(--accent); text-shadow: 0 0 6px rgba(0,255,65,0.55); }
+.todo-item .ti.doing { color: var(--bright); animation: todoPulse 1.6s ease-in-out infinite; }
+.todo-item .ti.todo { color: var(--text-tertiary); opacity: 0.6; }
+.todo-item.done .tt { color: var(--text-tertiary); }
+.todo-item.doing .tt { color: var(--text-primary); }
+.todo-item.todo .tt { color: var(--text-tertiary); }
+@keyframes todoPulse { 0%, 100% { opacity: 1; text-shadow: 0 0 7px rgba(194,255,217,0.7); } 50% { opacity: 0.5; text-shadow: none; } }
+
+/* --- GoalBar(对位官方:靶标 + 相位标签 + 目标文本 + 右侧动作组)--- */
+.goalbar { display: flex; align-items: center; gap: 10px; padding: 5px 10px 5px 12px; }
+.g-target { flex: none; width: 18px; height: 18px; }
+.g-target .gt-outer { transform-origin: center; }
+.goalbar.active .g-target { color: var(--accent); filter: drop-shadow(0 0 5px rgba(0,255,65,0.55)); }
+.goalbar.active .gt-outer { animation: spinRing 7s linear infinite; }
+.goalbar.active .gt-core { animation: todoPulse 2.2s ease-in-out infinite; }
+.goalbar.paused .g-target { color: var(--warning); filter: drop-shadow(0 0 4px rgba(255,176,0,0.4)); }
+.goalbar.paused { animation: none; }
+.goalbar.paused .g-phase { color: var(--warning); }
+.goalbar.blocked .g-target { color: var(--danger); filter: drop-shadow(0 0 5px rgba(255,85,85,0.5)); }
+.goalbar.blocked .g-phase { color: var(--danger); }
+.goalbar.blocked { animation: gGlitch 2.8s steps(1) infinite; border-color: rgba(255,85,85,0.35); }
+.goalbar.blocked::before { background: linear-gradient(180deg, var(--danger), rgba(255,85,85,0.06)); box-shadow: 0 0 6px rgba(255,85,85,0.4); }
+@keyframes spinRing { to { transform: rotate(360deg); } }
+@keyframes gGlitch { 0%, 91%, 100% { transform: translateX(0); } 93% { transform: translateX(-1px); } 95% { transform: translateX(1px); } 97% { transform: translateX(-1px); } }
+.g-phase { flex: none; letter-spacing: 0.1em; color: var(--accent); }
+.g-text { color: var(--text-primary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.g-actions { margin-left: auto; flex: none; display: flex; gap: 2px; }
+.g-act { background: none; border: none; color: var(--text-tertiary); cursor: pointer;
+  font-family: var(--font); font-size: 12px; padding: 2px 5px; display: inline-grid; place-items: center;
+  transition: color 0.15s, text-shadow 0.15s; }
+.g-act svg { width: 13px; height: 13px; display: block; }
+.g-act:hover { color: var(--accent); text-shadow: 0 0 6px rgba(61,255,143,0.55); }
+.g-act:hover svg { filter: drop-shadow(0 0 3px currentColor); }
+.g-act.warn:hover { color: var(--warning); text-shadow: 0 0 6px rgba(255,176,0,0.5); }
+.g-act.danger:hover { color: var(--danger); text-shadow: 0 0 6px rgba(255,85,85,0.5); }
+.goalbar input { background: none; border: none; border-bottom: 1px solid var(--border); outline: none;
+  color: var(--text-primary); font-family: var(--font); font-size: 12px; width: 220px; caret-color: var(--accent); }
+
+/* --- queue / 插件卡 / subline chip(沿用原条语言)--- */
+.queuedock, .plugcard { display: flex; align-items: center; gap: 8px; padding: 2px 4px 6px; font-size: 12px; color: var(--text-tertiary); }
 .queuedock .q-tag { color: var(--accent); letter-spacing: 0.1em; }
 .plugcard .p-tag { color: var(--accent); }
-.goalbar button, .plugcard button, .queuedock button, .subline .chip {
+.plugcard button, .queuedock button, .subline .chip {
   background: none; border: 1px solid var(--border); color: var(--text-tertiary); cursor: pointer;
   font-family: var(--font); font-size: 11px; letter-spacing: 0.06em; padding: 2px 8px; transition: color 0.15s, border-color 0.15s;
 }
-.goalbar button:hover, .plugcard button:hover, .queuedock button:hover, .subline .chip:hover { color: var(--accent); border-color: rgba(61,255,143,0.5); }
-.goalbar input { background: none; border: none; border-bottom: 1px solid var(--border); outline: none;
-  color: var(--text-primary); font-family: var(--font); font-size: 12px; width: 220px; caret-color: var(--accent); }
-.tododock .t-dot { color: var(--accent); } .tododock .t-doing { color: var(--warning); }
+.plugcard button:hover, .queuedock button:hover, .subline .chip:hover { color: var(--accent); border-color: rgba(61,255,143,0.5); }
 
 /* ===== A7#12 AttachmentRail(输入盒顶部)===== */
 .rail { display: flex; gap: 8px; padding: 8px 4px 0; }
@@ -226,6 +296,7 @@ body { background: var(--bg); color: var(--text-primary); font-family: var(--fon
     <label>thinking <select id="ctlThink"><option>minimal</option><option>low</option><option selected>medium</option><option>high</option><option>xhigh</option><option>max</option><option value="">--</option></select></label>
     <label>ctx <input type="range" id="ctlCtx" min="0" max="100" value="42" /> <span id="ctlCtxVal">42%</span></label>
     <button id="ctlGoal">切换 goal</button>
+    <button id="ctlGoalPhase">goal 态: active</button>
     <button id="ctlTodos">切换 todos</button>
     <button id="ctlImg">贴入样例图</button>
     <button id="ctlDock">注入插件卡</button>
@@ -332,7 +403,13 @@ const state = {
   sessionState: 'READY', sessionTitle: '会话 3fa2',
   model: 'deepseek-v4-flash', contextWindow: 204800, ctxInput: 86016, thinkingLevel: 'medium',
   permission: 'default', planOn: false,
-  goal: null, todosOn: true, images: [], queued: [],
+  goal: null, goalPhase: 'active', todosOn: true, todoExpanded: false, images: [], queued: [],
+  todos: [
+    { t: '梳理需求', s: 'done' },
+    { t: '实现 fixture 样本', s: 'doing' },
+    { t: '跑后台构建', s: 'doing' },
+    { t: '浏览器验收', s: 'todo' },
+  ],
 };
 let menuOpen = null;   // 'cmd' | 'model' | 'perm' | null
 let riskFrom = null;   // 'palette' | 'chip' —— Full access 确认来源
@@ -533,32 +610,113 @@ function renderMicro() {
   cmdline.placeholder = `输入 / 查看 skills 与命令 · 指令给 ${state.sessionTitle} …`;
 }
 
+/* --- GoalBar(结构对位官方 GoalBar:靶标 SVG + 相位标签 + 文本 + 动作组 ⏸/▶ ✎ 🗑;
+       ✓ complete 为 demo 扩展入口[官方条上无,待用户裁决])--- */
+const GOAL_PHASES = { active: '进行中的目标', paused: '已暂停的目标', blocked: '受阻的目标' };
+const GOAL_TARGET_SVG =
+  '<svg class="g-target" viewBox="0 0 18 18" aria-hidden="true">' +
+  '<circle class="gt-outer" cx="9" cy="9" r="7.4" fill="none" stroke="currentColor" stroke-width="1" stroke-dasharray="9 5"/>' +
+  '<circle cx="9" cy="9" r="3.6" fill="none" stroke="currentColor" stroke-width="1"/>' +
+  '<circle class="gt-core" cx="9" cy="9" r="1.5" fill="currentColor"/></svg>';
+/* 自绘 Matrix 风动作图标:细线尖角、currentColor 继承状态色,辉光由 .g-act:hover 的 text-shadow→filter 提供 */
+const G_ICON = {
+  edit: '<svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1" aria-hidden="true">' +
+    '<path d="M8.6 2.2l3.2 3.2L6 11.2H2.8V8L8.6 2.2z" stroke-linejoin="miter"/>' +
+    '<path d="M7.4 3.4l3.2 3.2"/>' +
+    '<path d="M1.5 12.8h11" opacity="0.45"/></svg>',
+  complete: '<svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1" aria-hidden="true">' +
+    '<circle cx="7" cy="7" r="5.6" stroke-dasharray="8 3.2"/>' + // 校验环(呼应靶标旋转环)
+    '<path d="M4.3 7.3l1.9 1.9 3.4-3.9" stroke-width="1.2"/></svg>',
+  clear: '<svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1" aria-hidden="true">' +
+    '<path d="M2.6 3.8h8.8" />' +
+    '<path d="M5.4 3.8V2.4h3.2v1.4" />' +
+    '<path d="M4 3.8l.7 8.2h4.6l.7-8.2" stroke-linejoin="miter"/>' +
+    '<path d="M6 6.2v4M8 6.2v4" opacity="0.5"/></svg>',
+};
 function renderGoal() {
   const g = $('goalbar');
+  g.className = 'goalbar' + (state.goal ? ' ' + state.goalPhase : '');
   if (!state.goal) {
-    g.innerHTML = '<span class="g-tag">GOAL</span><button id="gSet">设定目标</button>';
+    g.innerHTML = GOAL_TARGET_SVG + '<span class="g-phase" style="color:var(--text-tertiary)">未设定目标</span>' +
+      '<span class="g-actions"><button class="g-act" id="gSet" title="设定目标(/goal)">＋ 设定目标</button></span>';
     $('gSet').addEventListener('click', () => {
-      g.innerHTML = '<span class="g-tag">GOAL</span><input id="gInput" placeholder="objective…" /><button id="gOk">设定</button><button id="gNo">取消</button>';
-      $('gOk').addEventListener('click', () => { state.goal = $('gInput').value || '未命名目标'; logLine(`<b>[GOAL]</b> create: ${esc(state.goal)}`); renderAll(); });
+      g.innerHTML = GOAL_TARGET_SVG + '<input id="gInput" placeholder="objective…" />' +
+        '<span class="g-actions"><button class="g-act" id="gOk">设定</button><button class="g-act" id="gNo">取消</button></span>';
+      $('gOk').addEventListener('click', () => { state.goal = $('gInput').value || '未命名目标'; state.goalPhase = 'active'; logLine(`<b>[GOAL]</b> create: ${esc(state.goal)}`); renderAll(); });
       $('gNo').addEventListener('click', renderGoal);
       $('gInput').focus();
     });
-  } else {
-    g.innerHTML = `<span class="g-tag">GOAL</span><span></span><button data-a="edit">edit</button><button data-a="pause">pause</button><button data-a="complete">complete</button><button data-a="clear">clear</button>`;
-    g.children[1].textContent = state.goal;
-    g.querySelectorAll('button').forEach((b) => b.addEventListener('click', () => {
-      logLine(`<b>[GOAL]</b> ${b.dataset.a}(demo)`);
-      if (b.dataset.a === 'clear' || b.dataset.a === 'complete') state.goal = null;
-      renderAll();
-    }));
+    return;
   }
+  const phaseBtn = state.goalPhase === 'paused'
+    ? '<button class="g-act" data-a="resume" title="恢复目标">▶</button>'
+    : state.goalPhase === 'active'
+      ? '<button class="g-act warn" data-a="pause" title="暂停目标">⏸</button>'
+      : ''; // blocked:官方受阻条无暂停钮(仅 ✎/🗑)
+  g.innerHTML = GOAL_TARGET_SVG +
+    `<span class="g-phase">${GOAL_PHASES[state.goalPhase]}</span><span class="g-text"></span>` +
+    '<span class="g-actions">' + phaseBtn +
+    `<button class="g-act" data-a="edit" title="编辑目标">${G_ICON.edit}</button>` +
+    `<button class="g-act" data-a="complete" title="完成目标(demo 扩展入口,官方无)">${G_ICON.complete}</button>` +
+    `<button class="g-act danger" data-a="clear" title="清除目标">${G_ICON.clear}</button></span>`;
+  g.querySelector('.g-text').textContent = state.goal;
+  g.querySelectorAll('button').forEach((b) => b.addEventListener('click', () => {
+    const a = b.dataset.a;
+    logLine(`<b>[GOAL]</b> ${a}(demo)`);
+    if (a === 'pause') state.goalPhase = 'paused';
+    else if (a === 'resume') state.goalPhase = 'active';
+    else if (a === 'edit') return editGoalInline(g);
+    else if (a === 'clear' || a === 'complete') { state.goal = null; state.goalPhase = 'active'; }
+    renderAll();
+  }));
+}
+function editGoalInline(g) {
+  const txt = g.querySelector('.g-text');
+  const input = document.createElement('input');
+  input.value = state.goal;
+  txt.replaceWith(input);
+  input.focus();
+  const commit = () => { state.goal = input.value || state.goal; logLine(`<b>[GOAL]</b> edit → ${esc(state.goal)}`); renderAll(); };
+  input.addEventListener('keydown', (e) => { if (e.key === 'Enter') commit(); if (e.key === 'Escape') renderGoal(); });
+  input.addEventListener('blur', commit);
 }
 
+/* --- TodoDock(结构对位官方 TodoPanel:整头可点 + 计数汇总 + chevron;展开后任务列表向上显影)--- */
+const TODO_ICON = { done: '✓', doing: '◐', todo: '○' };
+const TODO_HEAD_SVG =
+  '<svg class="t-ico" width="14" height="14" viewBox="0 0 14 14" aria-hidden="true">' +
+  '<path d="M2 3h10M2 7h10M2 11h6" stroke="currentColor" stroke-width="1.2" fill="none"/>' +
+  '<circle cx="11.5" cy="11" r="1.3" fill="currentColor"/></svg>';
 function renderTodos() {
   const t = $('tododock');
   t.hidden = !state.todosOn;
-  if (state.todosOn)
-    t.innerHTML = '<span class="t-dot">◆</span><span>plan:</span><span>✓ 盘点入口</span><span class="t-doing">▸ 生成合并 demo</span><span>□ 落真组件</span>';
+  if (!state.todosOn) return;
+  const counts = { done: 0, doing: 0, todo: 0 };
+  state.todos.forEach((x) => { counts[x.s] = (counts[x.s] || 0) + 1; });
+  t.classList.toggle('expanded', state.todoExpanded);
+  t.innerHTML = '';
+  const head = document.createElement('button');
+  head.type = 'button';
+  head.className = 'todo-head';
+  head.setAttribute('aria-expanded', state.todoExpanded ? 'true' : 'false');
+  head.setAttribute('aria-label', '任务面板:展开/收起');
+  head.innerHTML = TODO_HEAD_SVG + '<span class="t-label">任务</span>' +
+    `<span class="t-counts"><span class="c-done">${counts.done} 已完成</span> · <span class="c-doing">${counts.doing} 进行中</span> · <span class="c-todo">${counts.todo} 待处理</span></span>` +
+    '<span class="t-chev">⌃</span>';
+  head.addEventListener('click', () => { state.todoExpanded = !state.todoExpanded; renderTodos(); });
+  t.appendChild(head);
+  if (!state.todoExpanded) return;
+  const list = document.createElement('div');
+  list.className = 'todo-list';
+  state.todos.forEach((x, i) => {
+    const row = document.createElement('div');
+    row.className = `todo-item ${x.s}`;
+    row.style.animationDelay = `${i * 60}ms`; // 逐行显影(从模拟层中浮现)
+    row.innerHTML = `<span class="ti ${x.s}">${TODO_ICON[x.s]}</span><span class="tt"></span>`;
+    row.querySelector('.tt').textContent = x.t;
+    list.appendChild(row);
+  });
+  t.appendChild(list);
 }
 
 function renderRail() {
@@ -744,7 +902,14 @@ $('ctlCtx').addEventListener('input', (e) => {
   state.ctxInput = Math.round((pct / 100) * state.contextWindow);
   renderMicro();
 });
-$('ctlGoal').addEventListener('click', () => { state.goal = state.goal ? null : '示例目标:完成输入栏迁移'; renderAll(); });
+$('ctlGoal').addEventListener('click', () => { state.goal = state.goal ? null : '示例目标:完成输入栏迁移'; state.goalPhase = 'active'; renderAll(); });
+$('ctlGoalPhase').addEventListener('click', () => {
+  const order = ['active', 'paused', 'blocked'];
+  state.goalPhase = order[(order.indexOf(state.goalPhase) + 1) % order.length];
+  if (!state.goal) state.goal = '示例目标:完成输入栏迁移';
+  $('ctlGoalPhase').textContent = `goal 态: ${state.goalPhase}`;
+  renderAll();
+});
 $('ctlTodos').addEventListener('click', () => { state.todosOn = !state.todosOn; renderAll(); });
 $('ctlImg').addEventListener('click', () => {
   const svg = `<svg xmlns='http://www.w3.org/2000/svg' width='96' height='96'><rect width='96' height='96' fill='%23010a04'/><text x='48' y='54' fill='%2300ff41' font-size='14' text-anchor='middle' font-family='monospace'>IMG</text></svg>`;

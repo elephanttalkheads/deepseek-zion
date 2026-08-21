@@ -163,7 +163,7 @@ deepseek-zion 的定位是**复刻 dsh web 的 UI**(原 dsh web 界面)。任何
    - **多余入口**(源块有、清单没有):进入第 2 步。
    即使差集为空,也要显式声明「无多余入口 / 无缺失入口」,不得省略本步骤。
 2. **多余入口先问后删**:对每个多余入口,逐条询问用户保留还是删除;**得到答复前,禁止生成 demo、禁止改动真组件**。删除范围仅限从 pi-martix-ui-dev 迁移过来的这些组件上的入口;`ui-component-inventory.md` 中列出的任何功能入口**一律不得删除**。
-3. **生成合并 demo**:迁移视觉 + 目标组件的全部功能入口(含第 1 步补齐的缺失入口、第 2 步确认保留的多余入口),数据可 mock。**demo 与其验证截图/辅助脚本必须按组件放在 `ui-prototype/<组件名>/` 独立目录中**(如 `ui-prototype/input-bar/input-bar-proto.html` + 各态截图),不得散放在 `ui-prototype/` 根级。**用户确认 demo 前,禁止改动 `renderer/src/` 真组件**。
+3. **生成合并 demo**:迁移视觉 + 目标组件的全部功能入口(含第 1 步补齐的缺失入口、第 2 步确认保留的多余入口),数据可 mock。**demo 与其验证截图/辅助脚本必须按组件放在 `ui-prototype/<组件名>/` 独立目录中**(如 `ui-prototype/input-bar/input-bar-proto.html` + 各态截图),不得散放在 `ui-prototype/` 根级。**截图按来源分两类存放**:官方源 UI 截图(inspector 召唤 / 官方 3080 直接截取,作为对位基准)放 `ui-prototype/<组件名>/official/`,复刻 demo 的各态验证截图放 `ui-prototype/<组件名>/replica/`;截图脚本(如 `_shot.mjs`)的输出路径必须指向 `replica/`。**用户确认 demo 前,禁止改动 `renderer/src/` 真组件**。
 4. **落真组件**:demo 确认后,按 §6 vendor 流程落进真组件。
 
 **硬性判定(违反即返工)**:
