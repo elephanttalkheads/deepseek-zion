@@ -154,6 +154,7 @@ const STATES = {
   TodoPanel: ['collapsed', 'expanded'],
   GoalBar: ['active', 'paused', 'blocked'],
   GoalDock: ['active', 'paused'],
+  QueueDock: ['empty', 'active'],
 }
 
 function pickStates(name, text) {

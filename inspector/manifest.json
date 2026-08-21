@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-08-21T04:24:29.776Z",
+  "generatedAt": "2026-08-21T05:26:29.768Z",
   "source": "docs/ui-component-inventory.md",
   "entries": [
     {
@@ -200,7 +200,11 @@
       "entries": [],
       "data": "",
       "tag": "mixed",
-      "official": null
+      "official": null,
+      "states": [
+        "empty",
+        "active"
+      ]
     },
     {
       "id": "b-agent-preset-四表面",

@@ -86,6 +86,8 @@ node inspector/cli.mjs close                        # 关闭舞台
 | `todo-dock-expanded` | real | 同上,再点 strip 头部按钮(`aria-expanded`)→ 官方 TodoPanel **展开态**(任务列表向上展开,150px) |
 | `input-dock` | real | **`conversation.input.dock` 槽整区**:真实条目并集截图(TodoPanel 任务条 + GoalBar 目标条 + QueueDock 队列行,`data-queue-dock` 有排队才渲染)—— 即 zion `SlotAnchor` 对应物;社区插件在官方 3080 未注册此槽,故无第三方卡片 |
 | `goal-dock` | overlay | 官方 **GoalDock**(ui-goal 导出的真实槽条目适配器,mock `useProjection`)—— 展示槽条目收到的 props 契约(投影适配器 + 注入动作 + t) |
+| `queue-dock` | real | **队列激活(仅真后端)**:新建/选中会话 → 发一条长任务启动真实回合 → 运行中再发第二条 → 官方 QueueDock 排队行(`data-queue-dock`,编辑/插队/移除)。fixture **无法**激活队列(官方 fixture 不发射 `session/queue` 帧) |
+| `queue-dock-clean` | real | 探针清理:停止运行 + 移除排队行(会话保留,可自行归档) |
 
 真实配方内部自动处理 fixture 环境的两大障碍:
 
@@ -106,6 +108,7 @@ npm run inspector:gen
 
 - **仅 dev 工具**:注入面板 + 5198 控制口(含 `eval` 原始 JS)只在本机回环、`--inspector` 显式开启时可用;不影响 `start` / `start:replica` 的正常运行。
 - **`--fixture` 零副作用**;`goal-bar-real` 在**真实后端**会真的创建会话目标(与用户在 UI 里敲 `/goal` 等价),验证完可点清除。
+- **`queue-dock` 有真实副作用**:在真后端会话里发两条消息(长生成 + 排队),验证后跑 `recipe queue-dock-clean`(停止+移除排队行);会话保留,需要的话自行归档。
 - 舞台挂载不改动官方应用状态;真实配方只走官方自己的 UI 动作(等价人工操作)。
 - 页面刷新后召唤面板需重新注入(主进程在 `did-finish-load` 时自动重注入)。
 - **重启与占口(已自动处理)**:新实例启动时若发现 5198 已被「旧 inspector 实例」占用(杀 npm 包装进程常见的孤儿 electron),会自动按端口找 PID **杀掉旧进程树并接管**,无需手工清场;若 5198 被非 inspector 占用则退避到 5208/5218/5228,并把实际端口写入 `inspector/.port`(cli 自动读取)。手动清场用 `node inspector/cli.mjs kill`。

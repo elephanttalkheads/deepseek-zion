@@ -75,7 +75,72 @@ window.__ZION_RECIPES__ = (() => {
     const el = await core.waitFor('[data-goal-bar]', 15000)
     if (!el) throw new Error('15s 内未出现 [data-goal-bar];检查 /goal 命令是否可用(真实后端需已配置模型)')
     core.flash('[data-goal-bar]')
-    return { selector: '[data-goal-bar]', rect: core.rectOf(el), note: `已通过 /goal 创建真实目标(目标条在 composer 上方;目标:${objective})` }
+  
+  /** 真实配方:队列激活(仅真后端;fixture 不发射 session/queue 帧,无法排队)。 */
+  const realQueueDock = async (core) => {
+    // 1) 确保有会话可发:优先新建干净会话(避免污染既有会话)
+    const ta0 = core.pickComposerTextarea()
+    if (!ta0) {
+      const newBtn = [...document.querySelectorAll('button')].find((b) =>
+        b.getAttribute('aria-label') === '新建会话' && b.getBoundingClientRect().width > 0)
+      if (newBtn) { newBtn.click(); await core.sleep(1500) }
+    }
+    const ta = core.pickComposerTextarea()
+    if (!ta) throw new Error('没有可用 composer(先新建/选中一个会话)')
+    // 2) 第一条:长任务 → 真后端 LLM 流式生成,运行窗口几十秒
+    const longTask = '请写一份关于 agent 工作流编排的详细研究报告:分五个章节,每章不少于五百字,引用具体机制(队列、审批、工具调用、投影),内容完整详尽,不要提前结束。'
+    core.setNativeValue(ta, longTask)
+    ta.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', code: 'Enter', bubbles: true, cancelable: true }))
+    // 3) 等运行起来(发送态变化/停止按钮出现),再发第二条 → 排队
+    await core.sleep(2500)
+    const stopBtn = [...document.querySelectorAll('button')].find((b) => {
+      const t = (b.textContent || '').trim()
+      const aria = b.getAttribute('aria-label') || ''
+      return /^停止$/.test(t) || aria === '停止' && b.getBoundingClientRect().width > 0
+    })
+    const ta2 = core.pickComposerTextarea()
+    if (!ta2) throw new Error('composer 不可用(第一条可能触发了接管)')
+    core.setNativeValue(ta2, '第二条:排队消息 —— 等第一条完成后由你处理,简要回答即可。')
+    ta2.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', code: 'Enter', bubbles: true, cancelable: true }))
+    const el = await core.waitFor('[data-queue-dock]', 15000)
+    if (!el) {
+      throw new Error(
+        '15s 内未出现 [data-queue-dock]。' +
+        (stopBtn ? '' : '第一条发出后未检测到「停止」(回合没在跑:模型未配置/回合秒完?)') +
+        '排队前提:会话运行中再发第二条(真后端;fixture 不支持队列)。',
+      )
+    }
+    core.flash('[data-queue-dock]')
+    return {
+      selector: '[data-queue-dock]',
+      rect: core.rectOf(el),
+      note: '真实排队激活:第二条在运行中发出 → 官方 QueueDock 队列行(编辑/插队/移除;真后端会话),验证后建议 recipe queue-dock-clean 清理',
+    }
+  }
+
+  /** 真实配方:清理队列探针(停止运行 + 移除排队行;会话本身保留,可自行归档)。 */
+  const realQueueDockClean = async (core) => {
+    const stop = [...document.querySelectorAll('button')].find((b) => {
+      const t = (b.textContent || '').trim()
+      const aria = b.getAttribute('aria-label') || ''
+      return (/^停止$/.test(t) || aria === '停止') && b.getBoundingClientRect().width > 0
+    })
+    if (stop) { stop.click(); await core.sleep(1200) }
+    const removeBtns = [...document.querySelectorAll('[data-queue-dock] button')].filter((b) => {
+      const aria = b.getAttribute('aria-label') || ''
+      const t = (b.textContent || '').trim()
+      return /移除|删除|remove/i.test(aria) || /^移除$/.test(t)
+    })
+    for (const b of removeBtns) { b.click(); await core.sleep(400) }
+    return {
+      ok: true,
+      selector: '[data-queue-dock]',
+      rect: core.rectOf(document.querySelector('[data-queue-dock]')),
+      note: `已清理:${stop ? '停止运行;' : ''}移除 ${removeBtns.length} 个排队行;会话保留(可自行归档)`,
+    }
+  }
+
+  return { selector: '[data-goal-bar]', rect: core.rectOf(el), note: `已通过 /goal 创建真实目标(目标条在 composer 上方;目标:${objective})` }
   }
 
   /** 在侧边栏选中一个会话:优先匹配文本(刚刚/1分钟/2分钟 = fixture 相对时间行),退化为「Fixture 历史会话」组第一行。 */
@@ -133,7 +198,72 @@ window.__ZION_RECIPES__ = (() => {
       setTimeout(() => { el.style.outline = '' }, 2500)
     }
     const rect = core.unionRect(entrySel)
+  
+  /** 真实配方:队列激活(仅真后端;fixture 不发射 session/queue 帧,无法排队)。 */
+  const realQueueDock = async (core) => {
+    // 1) 确保有会话可发:优先新建干净会话(避免污染既有会话)
+    const ta0 = core.pickComposerTextarea()
+    if (!ta0) {
+      const newBtn = [...document.querySelectorAll('button')].find((b) =>
+        b.getAttribute('aria-label') === '新建会话' && b.getBoundingClientRect().width > 0)
+      if (newBtn) { newBtn.click(); await core.sleep(1500) }
+    }
+    const ta = core.pickComposerTextarea()
+    if (!ta) throw new Error('没有可用 composer(先新建/选中一个会话)')
+    // 2) 第一条:长任务 → 真后端 LLM 流式生成,运行窗口几十秒
+    const longTask = '请写一份关于 agent 工作流编排的详细研究报告:分五个章节,每章不少于五百字,引用具体机制(队列、审批、工具调用、投影),内容完整详尽,不要提前结束。'
+    core.setNativeValue(ta, longTask)
+    ta.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', code: 'Enter', bubbles: true, cancelable: true }))
+    // 3) 等运行起来(发送态变化/停止按钮出现),再发第二条 → 排队
+    await core.sleep(2500)
+    const stopBtn = [...document.querySelectorAll('button')].find((b) => {
+      const t = (b.textContent || '').trim()
+      const aria = b.getAttribute('aria-label') || ''
+      return /^停止$/.test(t) || aria === '停止' && b.getBoundingClientRect().width > 0
+    })
+    const ta2 = core.pickComposerTextarea()
+    if (!ta2) throw new Error('composer 不可用(第一条可能触发了接管)')
+    core.setNativeValue(ta2, '第二条:排队消息 —— 等第一条完成后由你处理,简要回答即可。')
+    ta2.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', code: 'Enter', bubbles: true, cancelable: true }))
+    const el = await core.waitFor('[data-queue-dock]', 15000)
+    if (!el) {
+      throw new Error(
+        '15s 内未出现 [data-queue-dock]。' +
+        (stopBtn ? '' : '第一条发出后未检测到「停止」(回合没在跑:模型未配置/回合秒完?)') +
+        '排队前提:会话运行中再发第二条(真后端;fixture 不支持队列)。',
+      )
+    }
+    core.flash('[data-queue-dock]')
     return {
+      selector: '[data-queue-dock]',
+      rect: core.rectOf(el),
+      note: '真实排队激活:第二条在运行中发出 → 官方 QueueDock 队列行(编辑/插队/移除;真后端会话),验证后建议 recipe queue-dock-clean 清理',
+    }
+  }
+
+  /** 真实配方:清理队列探针(停止运行 + 移除排队行;会话本身保留,可自行归档)。 */
+  const realQueueDockClean = async (core) => {
+    const stop = [...document.querySelectorAll('button')].find((b) => {
+      const t = (b.textContent || '').trim()
+      const aria = b.getAttribute('aria-label') || ''
+      return (/^停止$/.test(t) || aria === '停止') && b.getBoundingClientRect().width > 0
+    })
+    if (stop) { stop.click(); await core.sleep(1200) }
+    const removeBtns = [...document.querySelectorAll('[data-queue-dock] button')].filter((b) => {
+      const aria = b.getAttribute('aria-label') || ''
+      const t = (b.textContent || '').trim()
+      return /移除|删除|remove/i.test(aria) || /^移除$/.test(t)
+    })
+    for (const b of removeBtns) { b.click(); await core.sleep(400) }
+    return {
+      ok: true,
+      selector: '[data-queue-dock]',
+      rect: core.rectOf(document.querySelector('[data-queue-dock]')),
+      note: `已清理:${stop ? '停止运行;' : ''}移除 ${removeBtns.length} 个排队行;会话保留(可自行归档)`,
+    }
+  }
+
+  return {
       selector: entrySel,
       rect,
       note: '官方 conversation.input.dock 槽:当前真实条目 = TodoPanel(任务条)+ GoalBar(目标条)+ QueueDock(队列行,有排队才渲染);社区插件在官方 3080 未注册此槽,故无第三方卡片',
@@ -153,7 +283,72 @@ window.__ZION_RECIPES__ = (() => {
       )
     }
     core.flash('[data-testid="todo-panel"]')
-    return { selector: '[data-testid="todo-panel"]', rect: core.rectOf(el), note: '官方 TodoPanel(plan strip,composer 上方;fx-alpha 会话)' }
+  
+  /** 真实配方:队列激活(仅真后端;fixture 不发射 session/queue 帧,无法排队)。 */
+  const realQueueDock = async (core) => {
+    // 1) 确保有会话可发:优先新建干净会话(避免污染既有会话)
+    const ta0 = core.pickComposerTextarea()
+    if (!ta0) {
+      const newBtn = [...document.querySelectorAll('button')].find((b) =>
+        b.getAttribute('aria-label') === '新建会话' && b.getBoundingClientRect().width > 0)
+      if (newBtn) { newBtn.click(); await core.sleep(1500) }
+    }
+    const ta = core.pickComposerTextarea()
+    if (!ta) throw new Error('没有可用 composer(先新建/选中一个会话)')
+    // 2) 第一条:长任务 → 真后端 LLM 流式生成,运行窗口几十秒
+    const longTask = '请写一份关于 agent 工作流编排的详细研究报告:分五个章节,每章不少于五百字,引用具体机制(队列、审批、工具调用、投影),内容完整详尽,不要提前结束。'
+    core.setNativeValue(ta, longTask)
+    ta.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', code: 'Enter', bubbles: true, cancelable: true }))
+    // 3) 等运行起来(发送态变化/停止按钮出现),再发第二条 → 排队
+    await core.sleep(2500)
+    const stopBtn = [...document.querySelectorAll('button')].find((b) => {
+      const t = (b.textContent || '').trim()
+      const aria = b.getAttribute('aria-label') || ''
+      return /^停止$/.test(t) || aria === '停止' && b.getBoundingClientRect().width > 0
+    })
+    const ta2 = core.pickComposerTextarea()
+    if (!ta2) throw new Error('composer 不可用(第一条可能触发了接管)')
+    core.setNativeValue(ta2, '第二条:排队消息 —— 等第一条完成后由你处理,简要回答即可。')
+    ta2.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', code: 'Enter', bubbles: true, cancelable: true }))
+    const el = await core.waitFor('[data-queue-dock]', 15000)
+    if (!el) {
+      throw new Error(
+        '15s 内未出现 [data-queue-dock]。' +
+        (stopBtn ? '' : '第一条发出后未检测到「停止」(回合没在跑:模型未配置/回合秒完?)') +
+        '排队前提:会话运行中再发第二条(真后端;fixture 不支持队列)。',
+      )
+    }
+    core.flash('[data-queue-dock]')
+    return {
+      selector: '[data-queue-dock]',
+      rect: core.rectOf(el),
+      note: '真实排队激活:第二条在运行中发出 → 官方 QueueDock 队列行(编辑/插队/移除;真后端会话),验证后建议 recipe queue-dock-clean 清理',
+    }
+  }
+
+  /** 真实配方:清理队列探针(停止运行 + 移除排队行;会话本身保留,可自行归档)。 */
+  const realQueueDockClean = async (core) => {
+    const stop = [...document.querySelectorAll('button')].find((b) => {
+      const t = (b.textContent || '').trim()
+      const aria = b.getAttribute('aria-label') || ''
+      return (/^停止$/.test(t) || aria === '停止') && b.getBoundingClientRect().width > 0
+    })
+    if (stop) { stop.click(); await core.sleep(1200) }
+    const removeBtns = [...document.querySelectorAll('[data-queue-dock] button')].filter((b) => {
+      const aria = b.getAttribute('aria-label') || ''
+      const t = (b.textContent || '').trim()
+      return /移除|删除|remove/i.test(aria) || /^移除$/.test(t)
+    })
+    for (const b of removeBtns) { b.click(); await core.sleep(400) }
+    return {
+      ok: true,
+      selector: '[data-queue-dock]',
+      rect: core.rectOf(document.querySelector('[data-queue-dock]')),
+      note: `已清理:${stop ? '停止运行;' : ''}移除 ${removeBtns.length} 个排队行;会话保留(可自行归档)`,
+    }
+  }
+
+  return { selector: '[data-testid="todo-panel"]', rect: core.rectOf(el), note: '官方 TodoPanel(plan strip,composer 上方;fx-alpha 会话)' }
   }
 
   /** 真实配方:todo plan strip 的展开态(幂等展开交给 core.ensureExpanded)。 */
@@ -164,7 +359,137 @@ window.__ZION_RECIPES__ = (() => {
     if (!el) throw new Error('todo 条未出现(需 --fixture 的 fx-alpha 会话)')
     await core.ensureExpanded('[data-testid="todo-panel"]')
     core.flash('[data-testid="todo-panel"]')
-    return { selector: '[data-testid="todo-panel"]', rect: core.rectOf(el), note: '官方 TodoPanel 展开态(任务列表向上展开,fx-alpha 会话)' }
+  
+  /** 真实配方:队列激活(仅真后端;fixture 不发射 session/queue 帧,无法排队)。 */
+  const realQueueDock = async (core) => {
+    // 1) 确保有会话可发:优先新建干净会话(避免污染既有会话)
+    const ta0 = core.pickComposerTextarea()
+    if (!ta0) {
+      const newBtn = [...document.querySelectorAll('button')].find((b) =>
+        b.getAttribute('aria-label') === '新建会话' && b.getBoundingClientRect().width > 0)
+      if (newBtn) { newBtn.click(); await core.sleep(1500) }
+    }
+    const ta = core.pickComposerTextarea()
+    if (!ta) throw new Error('没有可用 composer(先新建/选中一个会话)')
+    // 2) 第一条:长任务 → 真后端 LLM 流式生成,运行窗口几十秒
+    const longTask = '请写一份关于 agent 工作流编排的详细研究报告:分五个章节,每章不少于五百字,引用具体机制(队列、审批、工具调用、投影),内容完整详尽,不要提前结束。'
+    core.setNativeValue(ta, longTask)
+    ta.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', code: 'Enter', bubbles: true, cancelable: true }))
+    // 3) 等运行起来(发送态变化/停止按钮出现),再发第二条 → 排队
+    await core.sleep(2500)
+    const stopBtn = [...document.querySelectorAll('button')].find((b) => {
+      const t = (b.textContent || '').trim()
+      const aria = b.getAttribute('aria-label') || ''
+      return /^停止$/.test(t) || aria === '停止' && b.getBoundingClientRect().width > 0
+    })
+    const ta2 = core.pickComposerTextarea()
+    if (!ta2) throw new Error('composer 不可用(第一条可能触发了接管)')
+    core.setNativeValue(ta2, '第二条:排队消息 —— 等第一条完成后由你处理,简要回答即可。')
+    ta2.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', code: 'Enter', bubbles: true, cancelable: true }))
+    const el = await core.waitFor('[data-queue-dock]', 15000)
+    if (!el) {
+      throw new Error(
+        '15s 内未出现 [data-queue-dock]。' +
+        (stopBtn ? '' : '第一条发出后未检测到「停止」(回合没在跑:模型未配置/回合秒完?)') +
+        '排队前提:会话运行中再发第二条(真后端;fixture 不支持队列)。',
+      )
+    }
+    core.flash('[data-queue-dock]')
+    return {
+      selector: '[data-queue-dock]',
+      rect: core.rectOf(el),
+      note: '真实排队激活:第二条在运行中发出 → 官方 QueueDock 队列行(编辑/插队/移除;真后端会话),验证后建议 recipe queue-dock-clean 清理',
+    }
+  }
+
+  /** 真实配方:清理队列探针(停止运行 + 移除排队行;会话本身保留,可自行归档)。 */
+  const realQueueDockClean = async (core) => {
+    const stop = [...document.querySelectorAll('button')].find((b) => {
+      const t = (b.textContent || '').trim()
+      const aria = b.getAttribute('aria-label') || ''
+      return (/^停止$/.test(t) || aria === '停止') && b.getBoundingClientRect().width > 0
+    })
+    if (stop) { stop.click(); await core.sleep(1200) }
+    const removeBtns = [...document.querySelectorAll('[data-queue-dock] button')].filter((b) => {
+      const aria = b.getAttribute('aria-label') || ''
+      const t = (b.textContent || '').trim()
+      return /移除|删除|remove/i.test(aria) || /^移除$/.test(t)
+    })
+    for (const b of removeBtns) { b.click(); await core.sleep(400) }
+    return {
+      ok: true,
+      selector: '[data-queue-dock]',
+      rect: core.rectOf(document.querySelector('[data-queue-dock]')),
+      note: `已清理:${stop ? '停止运行;' : ''}移除 ${removeBtns.length} 个排队行;会话保留(可自行归档)`,
+    }
+  }
+
+  return { selector: '[data-testid="todo-panel"]', rect: core.rectOf(el), note: '官方 TodoPanel 展开态(任务列表向上展开,fx-alpha 会话)' }
+  }
+
+
+  /** 真实配方:队列激活(仅真后端;fixture 不发射 session/queue 帧,无法排队)。 */
+  const realQueueDock = async (core) => {
+    // 1) 确保有会话可发:优先新建干净会话(避免污染既有会话)
+    const ta0 = core.pickComposerTextarea()
+    if (!ta0) {
+      const newBtn = [...document.querySelectorAll('button')].find((b) =>
+        b.getAttribute('aria-label') === '新建会话' && b.getBoundingClientRect().width > 0)
+      if (newBtn) { newBtn.click(); await core.sleep(1500) }
+    }
+    const ta = core.pickComposerTextarea()
+    if (!ta) throw new Error('没有可用 composer(先新建/选中一个会话)')
+    // 2) 第一条:长任务 → 真后端 LLM 流式生成,运行窗口几十秒
+    const longTask = '请写一份关于 agent 工作流编排的详细研究报告:分五个章节,每章不少于五百字,引用具体机制(队列、审批、工具调用、投影),内容完整详尽,不要提前结束。'
+    core.setNativeValue(ta, longTask)
+    ta.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', code: 'Enter', bubbles: true, cancelable: true }))
+    // 3) 等运行起来(发送态变化/停止按钮出现),再发第二条 → 排队
+    await core.sleep(2500)
+    const stopBtn = [...document.querySelectorAll('button')].find((b) => {
+      const t = (b.textContent || '').trim()
+      const aria = b.getAttribute('aria-label') || ''
+      return /^停止$/.test(t) || aria === '停止' && b.getBoundingClientRect().width > 0
+    })
+    const ta2 = core.pickComposerTextarea()
+    if (!ta2) throw new Error('composer 不可用(第一条可能触发了接管)')
+    core.setNativeValue(ta2, '第二条:排队消息 —— 等第一条完成后由你处理,简要回答即可。')
+    ta2.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', code: 'Enter', bubbles: true, cancelable: true }))
+    const el = await core.waitFor('[data-queue-dock]', 15000)
+    if (!el) {
+      throw new Error(
+        '15s 内未出现 [data-queue-dock]。' +
+        (stopBtn ? '' : '第一条发出后未检测到「停止」(回合没在跑:模型未配置/回合秒完?)') +
+        '排队前提:会话运行中再发第二条(真后端;fixture 不支持队列)。',
+      )
+    }
+    core.flash('[data-queue-dock]')
+    return {
+      selector: '[data-queue-dock]',
+      rect: core.rectOf(el),
+      note: '真实排队激活:第二条在运行中发出 → 官方 QueueDock 队列行(编辑/插队/移除;真后端会话),验证后建议 recipe queue-dock-clean 清理',
+    }
+  }
+
+  /** 真实配方:清理队列探针(停止运行 + 移除排队行;会话本身保留,可自行归档)。 */
+  const realQueueDockClean = async (core) => {
+    const stop = [...document.querySelectorAll('button')].find((b) => {
+      const t = (b.textContent || '').trim()
+      const aria = b.getAttribute('aria-label') || ''
+      return (/^停止$/.test(t) || aria === '停止') && b.getBoundingClientRect().width > 0
+    })
+    if (stop) { stop.click(); await core.sleep(1200) }
+    const removeBtns = [...document.querySelectorAll('[data-queue-dock] button')].filter((b) => {
+      const aria = b.getAttribute('aria-label') || ''
+      const t = (b.textContent || '').trim()
+      return /移除|删除|remove/i.test(aria) || /^移除$/.test(t)
+    })
+    for (const b of removeBtns) { b.click(); await core.sleep(400) }
+    return {
+      ok: true,
+      selector: '[data-queue-dock]',
+      rect: core.rectOf(document.querySelector('[data-queue-dock]')),
+      note: `已清理:${stop ? '停止运行;' : ''}移除 ${removeBtns.length} 个排队行;会话保留(可自行归档)`,
+    }
   }
 
   return {
@@ -241,6 +566,18 @@ window.__ZION_RECIPES__ = (() => {
         onEdit: ok, onPause: ok, onResume: ok, onClear: ok,
         t: goalT(),
       }),
+    },
+    'queue-dock': {
+      id: 'queue-dock',
+      name: 'QueueDock(真实·排队激活,仅真后端)',
+      kind: 'real',
+      run: realQueueDock,
+    },
+    'queue-dock-clean': {
+      id: 'queue-dock-clean',
+      name: 'QueueDock 清理(停止+移除排队行)',
+      kind: 'real',
+      run: realQueueDockClean,
     },
 
   }
