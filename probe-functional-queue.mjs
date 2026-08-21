@@ -63,6 +63,8 @@ app.whenReady().then(async () => {
   const actions = await js(win, `[...document.querySelectorAll('.queue-row[data-placement="queued"] .queue-action')].map(b => b.innerText).join(',')`)
   details['03'] = `queued 行动作 = ${actions}`
   await check('03', `${JSON.stringify(actions)}.includes('移除') && ${JSON.stringify(actions)}.includes('插队')`, '03 移除/插队按钮存在')
+  // 挂载点断言(2026-08-21 合并形态):QueueDock 挪进 InputBar 的 dock 排
+  await check('03b', `!!document.querySelector('.input-bar .input-bar-dock .queue-dock')`, '03b QueueDock 挂载于输入栏 dock 排')
 
   // remove via updateQueue
   await js(win, `(() => { const b = [...document.querySelectorAll('.queue-row[data-placement="queued"] .queue-action')].find(x => x.innerText === '移除'); if (b) b.click(); return !!b })()`)

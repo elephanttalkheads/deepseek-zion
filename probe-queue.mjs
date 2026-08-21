@@ -65,6 +65,10 @@ app.whenReady().then(async () => {
   const qText = qRow ? await js(win, `[...document.querySelectorAll('.queue-row')].map(e => e.innerText).join(' | ')`) : '(none)'
   out(`queue rows: ${qText}`)
 
+  // 挂载点断言(2026-08-21 合并形态):QueueDock 挪进 InputBar 的 dock 排
+  const mountOk = await js(win, `!!document.querySelector('.input-bar .input-bar-dock .queue-dock')`)
+  out(`queue dock mounted in input-bar dock row: ${mountOk}`)
+
   // screenshot + errors
   const shot = await win.webContents.capturePage()
   fs.writeFileSync(path.join(OUT, 'queue-status.png'), shot.toPNG())

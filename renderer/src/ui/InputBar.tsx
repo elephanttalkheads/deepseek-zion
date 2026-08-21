@@ -21,11 +21,13 @@ import {
 import { ModelSelectAdapter } from '../app/model-select.tsx'
 import { PermissionChip } from '../app/permission-ui.tsx'
 import { PlanSeat } from '../app/plan-seat.tsx'
-import { ContextMeterSeat, StatsLineSeat, TodoDockSeat } from '../app/composer-stats.tsx'
+import { StatsLineSeat } from '../app/composer-stats.tsx'
 import { useTriggerPipeline } from '../app/trigger-menu.tsx'
 import type { PickOutcome, TokenSpan } from '../../vendor/ui-input-trigger/client/index.ts'
 import { SlotAnchor } from '../plugin/anchors.tsx'
 import { GoalBar } from './GoalBar.tsx'
+import { QueueDock } from './QueueDock.tsx'
+import { TodoDock } from './TodoDock.tsx'
 import type { PromptContentPart } from '../../vendor/client-connection/client/api.ts'
 import type { CommandDescriptor } from '@deepseek-ai/dsh-commands/types'
 
@@ -221,9 +223,14 @@ export function InputBar(): JSX.Element {
   return (
     <div className="input-bar" data-composer-card>
       {trigger.render()}
-      <SlotAnchor slot="conversation.input.dock" ownerProps={{}} />
-      <TodoDockSeat />
-      <GoalBar />
+      {/* conversation.input.dock 停靠排(官方 §1.3 语义):官方条目(todo 任务条 /
+          goal 目标条 / queue 队列行[有排队才渲染])与插件条目同排纵向停靠。 */}
+      <div className="input-bar-dock">
+        <TodoDock />
+        <GoalBar />
+        <QueueDock />
+        <SlotAnchor slot="conversation.input.dock" ownerProps={{}} />
+      </div>
       <div className="input-bar-modes">
         <PermissionChip />
         <PlanSeat />
@@ -309,8 +316,6 @@ export function InputBar(): JSX.Element {
         <div className="input-bar-error">{imageLimitError ?? intakeError}</div>
       )}
 
-      <StatsLineSeat />
-
       <textarea
         ref={textareaRef}
         className="input-bar-textarea"
@@ -365,11 +370,15 @@ export function InputBar(): JSX.Element {
           hidden
           onChange={(e) => { readFiles(e.target.files); e.target.value = '' }}
         />
-        <ContextMeterSeat />
         {running && (
           <button className="input-bar-stop" type="button" onClick={() => stop()}>停止</button>
         )}
         <button className="input-bar-send" type="button" onClick={submit} disabled={(draft.trim() === '' && images.length === 0) || imageLimitError !== null}>发送</button>
+      </div>
+      {/* StatsLine 会话统计条:位置按官方 = 输入框底部(textarea/foot 之下);
+          ContextMeter 环已按评审裁决移除(ui-change-log 2026-08-21)。 */}
+      <div className="input-bar-statsline">
+        <StatsLineSeat />
       </div>
     </div>
   )

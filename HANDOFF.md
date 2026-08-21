@@ -40,12 +40,14 @@
 pm run start:inspector[:fixture]:官方 3080 页面注入悬浮面板(右下角「⿻ 组件」)+ 控制口 5198 + 
 ode inspector/cli.mjs。原理:官方页面暴露 window.__DSH_MODULES__(ClientModuleSystem)→ 动态 import 官方 client 模块拿真实组件(React 同实例挂载,舞台 overlay),或真实配方驱动官方 UI 状态(composer 键入 /goal → 真实 GoalBar;选 fx-alpha + 驳回常驻审批 → 真实 TodoDock plan strip)。已验:GoalBar 三态舞台 + 真实 goal + TodoDock 真实 + raw/eval/shot/close 全通(截图进 inspector/shot-out/)。fixture 环境两坑已自动处理:「内测声明」弹窗(fixture 无法持久化确认 → 移除 dialog)与 composer 接管(常驻审批点「拒绝」/问题组「放弃整组问题」)。manifest 由 docs/ui-component-inventory.md 生成(
 pm run inspector:gen);overlay 仅限**模块导出值**组件(ui-goal 导出 GoalBar/GoalDock;TodoPanel/JobListAction 未导出 → 只能真实配方)。2026-08-21 使用优化(报告驱动):单实例接管(新实例自动杀旧 inspector 进程树)/端口退避+`.port` 文件/`cli kill`/`cli reload`(改配方不必重启)/`status --wait`/截图亮度自检重拍+尺寸亮度输出/manifest `states` 标记+`core.ensureExpanded`/独立 cache 目录/弹窗匹配多锚点;真实配方执行前先关舞台(mock 组件污染真实选择器)。
+- **输入栏合并形态落地(ui-prototype/input-bar demo → 复刻真组件)** ✅ 2026-08-21:自研 Matrix TodoDock 替换 vendor 席位、GoalBar 三态编舞重设计、QueueDock 挪进 `.input-bar-dock` 停靠排(TodoDock→GoalBar→QueueDock→SlotAnchor)、ContextMeter 环移除 + StatsLine 移至输入框底部(两条 ui-change-log 立账);语义零改动(vendor/数据契约/goal 动作/队列行为不动);probe-composer-stats fixture 5/5 + real 6/6、probe-functional fixture 22/22(新增 goal 三态断言)、functional-queue 10/10、queue-edit 4/4、queue/queue-ops real 过、checklist 24/24、typecheck 0 新增错误文件。
 
 ---
 
 ## 1. 最近提交链(自本会话;`main` 最新行在前)
 
 | 提交 | 内容 |
+| `(本轮,未提交)` | **输入栏合并形态落地(demo → 真组件)**:新建自研 `ui/TodoDock.tsx`(Matrix 版 plan strip,结构 1:1 对官方 TodoPanel:整头 button[aria-expanded] + 「任务」+ 计数汇总 + chevron 展开收起 + ✓◐○ 字形,vendor 零改动);`ui/GoalBar.tsx` 重设计(靶标 SVG 双环+核心 / 相位标签「进行中的目标·已暂停的目标·受阻的目标」/ 三态编舞 active 磷光绿旋转·paused 琥珀·blocked 橙红 glitch / 图标动作组 data-action=pause·resume·edit·complete·clear;受阻相无 pause/resume 钮对齐官方);QueueDock 从 ConversationDock 挪进 InputBar 的 `.input-bar-dock` 停靠排(TodoDock → GoalBar → QueueDock → SlotAnchor);ContextMeter 环按评审裁决移除(ui-change-log 两条立账:context-meter 环 + goal blocked 钮);StatsLine 移至输入框底部 Matrix 化;runtime 加 `__zionProbeGetSelectedSessionId` 探针缝(fixture);styles.css 追加 dock 排条语言(暗底+CRT 扫描纹+能量竖轨+状态辉光);探针:composer-stats 改写(fixture 5/5 + real 6/6)、functional goal 段改 data-action + blocked 注入断言(fixture 22/22)、functional-queue 10/10、queue-edit 4/4、queue/queue-ops real 过(queue-ops 首个 prompt 改长任务修时序抖动)、checklist 24/24;typecheck 基线对照 0 新增错误文件(git archive HEAD 重建基线)|
 | `(本轮)` | 组件召唤器 inspector:main.mjs 加 --inspector/--fixture/--hidden(官方原版 UI 注入召唤面板 + 127.0.0.1:5198 控制口 + capturePage 区域截图);inspector/page-panel.js(舞台挂载引擎:window.__DSH_MODULES__ 动态 import 官方模块 + React 同实例 + 悬浮面板)+ recipes.js(GoalBar 三态舞台 / 真实 /goal / TodoDock 真实:选 fx-alpha + 驳回常驻审批 + 移除内测声明 dialog)+ cli.mjs(status/list/summon/raw/recipe/shot/eval/close)+ gen-manifest.mjs(解析 ui-component-inventory.md → manifest.json)+ npm scripts start:inspector[:fixture]/inspector:gen;验证:GoalBar 三态+真实、TodoDock 真实、raw、eval、close 全通,截图清晰(inspector/shot-out/ 已 gitignore);README+HANDOFF 同步 |
 | `(本轮)` | 插件设置分区:SettingsShell 移除「插件清单」导航项(官方无独立导航项);新增 PluginsSettingsSection(插件配置三卡 + 插件列表三组 官方/MCP/社区,社区徽标+UI 注入未实现说明);fixture 补 shell/agent-loop/web-search-deepseek ns + mutate + pluginInventory/list 端点;probe-plugin-settings fixture 8/8 + real 8/8;probe-settings S3 断言更新(导航无插件清单);ui-component-inventory/CONTEXT/HANDOFF 同步
 | `bf486e1` | 归档过滤修复:runtime 捕获 workspace.list 的 archivedSessionIds(此前被丢弃)+ onHost 消费 host/archived-sessions-changed + 选中会话被归档后清空选择;Sidebar rows 排除已归档会话(flat + 分组同源,官方 deriveFlat/sessionVisible 语义)+ 行 data-session-id;新 probe-archive-filter(真后端 8 个已归档不进侧边栏/归档行消失/清空回归/入口保留 4-4);typecheck 基线 172 行不新增;gitignore 补 probe-archive-filter-out/
@@ -162,7 +164,7 @@ pm run inspector:gen);overlay 仅限**模块导出值**组件(ui-goal 导出 Goa
 | `probe-cordis-console.mjs` | cordis 运行控制台 + 批准并信任 | 3080 | 7/7 |
 | `probe-msg-actions.mjs` | 消息复制/分支(fork+选切子会话) | 3080 | 6/6 |
 | `probe-permission-plan.mjs` | 权限行(Full access 风险确认往返)/ composer 权限 chip / Plan chip(激活→关闭) | 3080+fixture | 12/12 |
-| `probe-composer-stats.mjs` | ContextMeter 环+组成面板 / StatsLine 统计条 / TodoDock plan strip | 3080+fixture | 7/7 |
+| `probe-composer-stats.mjs` | StatsLine 统计条(位置 = 输入框底部)/ 自研 Matrix TodoDock(整头 aria-expanded + 计数汇总 + 展开收起交互);ContextMeter 环已移除(2026-08-21 评审裁决,ui-change-log 立账) | 3080+fixture | 5/5 + 6/6 |
 | `probe-workspace-actions.mjs` | 视图选项(分组/排序)/ 行 … 菜单(重命名/fork/archive) | 3080+fixture | 8/8 |
 | `probe-sidebar-drag.mjs` | 拖拽重排(insertSessionBefore 顺序落点)/ 溢出折叠展开 | 3080+fixture | 6/6 |
 | `probe-jobs.mjs` | JobListAction 会话头作业 badge(注入帧徽标/列表排序/时钟实时走/外点+Escape 关闭/空帧消失;real 真实 jobs 数据) | 3080+fixture | 9/9 + 10/10 |

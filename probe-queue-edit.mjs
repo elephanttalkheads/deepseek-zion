@@ -91,6 +91,10 @@ app.whenReady().then(async () => {
   mark('q2', editBtn && inputShown && inputValue.includes('queue-edit-probe-原文') && retyped && saved && previewUpdated,
     'Q2 行内编辑 → 保存 → 预览更新(updateQueue edit 往返)', `input=${JSON.stringify(inputValue)}`)
 
+  // 挂载点断言(2026-08-21 合并形态):QueueDock 挪进 InputBar 的 dock 排
+  const mountOk = await js(win, `!!document.querySelector('.input-bar .input-bar-dock .queue-dock')`)
+  mark('q2b', mountOk, 'Q2b QueueDock 挂载于输入栏 dock 排(.input-bar-dock)')
+
   mark('q3', errors.length === 0, 'Q3 全程零控制台错误', errors.length ? `${errors.length} 个` : '')
 
   const shot = await win.webContents.capturePage()

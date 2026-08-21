@@ -1,21 +1,18 @@
 /**
  * ComposerStats — 官方 ui-conversation 信息层的 zion 适配(projection 绑定)。
  *
- * 1) ContextMeterSeat:composer 尾部的上下文占用环(vendor ContextMeter,
- *    `contextPressure` + `contextBreakdown` 投影;无能力 → 不渲染)。
- * 2) StatsLineSeat:composer dock 的会话统计条(vendor StatsLine,
- *    `sessionStats` + `tokenUsage` 投影 + 会话快照回退;无数据 → 不渲染)。
- * 3) TodoDockSeat:composer 上方的 plan strip(vendor TodoDock,`todos` 投影;
- *    空/缺键 → 不渲染)。
+ * StatsLineSeat:composer dock 的会话统计条(vendor StatsLine,`sessionStats`
+ * + `tokenUsage` 投影 + 会话快照回退;无数据 → 不渲染),位于输入框底部。
  *
- * 三个组件共用 runtime 的 useProjection(per-key uSES 绑定)与 conversation
- * 字典投影翻译器。SlotMap/LocaleNamespaceMap 等位声明补齐官方 apply 未编译
- * 的 merge(conversation.input.dock / conversation locale)。
+ * 2026-08-21 输入栏合并形态落地:ContextMeterSeat(占用环)按评审裁决移除
+ * (ctx 占用以微簇胶囊条为准,见 ui-change-log 2026-08-21--remove-context-meter-ring.md);
+ * TodoDockSeat 由自研 Matrix 版 `src/ui/TodoDock.tsx` 替换(vendor TodoDock 零改动)。
+ *
+ * SlotMap/LocaleNamespaceMap 等位声明补齐官方 apply 未编译的 merge
+ * (conversation.input.dock / conversation locale)。
  */
 import type { ConversationKey } from '../../vendor/client-ui-conversation/client/locales.ts'
-import { ContextMeter } from '../../vendor/client-ui-conversation/client/skeleton/ContextMeter.tsx'
 import { StatsLine } from '../../vendor/client-ui-conversation/client/chat/StatsLine.tsx'
-import { TodoDock } from '../../vendor/client-ui-conversation/client/skeleton/TodoPanel.tsx'
 import { zh as conversationZh } from '../../vendor/client-ui-conversation/client/locales.ts'
 import { useRuntime } from './runtime.tsx'
 
@@ -45,26 +42,8 @@ function makeT(dict: Record<string, string>): (key: string, params?: Record<stri
 }
 const conversationT = makeT(conversationZh as Record<string, string>)
 
-/** Composer 尾部上下文占用环(能力缺失 → 不渲染)。 */
-export function ContextMeterSeat(): JSX.Element | null {
-  const { useProjection } = useRuntime()
-  return <ContextMeter useProjection={useProjection} t={conversationT} />
-}
-
-/** Composer dock 会话统计条(无数据 → 不渲染)。 */
+/** 输入框底部会话统计条(无数据 → 不渲染)。 */
 export function StatsLineSeat(): JSX.Element | null {
   const { useConversation, useProjection } = useRuntime()
   return <StatsLine useSession={useConversation} useProjection={useProjection} t={conversationT} />
-}
-
-/** Composer 上方 plan strip(空/缺键 → 不渲染)。 */
-export function TodoDockSeat(): JSX.Element | null {
-  const { useConversation, useProjection, selectedSessionId } = useRuntime()
-  const props = {
-    useSession: useConversation,
-    sessionId: selectedSessionId,
-    useProjection,
-    t: conversationT,
-  } as unknown as Parameters<typeof TodoDock>[0]
-  return <TodoDock {...props} />
 }

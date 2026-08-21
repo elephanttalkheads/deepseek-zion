@@ -33,7 +33,12 @@
     · GoalBar 改为官方结构:靶标 SVG(双环+核心)+ 相位标签(进行中的目标/已暂停的目标/受阻的目标)
       + 目标文本 + 右侧动作组(⏸/▶ 暂停恢复、✎ 编辑、🗑 清除);
       active=磷光绿旋转外环,paused=琥珀静止,blocked=橙红 glitch。
-      ✓ complete 为 demo 扩展入口(官方条上无,多余入口待用户裁决,暂保留)。
+      ✓ complete 为 demo 扩展入口(官方条上无,用户裁决保留[2026-08-21],落地接官方 goals/complete RPC)。
+  落地前最终裁决(2026-08-21,grilling 共识):
+    · 权限 chip / plan 开关放回 .micro 微簇行(推翻 08-20 的 subline 裁决,对齐真组件原位);
+    · 新增 StatsLine:输入框底部统计条,Matrix 风,数据字段与官方一致(mock);
+    · ContextMeter 环在真组件删除(demo 本无;ui-change-log 立账);
+    · QueueDock 挪入 dock 排(todo/goal/queue 同排对位官方);TodoDock 自研 Matrix 版落真组件。
 -->
 <html lang="zh-CN">
 <head>
@@ -165,11 +170,11 @@ body { background: var(--bg); color: var(--text-primary); font-family: var(--fon
 .queuedock, .plugcard { display: flex; align-items: center; gap: 8px; padding: 2px 4px 6px; font-size: 12px; color: var(--text-tertiary); }
 .queuedock .q-tag { color: var(--accent); letter-spacing: 0.1em; }
 .plugcard .p-tag { color: var(--accent); }
-.plugcard button, .queuedock button, .subline .chip {
+.plugcard button, .queuedock button, .micro .chip {
   background: none; border: 1px solid var(--border); color: var(--text-tertiary); cursor: pointer;
   font-family: var(--font); font-size: 11px; letter-spacing: 0.06em; padding: 2px 8px; transition: color 0.15s, border-color 0.15s;
 }
-.plugcard button:hover, .queuedock button:hover, .subline .chip:hover { color: var(--accent); border-color: rgba(61,255,143,0.5); }
+.plugcard button:hover, .queuedock button:hover, .micro .chip:hover { color: var(--accent); border-color: rgba(61,255,143,0.5); }
 
 /* ===== A7#12 AttachmentRail(输入盒顶部)===== */
 .rail { display: flex; gap: 8px; padding: 8px 4px 0; }
@@ -198,9 +203,10 @@ body { background: var(--bg); color: var(--text-primary); font-family: var(--fon
 .go-btn.stop { color: var(--danger); border-color: rgba(255, 85, 85, 0.4); }
 .go-btn.stop:hover { border-color: var(--danger); box-shadow: 0 0 8px rgba(255, 85, 85, 0.25); }
 .go-btn.ghost { color: var(--text-tertiary); }
-/* A7#5 PermissionChip / A7#6 PlanSeat 移入 .subline(评审调整) */
-.subline { display: flex; gap: 8px; align-items: center; padding-top: 6px; flex-wrap: wrap; }
-.subline .chip.on { color: var(--warning); border-color: rgba(255, 176, 0, 0.4); }
+/* A7#5 PermissionChip / A7#6 PlanSeat 在 .micro 行(2026-08-21 裁决);StatsLine = 输入框底部统计条(对位官方) */
+.micro .chip.on { color: var(--warning); border-color: rgba(255, 176, 0, 0.4); }
+.subline { display: flex; gap: 8px; align-items: baseline; padding-top: 6px; flex-wrap: wrap; }
+.statsline .st { font-size: 11px; color: var(--text-tertiary); letter-spacing: 0.05em; font-variant-numeric: tabular-nums; }
 .subline .hint { margin-left: auto; font-size: 11px; color: var(--text-tertiary); letter-spacing: 0.06em; }
 
 /* ===== 命令面板(样式照 styles.css:746-776;锚点按评审改为紧贴 .input-row 正上方,z 高于输入框上方全部元素)===== */
@@ -318,8 +324,11 @@ body { background: var(--bg); color: var(--text-primary); font-family: var(--fon
         <div class="queuedock" id="queuedock" hidden></div>
         <div class="plugcard" id="plugcard" hidden></div>
       </div>
-      <!-- .micro(§13 视觉;ctx 占用 = #mCtxbar 胶囊条唯一展示;模型名 = A7#7 可点入口) -->
+      <!-- .micro(§13 视觉;权限 chip / plan 开关在本行左侧(2026-08-21 裁决,对齐真组件原位,推翻 08-20 的 subline 裁决);
+           ctx 占用 = #mCtxbar 胶囊条唯一展示;模型名 = A7#7 可点入口) -->
       <div class="micro">
+        <button class="chip" id="permChip" title="权限预设(A7#5)">权限: default</button>
+        <button class="chip" id="planChip" title="Plan 模式(A7#6)">plan: off</button>
         <span class="mi-cluster">
           <button class="mi-model" id="mModel" title="模型 / 推理等级(A7#7)">deepseek-v4-flash</button>
           <span class="ctxbar" id="mCtxbar" style="--ctx: 42%" title="上下文占用 86016 / 204800"><i></i></span>
@@ -342,9 +351,9 @@ body { background: var(--bg); color: var(--text-primary); font-family: var(--fon
           <button class="go-btn" id="goBtn" aria-label="发送" title="发送(A7#14)" disabled>↑</button>
         </div>
       </div>
-      <div class="subline">
-        <button class="chip" id="permChip" title="权限预设(A7#5)">权限: default</button>
-        <button class="chip" id="planChip" title="Plan 模式(A7#6)">plan: off</button>
+      <!-- StatsLine(对位官方输入框底部统计条,数据字段与官方一致;mock 数据走 state.stats) -->
+      <div class="subline statsline">
+        <span class="st" id="mStats"></span>
         <span class="hint">Enter 发送 · Shift+Enter 换行 · / 命令 · + 命令列表</span>
       </div>
     </div>
@@ -410,6 +419,7 @@ const state = {
     { t: '跑后台构建', s: 'doing' },
     { t: '浏览器验收', s: 'todo' },
   ],
+  stats: { rounds: 108, steps: 1828, llm: '398m41s', tools: '67m16s', firstToken: '4.5s', tps: 77, cacheHit: '98%', input: '423M tok' },
 };
 let menuOpen = null;   // 'cmd' | 'model' | 'perm' | null
 let riskFrom = null;   // 'palette' | 'chip' —— Full access 确认来源
@@ -610,6 +620,14 @@ function renderMicro() {
   cmdline.placeholder = `输入 / 查看 skills 与命令 · 指令给 ${state.sessionTitle} …`;
 }
 
+/* StatsLine(输入框底部统计条;字段与官方一致:轮/步 │ LLM/工具耗时 │ 首 token/tok·s │ 缓存命中 │ 输入) */
+function renderStats() {
+  const s = state.stats;
+  $('mStats').textContent =
+    `${s.rounds} 轮 · ${s.steps} 步  │  LLM ${s.llm} · 工具调用 ${s.tools}  │  ` +
+    `首 token 平均 ${s.firstToken} · ${s.tps} tok/s  │  缓存命中 ${s.cacheHit}  │  输入 ${s.input}`;
+}
+
 /* --- GoalBar(结构对位官方 GoalBar:靶标 SVG + 相位标签 + 文本 + 动作组 ⏸/▶ ✎ 🗑;
        ✓ complete 为 demo 扩展入口[官方条上无,待用户裁决])--- */
 const GOAL_PHASES = { active: '进行中的目标', paused: '已暂停的目标', blocked: '受阻的目标' };
@@ -744,7 +762,7 @@ function renderInput() {
   $('planChip').classList.toggle('on', state.planOn);
 }
 
-function renderAll() { renderMicro(); renderGoal(); renderTodos(); renderRail(); renderDock(); renderInput(); renderPopup(); }
+function renderAll() { renderMicro(); renderStats(); renderGoal(); renderTodos(); renderRail(); renderDock(); renderInput(); renderPopup(); }
 
 /* ================= 行为 ================= */
 function send() {

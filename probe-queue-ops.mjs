@@ -55,7 +55,8 @@ app.whenReady().then(async () => {
   if (sessionId === null) { out('ABORT: no session'); app.exit(1); return }
 
   out('--- prompt #1 (start turn) ---')
-  const p1 = await WIRE(win, 'session.prompt', { sessionId, mode: 'queue', content: [{ type: 'text', text: '只回复「队列验收准备完成」,不做其他事。' }], clientTimeZone: 'UTC' })
+  // 让首个 turn 跑得足够久:短任务会在探针轮询前完结并把排队消息消费掉(时序抖动)。
+  const p1 = await WIRE(win, 'session.prompt', { sessionId, mode: 'queue', content: [{ type: 'text', text: '从 1 数到 300,每个数字一行,不要省略,不要做其他事。' }], clientTimeZone: 'UTC' })
   out(`prompt1: ok=${p1.result?.ok}`)
   await sleep(800)
 
@@ -68,7 +69,7 @@ app.whenReady().then(async () => {
     const rows = [...document.querySelectorAll('.sidebar-row')]
     const row = rows.find(e => e.getAttribute('data-session') || true)
     // click the newest session (first row typically); prefer by title if token appears
-    const target = rows.find(e => e.innerText.includes('队列验收') || e.innerText.includes('不要做其他事')) ?? rows[0]
+    const target = rows.find(e => e.innerText.includes('从 1 数到') || e.innerText.includes('排队展示')) ?? rows[0]
     if (target) { target.click(); return target.innerText.replace(/\\n/g,' ') }
     return null
   })()`)
@@ -97,6 +98,10 @@ app.whenReady().then(async () => {
 
   const settingsCard = await js(win, `document.querySelectorAll('.details-plugins, .queue-actions').length`)
   out(`queue action controls present: ${settingsCard}`)
+
+  // 挂载点断言(2026-08-21 合并形态):QueueDock 挪进 InputBar 的 dock 排
+  const mountOk = await js(win, `!!document.querySelector('.input-bar .input-bar-dock .queue-dock')`)
+  out(`queue dock mounted in input-bar dock row: ${mountOk}`)
 
   fs.writeFileSync(path.join(OUT, 'queue-ops.txt'), lines.join('\n'))
   const shot = await win.webContents.capturePage()

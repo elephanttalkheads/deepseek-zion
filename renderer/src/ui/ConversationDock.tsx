@@ -13,7 +13,6 @@ import { AgentPresetLabelSeat, AgentPresetSeatSeat } from '../app/agent-preset.t
 import { SubagentCatalogActionSeat } from '../app/subagent.tsx'
 import { ComposerSeat } from '../app/composer-takeover.tsx'
 import { ChatView } from './ChatView.tsx'
-import { QueueDock } from './QueueDock.tsx'
 
 type ViewId = 'chat' | 'trajectory'
 
@@ -93,7 +92,7 @@ export function ConversationDock(): JSX.Element {
           )}
         </div>
       )}
-      <QueueDock />
+      {/* QueueDock 已挪进 InputBar 的 conversation.input.dock 停靠排(2026-08-21 合并形态落地)。 */}
       {running && view === 'chat' && <div className="conversation-streaming" data-running>streaming… ({composerPhase})</div>}
       <ComposerSeat />
     </div>

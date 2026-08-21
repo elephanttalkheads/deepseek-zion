@@ -91,6 +91,8 @@ app.whenReady().then(async () => {
   await check('06', `(${JSON.stringify(errStrip ?? '')} === '' || ${JSON.stringify(errStrip ?? '')} === null)`, '06 commands.execute: /echo 提交无错误')
 
   // 4. goal bar — create a goal via the 设定目标 form.
+  //    2026-08-21 Matrix 重设计落地后:结构 = 靶标 SVG + 相位标签(进行中的目标/
+  //    已暂停的目标/受阻的目标)+ 目标文本 + 图标动作组(data-action);动作语义不变。
   await check('07', `!!document.querySelector('.goal-bar')`, '07 goal bar 渲染')
   const hasSetButton = await js(win, `([...document.querySelectorAll('.goal-bar-btn')].some(b => b.innerText === '设定目标'))`)
   if (hasSetButton) {
@@ -102,12 +104,28 @@ app.whenReady().then(async () => {
     details['08b'] = `goal 输入后表单值 = ${JSON.stringify(goalDraft)}`
     await js(win, `([...document.querySelectorAll('.goal-bar-btn')].find(b => b.innerText === '设定'))?.click()`)
     await check('09', `!!document.querySelector('.goal-bar-objective-text') && document.querySelector('.goal-bar-objective-text')?.innerText.includes('功能接线验收目标')`, '09 goal.create: 目标显示在 goal bar')
-    await check('10', `!!document.querySelector('.goal-bar-phase[data-phase="active"]')`, '10 goal: 相位=active')
+    await check('10', `!!document.querySelector('.goal-bar[data-phase="active"]') && document.querySelector('.goal-bar-phase')?.innerText === '进行中的目标'`, '10 goal: 相位=active(标签「进行中的目标」)')
+    await check('10b', `!!document.querySelector('.goal-bar-target') && !!document.querySelector('.goal-bar-btn[data-action="pause"]') && !!document.querySelector('.goal-bar-btn[data-action="complete"]')`, '10b goal 结构: 靶标 SVG + pause/complete 动作组')
     // pause via button
-    await js(win, `([...document.querySelectorAll('.goal-bar-btn')].find(b => b.innerText === 'pause'))?.click()`)
-    await check('11', `!!document.querySelector('.goal-bar-phase[data-phase="paused"]')`, '11 goal.pause: 相位=paused')
+    await js(win, `document.querySelector('.goal-bar-btn[data-action="pause"]')?.click()`)
+    await check('11', `!!document.querySelector('.goal-bar[data-phase="paused"]') && document.querySelector('.goal-bar-phase')?.innerText === '已暂停的目标'`, '11 goal.pause: 相位=paused(琥珀静止)')
+    // resume via the same toggle
+    await js(win, `document.querySelector('.goal-bar-btn[data-action="resume"]')?.click()`)
+    await check('11b', `!!document.querySelector('.goal-bar[data-phase="active"]')`, '11b goal.resume: pause↔resume 切换回 active')
+    // blocked 相(探针缝注入 session/projection goal 帧):橙红 glitch + 无 pause/resume 钮(对齐官方)
+    const goalSessionId = await js(win, `window.__zionProbeGetSelectedSessionId?.() ?? null`)
+    details['11c'] = `blocked 注入目标会话 = ${goalSessionId ?? '(无探针缝)'}`
+    if (goalSessionId !== null) {
+      const blockedFrame = { type: 'session/projection', sessionId: goalSessionId, key: 'goal', value: { goal: { id: 'probe-goal-blocked', revision: 1, objective: '功能接线验收目标', phase: 'blocked' } }, seq: 99999 }
+      await js(win, `window.__zionProbePushMuxFrame(${JSON.stringify(blockedFrame)})`)
+      await check('11d', `!!document.querySelector('.goal-bar[data-phase="blocked"]') && document.querySelector('.goal-bar-phase')?.innerText === '受阻的目标'`, '11d goal blocked 相: 标签「受阻的目标」(橙红 glitch)')
+      await check('11e', `!document.querySelector('.goal-bar-btn[data-action="pause"]') && !document.querySelector('.goal-bar-btn[data-action="resume"]') && !!document.querySelector('.goal-bar-btn[data-action="complete"]') && !!document.querySelector('.goal-bar-btn[data-action="clear"]')`, '11e blocked 相无 pause/resume 钮,complete/clear 保留')
+    } else {
+      results['11d'] = results['11e'] = false
+      console.log('❌ 11c 缺少 __zionProbeGetSelectedSessionId 探针缝')
+    }
   } else {
-    results['08'] = results['09'] = results['10'] = results['11'] = false
+    results['08'] = results['09'] = results['10'] = results['10b'] = results['11'] = results['11b'] = results['11d'] = results['11e'] = false
     console.log('❌ 07b 缺少「设定目标」按钮')
   }
 

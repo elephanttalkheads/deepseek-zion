@@ -266,6 +266,16 @@ export function RuntimeProvider({ children }: { children: ReactNode }): JSX.Elem
     }
   }, [runtime, reloadWorkspaces])
 
+  // Probe seam(fixture only):回读当前选中会话 id。探针注入 session 级 mux 帧
+  //(如 session/projection 的 goal 帧)需要目标 sessionId,而新建空白会话不进
+  // 侧边栏、DOM 无处可读,故开只读缝。
+  useEffect(() => {
+    if (!runtime.wire.isFixture) return
+    const win = window as unknown as Record<string, unknown>
+    win.__zionProbeGetSelectedSessionId = (): string | undefined => selectedId
+    return () => { delete win.__zionProbeGetSelectedSessionId }
+  }, [runtime, selectedId])
+
   // Probe seam(both modes):归档过滤路径只读驱动(不触碰后端)。探针用它在真实
   // 数据上验证「归档会话从侧边栏消失」:Set 直接驱动 Sidebar 的 archivedSessionIds
   // 过滤;Get 回读当前运行时的归档集合。
