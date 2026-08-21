@@ -1,8 +1,9 @@
 /**
  * GoalBar — the composer's goal strip (functional wiring, M2; 2026-08-21 Matrix
- * 风格化重设计). Reads the selected session's `goal` projection (useGoal); when
- * no goal exists it offers a create form (objective + optional round cap) via
- * goal.create; when a goal exists it shows 靶标 SVG + 相位标签 + 目标文本 +
+ * 风格化重设计). Reads the selected session's `goal` projection (useGoal); 无目标
+ * 时整条隐藏(2026-08-21,对齐官方——官方仅以 hasGoal 做 /goal hint 消歧;
+ * 创建入口 = /goal slash 命令,见 ui-change-log 2026-08-21--hide-idle-goal-bar.md);
+ * when a goal exists it shows 靶标 SVG + 相位标签 + 目标文本 +
  * 右侧动作组(pause↔resume 切换 / edit / complete / clear)via the goal.*
  * contract. 三态编舞:active=磷光绿旋转环,paused=琥珀静止,blocked=橙红
  * glitch;受阻相不显示 pause/resume 切换钮(对齐官方,见 ui-change-log
@@ -115,7 +116,7 @@ function GoalForm({ initial, submitLabel, onSubmit, onCancel }: GoalBarFormProps
   )
 }
 
-export function GoalBar(): JSX.Element {
+export function GoalBar(): JSX.Element | null {
   const { useGoal, goalActions, selectedSessionId } = useRuntime()
   const goal = useGoal(s => s) as GoalProjectionValue | null | undefined
   const [mode, setMode] = useState<'idle' | 'create' | 'edit'>('idle')
@@ -156,8 +157,11 @@ export function GoalBar(): JSX.Element {
   }
 
   if (current === undefined || current === null) {
-    // 未设定态(demo 简洁形态):靶标 + 「未设定目标」相位标签 + 右侧「＋ 设定目标」;
-    // 点击后的设定表单语义不变。
+    // 2026-08-21:无目标时整条隐藏(用户要求 + 对齐官方——官方仅以 hasGoal
+    // 做 /goal hint 消歧,无目标不渲染 goal 条);创建入口 = /goal slash 命令
+    // (见 ui-change-log 2026-08-21--hide-idle-goal-bar.md)。create 表单分支
+    // 保留,供未来入口复用。
+    if (mode === 'idle') return null
     return (
       <div className="goal-bar" data-has-goal={undefined}>
         <GoalTarget />

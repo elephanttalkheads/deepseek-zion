@@ -3,7 +3,7 @@
 //  1. session.create (+/新会话) -> a new session row appears and is selected
 //  2. composer «+» command menu (commands.list) -> command rows render
 //  3. slash dispatch (/echo …) -> session.command executes via the commands remote
-//  4. goal bar (goal projection + goal.create/edit/pause/complete/clear)
+//  4. goal bar (无目标隐藏 + /goal 命令创建 + projection 相位编舞 pause/resume/blocked)
 //  5. workspace menu (workspace.list + create via Miller 目录浏览弹窗 + rename/delete)
 //  6. subagent panel (subagents.list via refreshSubagents) renders in the right column
 // Usage: npx electron probe-functional.mjs
@@ -65,7 +65,7 @@ app.whenReady().then(async () => {
   //    sessions are hidden in the sidebar, so probe creation via InputBar mount.
   await js(win, `(() => { const b = document.querySelector('.shell-new'); if (b) b.click(); return !!b })()`)
   await check('01', `!!document.querySelector('.input-bar')`, '01 session.create: 新会话创建并被选中(InputBar 挂载)')
-  await check('02', `[document.querySelector('.input-bar-textarea'), document.querySelector('.goal-bar')].every(Boolean)`, '02 session.create: 新会话就绪(textarea + goal bar 渲染)')
+  await check('02', `!!document.querySelector('.input-bar-textarea') && !document.querySelector('.goal-bar')`, '02 session.create: 新会话就绪(textarea 渲染;无目标 goal bar 隐藏)')
 
   // 2. composer «+» command menu (commands.list).
   await js(win, `(() => { const b = document.querySelector('.input-bar-add'); if (b) b.click(); return !!b })()`)
@@ -90,20 +90,17 @@ app.whenReady().then(async () => {
   details['06'] = `slash 提交后错误条 = ${errStrip ?? '(空)'}`
   await check('06', `(${JSON.stringify(errStrip ?? '')} === '' || ${JSON.stringify(errStrip ?? '')} === null)`, '06 commands.execute: /echo 提交无错误')
 
-  // 4. goal bar — create a goal via the 设定目标 form.
-  //    2026-08-21 Matrix 重设计落地后:结构 = 靶标 SVG + 相位标签(进行中的目标/
-  //    已暂停的目标/受阻的目标)+ 目标文本 + 图标动作组(data-action);动作语义不变。
-  await check('07', `!!document.querySelector('.goal-bar')`, '07 goal bar 渲染')
-  const hasSetButton = await js(win, `([...document.querySelectorAll('.goal-bar-btn')].some(b => (b.innerText ?? '').includes('设定目标')))`)
-  if (hasSetButton) {
-    await js(win, `([...document.querySelectorAll('.goal-bar-btn')].find(b => (b.innerText ?? '').includes('设定目标')))?.click()`)
-    await check('08', `!!document.querySelector('.goal-bar-form-objective')`, '08 goal 表单出现')
-    await typeInto(win, '.goal-bar-form-objective', '功能接线验收目标')
-    await sleep(150)
-    const goalDraft = await js(win, `document.querySelector('.goal-bar-form-objective')?.value ?? ''`)
-    details['08b'] = `goal 输入后表单值 = ${JSON.stringify(goalDraft)}`
-    await js(win, `([...document.querySelectorAll('.goal-bar-btn')].find(b => b.innerText === '设定'))?.click()`)
-    await check('09', `!!document.querySelector('.goal-bar-objective-text') && document.querySelector('.goal-bar-objective-text')?.innerText.includes('功能接线验收目标')`, '09 goal.create: 目标显示在 goal bar')
+  // 4. goal bar — 2026-08-21 起无目标时整条隐藏(对齐官方),创建走 /goal slash
+  //    命令(InputBar 以 / 开头的行派发到 commands.execute;fixture 建 active 目标)。
+  //    结构 = 靶标 SVG + 相位标签(进行中的目标/已暂停的目标/受阻的目标)+ 目标文本
+  //    + 图标动作组(data-action);动作语义不变。
+  await check('07', `!document.querySelector('.goal-bar')`, '07 goal bar 未设定时隐藏(对齐官方)')
+  await typeInto(win, '.input-bar-textarea', '/goal 功能接线验收目标')
+  await sleep(200)
+  await js(win, `(() => { const b = document.querySelector('.input-bar-send'); if (b) b.click(); return !!b })()`)
+  await sleep(800)
+  {
+    await check('09', `!!document.querySelector('.goal-bar-objective-text') && document.querySelector('.goal-bar-objective-text')?.innerText.includes('功能接线验收目标')`, '09 /goal 命令: 目标显示在 goal bar')
     await check('10', `!!document.querySelector('.goal-bar[data-phase="active"]') && document.querySelector('.goal-bar-phase')?.innerText === '进行中的目标'`, '10 goal: 相位=active(标签「进行中的目标」)')
     await check('10b', `!!document.querySelector('.goal-bar-target') && !!document.querySelector('.goal-bar-btn[data-action="pause"]') && !!document.querySelector('.goal-bar-btn[data-action="complete"]')`, '10b goal 结构: 靶标 SVG + pause/complete 动作组')
     // pause via button
@@ -124,9 +121,6 @@ app.whenReady().then(async () => {
       results['11d'] = results['11e'] = false
       console.log('❌ 11c 缺少 __zionProbeGetSelectedSessionId 探针缝')
     }
-  } else {
-    results['08'] = results['09'] = results['10'] = results['10b'] = results['11'] = results['11b'] = results['11d'] = results['11e'] = false
-    console.log('❌ 07b 缺少「设定目标」按钮')
   }
 
   // 5. workspace menu — list + create (host.pickDirectory fake path) + rename + delete.

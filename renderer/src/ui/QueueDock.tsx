@@ -2,14 +2,19 @@
  * M3/M5 — QueueDock (Q19A self-authored presentational layer).
  *
  * Renders the selected session's transient inbox snapshot (snapshot.queue):
- * queued / steering / context placements the host pushes during and across
- * turns, plus per-row queue mutations (remove / steer / edit 行内编辑) for
- * queued items. Also surfaces the session feedback strip: lastAgentError.
+ * queued / steering placements the host pushes during and across turns, plus
+ * per-row queue mutations (remove / steer / edit 行内编辑) for queued items.
+ * Also surfaces the session feedback strip: lastAgentError.
+ *
+ * 2026-08-21 对齐官方:context 放置项(如 approval policy changed 通知)不在
+ * dock 渲染——官方 QueueDock 只渲染 placement==='queued';context 项被消费后
+ * 以 context 聊天节点进入会话流(复刻 ChatView 已渲染该节点)。steering 行
+ * 保留:复刻 ChatView 暂无 pending-steering 渲染,dock 是其唯一可见处。
  */
 import { useState } from 'react'
 import { useRuntime } from '../app/runtime.tsx'
 
-const PLACEMENT_LABELS: Record<string, string> = { queued: '待发送', steering: '插队', context: '上下文' }
+const PLACEMENT_LABELS: Record<string, string> = { queued: '待发送', steering: '插队' }
 
 function textOf(content: unknown): string {
   if (!Array.isArray(content)) return ''
@@ -21,7 +26,9 @@ function textOf(content: unknown): string {
 
 export function QueueDock(): JSX.Element | null {
   const { useConversation, updateQueue } = useRuntime()
-  const queue = useConversation(s => s.queue)
+  const inbox = useConversation(s => s.queue)
+  // context 放置项不进 dock(对齐官方;消费后由会话流的 context 节点呈现)。
+  const queue = inbox.filter(msg => msg.placement !== 'context')
   const lastAgentError = useConversation(s => s.lastAgentError)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [draft, setDraft] = useState('')
