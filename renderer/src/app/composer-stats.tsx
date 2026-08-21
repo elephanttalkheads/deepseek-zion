@@ -11,8 +11,9 @@
  * SlotMap/LocaleNamespaceMap 等位声明补齐官方 apply 未编译的 merge
  * (conversation.input.dock / conversation locale)。
  */
+import type { CSSProperties } from 'react'
 import type { ConversationKey } from '../../vendor/client-ui-conversation/client/locales.ts'
-import { StatsLine } from '../../vendor/client-ui-conversation/client/chat/StatsLine.tsx'
+import { StatsLine, contextOccupancy } from '../../vendor/client-ui-conversation/client/chat/StatsLine.tsx'
 import { zh as conversationZh } from '../../vendor/client-ui-conversation/client/locales.ts'
 import { useRuntime } from './runtime.tsx'
 
@@ -46,4 +47,29 @@ const conversationT = makeT(conversationZh as Record<string, string>)
 export function StatsLineSeat(): JSX.Element | null {
   const { useConversation, useProjection } = useRuntime()
   return <StatsLine useSession={useConversation} useProjection={useProjection} t={conversationT} />
+}
+
+/**
+ * ctx 占用胶囊条 + 百分比(demo #mCtxbar/#mCtxPct;2026-08-21 第二轮微簇落地)。
+ * 数据 = 已移除的 ContextMeter 环同一数据桥(`contextPressure` 投影 + vendor
+ * `contextOccupancy` 推导):数据复活、环不复活。能力缺失(占用未知)→ 不渲染,
+ * 与环同一 gate。
+ */
+export function ContextCapsule(): JSX.Element | null {
+  const { useProjection } = useRuntime()
+  const pressure = useProjection('contextPressure')
+  const context = contextOccupancy(pressure)
+  if (context === null) return null
+  return (
+    <>
+      <span
+        className="input-bar-ctxbar"
+        style={{ '--ctx': `${context.percent}%` } as CSSProperties}
+        title={`上下文占用 ${context.usedTokens} / ${context.contextWindow}`}
+      >
+        <i />
+      </span>
+      <span className="input-bar-ctxpct">{context.percent}%</span>
+    </>
+  )
 }

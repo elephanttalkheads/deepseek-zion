@@ -51,14 +51,38 @@ export function ModelSelectAdapter({ wire, sessionId, locked }: ModelSelectAdapt
     }
   }
 
+  // 微簇的独立 mi-think 元素(2026-08-21 第二轮):推理等级从 vendor 触发器里
+  // 拆出(触发器压缩为纯模型名按钮,effort 段由 CSS 隐藏),推导镜像 vendor
+  // ModelSelect(current → reasoning → effectiveEffort),data-level 供 tl-* 等级色。
+  // 手动订阅(不用 useSyncExternalStore:该钩子在 fx-alpha 会话下与
+  // vendor ModelSelect 的同款订阅叠加时触发渲染线程跑飞,2026-08-21 二分定位;
+  // 语义等价——挂载读快照,订阅通知时重读)。
+  const [state, setState] = useState(() => directory.store.getSnapshot())
+  useEffect(() => directory.store.subscribe(() => { setState(directory.store.getSnapshot()) }), [directory])
+  const currentChoice = state.groups
+    .flatMap(group => group.models.map(model => ({ group, model })))
+    .find(c => c.group.id === state.current?.provider && c.model.id === state.current?.model)
+  const reasoning = currentChoice?.model.reasoning
+  const effectiveEffort = state.current?.reasoningEffort ?? reasoning?.defaultEffort
+  const effortLabel = reasoning === undefined
+    ? undefined
+    : effectiveEffort === undefined
+      ? t('effort.providerDefault')
+      : reasoning.efforts.find(level => level.id === effectiveEffort)?.name ?? effectiveEffort
+
   return (
-    <ModelSelect
-      locked={locked}
-      available={true}
-      directory={directory.store}
-      load={() => { void directory.load().catch(() => { /* noop */ }) }}
-      select={select}
-      t={t as never}
-    />
+    <>
+      <ModelSelect
+        locked={locked}
+        available={true}
+        directory={directory.store}
+        load={() => { void directory.load().catch(() => { /* noop */ }) }}
+        select={select}
+        t={t as never}
+      />
+      {effortLabel !== undefined && (
+        <span className="input-bar-model-think" data-level={effectiveEffort}>{effortLabel}</span>
+      )}
+    </>
   )
 }

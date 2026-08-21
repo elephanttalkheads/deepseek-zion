@@ -130,14 +130,14 @@ app.whenReady().then(async () => {
   out(`running now: ${await win.webContents.executeJavaScript(`!!document.querySelector('.input-bar-stop')`)}`)
   // fx-alpha is resident-running; stop once so the composer exposes 发送
   if (await win.webContents.executeJavaScript(`!!document.querySelector('.input-bar-stop')`)) {
-    await clickText(win, '.input-bar-stop', '停止')
+    await clickFirst(win, '.input-bar-stop')
     await sleep(1200)
   }
   await win.webContents.executeJavaScript(`(() => { const ta = document.querySelector('.input-bar-textarea'); if (!ta) return false; const setter = Object.getOwnPropertyDescriptor(window.HTMLTextAreaElement.prototype, 'value').set; setter.call(ta, 'report model'); ta.dispatchEvent(new Event('input', { bubbles: true })); return true })()`)
   await sleep(300)
   const draftState = await win.webContents.executeJavaScript(`(() => { const ta = document.querySelector('.input-bar-textarea'); const btn = [...document.querySelectorAll('.input-bar-send')][0]; return JSON.stringify({ value: ta?.value ?? null, btnDisabled: btn ? btn.disabled : null, btnExists: !!btn }) })()`)
   out(`draft/button state: ${draftState}`)
-  await clickText(win, '.input-bar-send', '发送')
+  await clickFirst(win, '.input-bar-send')
   await sleep(4000)
   const bodyText = await win.webContents.executeJavaScript(`document.body.innerText`)
   const sent = bodyText.includes('当前模型')

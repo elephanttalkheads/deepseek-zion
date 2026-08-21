@@ -156,13 +156,15 @@ export function GoalBar(): JSX.Element {
   }
 
   if (current === undefined || current === null) {
+    // 未设定态(demo 简洁形态):靶标 + 「未设定目标」相位标签 + 右侧「＋ 设定目标」;
+    // 点击后的设定表单语义不变。
     return (
       <div className="goal-bar" data-has-goal={undefined}>
-        <div className="goal-bar-empty">
-          <GoalTarget />
-          <span className="goal-bar-hint">无目标 · 输入顶部文本框或点击“设定目标”开启长任务</span>
-          <button type="button" className="goal-bar-btn" onClick={() => setMode('create')}>设定目标</button>
-        </div>
+        <GoalTarget />
+        <span className="goal-bar-phase goal-bar-phase-empty">未设定目标</span>
+        <span className="goal-bar-controls">
+          <button type="button" className="goal-bar-btn" onClick={() => setMode('create')}>＋ 设定目标</button>
+        </span>
       </div>
     )
   }

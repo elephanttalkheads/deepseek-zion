@@ -130,8 +130,13 @@ app.whenReady().then(async () => {
     })()`)
     await sleep(900)
     mark('m6', toEffort && effortPicked, 'M6 选择推理等级(selectModel 带 reasoningEffort)', JSON.stringify(effortList.slice(0, 5)))
+    // M6b: 独立 mi-think 元素(第二轮微簇;推理等级从触发器拆出,data-level 供 tl-* 等级色)
+    const think = await js(win, `(() => { const el = document.querySelector('.input-bar-model-think'); return el ? { text: (el.innerText ?? '').trim(), level: el.getAttribute('data-level') } : null })()`)
+    out(`mi-think = ${JSON.stringify(think)}`)
+    mark('m6b', think !== null && think.text !== '' && think.level !== null, 'M6b 独立 mi-think 元素(data-level 等级)', JSON.stringify(think))
   } else {
     mark('m6', false, 'M6 无推理等级行可测', '')
+    mark('m6b', false, 'M6b 无推理等级行,mi-think 未测', '')
   }
 
   mark('m7', errors.length === 0, 'M7 全程零控制台错误', errors.length ? `${errors.length} 个` : '')

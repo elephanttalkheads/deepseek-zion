@@ -142,15 +142,31 @@ app.whenReady().then(async () => {
   out(`stats line: ${JSON.stringify(statsLine)}`)
   mark('c3', statsShown, 'C3 StatsLine 统计条渲染(轮 · 步)', JSON.stringify(statsLine.slice(0, 100)))
 
-  // C4: StatsLine 位置 = .input-bar-foot 之后;ContextMeter 环已移除(评审裁决)
-  const positionOk = await js(win, `(() => {
-    const foot = document.querySelector('.input-bar-foot')
-    const stats = document.querySelector('.input-bar-statsline')
-    if (!foot || !stats) return false
-    return !!(foot.compareDocumentPosition(stats) & Node.DOCUMENT_POSITION_FOLLOWING)
+  // C3b: 微簇 .micro 单行(2026-08-21 第二轮):左 chip 与右 cluster 同行;
+  // cluster = 模型紧凑触发 + ctx 胶囊条 + 会话状态。
+  const microOk = await js(win, `(() => {
+    const row = document.querySelector('.input-bar-modes')
+    const cluster = row?.querySelector('.input-bar-modes-cluster')
+    if (!row || !cluster) return false
+    if (!cluster.querySelector('.input-bar-model button[aria-haspopup="menu"]')) return false
+    if (!cluster.querySelector('.input-bar-ctxbar')) return false
+    if (!cluster.querySelector('.input-bar-state')) return false
+    const chip = row.querySelector('button')
+    if (!chip) return false
+    return Math.abs(chip.getBoundingClientRect().top - cluster.getBoundingClientRect().top) <= 2
   })()`)
-  const meterGone = await js(win, `!document.querySelector('.input-bar-foot button[aria-label*="上下文已用"]')`)
-  mark('c4', positionOk && meterGone, 'C4 StatsLine 位于输入框底部(foot 之后)且 ContextMeter 环已移除', `pos=${positionOk} meterGone=${meterGone}`)
+  const microText = await js(win, `(document.querySelector('.input-bar-modes')?.innerText ?? '').split(String.fromCharCode(10)).join(' ')`)
+  mark('c3b', microOk, 'C3b 微簇单行(chip + 模型触发 + ctx 胶囊 + 会话状态)', JSON.stringify(microText.slice(0, 100)))
+
+  // C4: StatsLine 位置 = 输入盒(.input-box)之后;ContextMeter 环已移除(评审裁决)
+  const positionOk = await js(win, `(() => {
+    const box = document.querySelector('.input-box')
+    const stats = document.querySelector('.input-bar-statsline')
+    if (!box || !stats) return false
+    return !!(box.compareDocumentPosition(stats) & Node.DOCUMENT_POSITION_FOLLOWING)
+  })()`)
+  const meterGone = await js(win, `!document.querySelector('.input-bar button[aria-label*="上下文已用"]')`)
+  mark('c4', positionOk && meterGone, 'C4 StatsLine 位于输入盒(.input-box)之后且 ContextMeter 环已移除', `pos=${positionOk} meterGone=${meterGone}`)
 
   mark('c5', errors.length === 0, 'C5 全程零控制台错误', errors.length ? `${errors.length} 个` : '')
 

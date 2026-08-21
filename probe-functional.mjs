@@ -94,9 +94,9 @@ app.whenReady().then(async () => {
   //    2026-08-21 Matrix 重设计落地后:结构 = 靶标 SVG + 相位标签(进行中的目标/
   //    已暂停的目标/受阻的目标)+ 目标文本 + 图标动作组(data-action);动作语义不变。
   await check('07', `!!document.querySelector('.goal-bar')`, '07 goal bar 渲染')
-  const hasSetButton = await js(win, `([...document.querySelectorAll('.goal-bar-btn')].some(b => b.innerText === '设定目标'))`)
+  const hasSetButton = await js(win, `([...document.querySelectorAll('.goal-bar-btn')].some(b => (b.innerText ?? '').includes('设定目标')))`)
   if (hasSetButton) {
-    await js(win, `([...document.querySelectorAll('.goal-bar-btn')].find(b => b.innerText === '设定目标'))?.click()`)
+    await js(win, `([...document.querySelectorAll('.goal-bar-btn')].find(b => (b.innerText ?? '').includes('设定目标')))?.click()`)
     await check('08', `!!document.querySelector('.goal-bar-form-objective')`, '08 goal 表单出现')
     await typeInto(win, '.goal-bar-form-objective', '功能接线验收目标')
     await sleep(150)

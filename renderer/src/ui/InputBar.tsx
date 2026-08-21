@@ -21,7 +21,7 @@ import {
 import { ModelSelectAdapter } from '../app/model-select.tsx'
 import { PermissionChip } from '../app/permission-ui.tsx'
 import { PlanSeat } from '../app/plan-seat.tsx'
-import { StatsLineSeat } from '../app/composer-stats.tsx'
+import { ContextCapsule, StatsLineSeat } from '../app/composer-stats.tsx'
 import { useTriggerPipeline } from '../app/trigger-menu.tsx'
 import type { PickOutcome, TokenSpan } from '../../vendor/ui-input-trigger/client/index.ts'
 import { SlotAnchor } from '../plugin/anchors.tsx'
@@ -49,6 +49,7 @@ function formatBytes(n: number): string {
 export function InputBar(): JSX.Element {
   const { wire, selectedSessionId, sendPrompt, stop, useConversation, imageLimits, runCommand, listCommands } = useRuntime()
   const running = useConversation(s => s.running)
+  const composerPhase = useConversation(s => s.composerPhase)
   const promptError = useConversation(s => s.promptError)
   const [draft, setDraft] = useState('')
   const [images, setImages] = useState<PendingImage[]>([])
@@ -61,6 +62,18 @@ export function InputBar(): JSX.Element {
   const dragDepthRef = useRef(0)
   const fileRef = useRef<HTMLInputElement | null>(null)
   const textareaRef = useRef<HTMLTextAreaElement | null>(null)
+
+  // textarea 多行撑高(demo autosize 移植):按 scrollHeight 向上长,MAX_H(≈5 行)
+  // 封顶后出滚动条。draft 任何变化(键入/命令回填/发送清空)都重算。
+  const TEXTAREA_MAX_H = 22.5 * 5
+  useEffect(() => {
+    const el = textareaRef.current
+    if (el === null) return
+    el.style.height = 'auto'
+    const capped = Math.min(el.scrollHeight, TEXTAREA_MAX_H)
+    el.style.height = `${capped}px`
+    el.style.overflowY = el.scrollHeight > TEXTAREA_MAX_H ? 'auto' : 'hidden'
+  }, [draft])
 
   // 触发菜单管线(`/` 命令/技能 + /permission popupSelect):draft 修订号供
   // pick 的 span CAS(官方输入机 draftRev 语义)。
@@ -231,51 +244,25 @@ export function InputBar(): JSX.Element {
         <QueueDock />
         <SlotAnchor slot="conversation.input.dock" ownerProps={{}} />
       </div>
+      {/* .micro 微簇单行(demo §13 形态):左 = 权限 chip + plan chip(数据与弹层
+          行为不动,chip 视觉由 CSS 压缩);右 cluster = 模型名紧凑触发(菜单功能
+          保留)+ 独立 mi-think 推理等级 + ctx 胶囊条/百分比 + 会话状态。 */}
       <div className="input-bar-modes">
         <PermissionChip />
         <PlanSeat />
-      </div>
-
-      <div className="input-bar-model">
-        {selectedSessionId === undefined ? (
-          <span className="input-bar-model-fallback">模型</span>
-        ) : (
-          <ModelSelectAdapter wire={wire} sessionId={selectedSessionId} locked={running} />
-        )}
-      </div>
-
-      <div className="input-bar-command" data-open={menuOpen || undefined}>
-        <button
-          type="button"
-          className="input-bar-add"
-          title="命令"
-          aria-label="命令"
-          aria-haspopup="listbox"
-          aria-expanded={menuOpen}
-          onClick={toggleMenu}
-        >
-          +
-        </button>
-        {menuOpen && (
-          <div className="command-panel" role="listbox" aria-label="命令列表">
-            {commandsError !== null && <div className="command-panel-error">{commandsError}</div>}
-            {(commandsError === null && commands.length === 0) && (
-              <div className="command-panel-hint">加载命令…</div>
-            )}
-            {commands.map(command => (
-              <button
-                key={command.name}
-                type="button"
-                className="command-panel-item"
-                role="option"
-                onClick={() => pickCommand(command)}
-              >
-                <span className="command-panel-name">/{command.name}</span>
-                <span className="command-panel-desc">{command.description}</span>
-              </button>
-            ))}
-          </div>
-        )}
+        <span className="input-bar-modes-cluster">
+          {selectedSessionId === undefined ? (
+            <span className="input-bar-model-fallback">模型</span>
+          ) : (
+            <span className="input-bar-model">
+              <ModelSelectAdapter wire={wire} sessionId={selectedSessionId} locked={running} />
+            </span>
+          )}
+          <ContextCapsule />
+          <span className="input-bar-state" data-running={running || undefined}>
+            {running ? (composerPhase === 'active' ? 'STREAMING' : 'RUNNING') : 'READY'}
+          </span>
+        </span>
       </div>
 
       {dragActive && (
@@ -296,86 +283,125 @@ export function InputBar(): JSX.Element {
         />
       )}
 
-      {images.length > 0 && (
-        <AttachmentRail<AttachmentRailItem>
-          items={images.map((img, idx) => ({
-            id: `img-${idx}`,
-            previewUrl: `data:${img.mediaType};base64,${img.data}`,
-            alt: img.name ?? String(idx + 1),
-            removeLabel: `移除图片 ${img.name ?? String(idx + 1)}`,
-          }))}
-          labels={attachmentRailLabels(chatT)}
-          onOpen={(item) => setLightbox({ src: item.previewUrl, alt: item.alt })}
-          onRemove={(item) => {
-            const idx = images.findIndex((_, i) => `img-${i}` === item.id)
-            if (idx >= 0) setImages(prev => prev.filter((_, i) => i !== idx))
-          }}
-        />
-      )}
+      {/* 输入盒(demo .input-box):上下发丝边框壳;附件缩略图在壳内顶部;
+          + 📎 ❯ textarea 停止 发送 全部同一行(.input-row)。 */}
+      <div className="input-box">
+        {images.length > 0 && (
+          <div className="input-bar-rail">
+            <AttachmentRail<AttachmentRailItem>
+              items={images.map((img, idx) => ({
+                id: `img-${idx}`,
+                previewUrl: `data:${img.mediaType};base64,${img.data}`,
+                alt: img.name ?? String(idx + 1),
+                removeLabel: `移除图片 ${img.name ?? String(idx + 1)}`,
+              }))}
+              labels={attachmentRailLabels(chatT)}
+              onOpen={(item) => setLightbox({ src: item.previewUrl, alt: item.alt })}
+              onRemove={(item) => {
+                const idx = images.findIndex((_, i) => `img-${i}` === item.id)
+                if (idx >= 0) setImages(prev => prev.filter((_, i) => i !== idx))
+              }}
+            />
+          </div>
+        )}
+        <div className="input-row">
+          <div className="input-bar-command" data-open={menuOpen || undefined}>
+            <button
+              type="button"
+              className="input-bar-add"
+              title="命令"
+              aria-label="命令"
+              aria-haspopup="listbox"
+              aria-expanded={menuOpen}
+              onClick={toggleMenu}
+            >
+              +
+            </button>
+            {menuOpen && (
+              <div className="command-panel" role="listbox" aria-label="命令列表">
+                {commandsError !== null && <div className="command-panel-error">{commandsError}</div>}
+                {(commandsError === null && commands.length === 0) && (
+                  <div className="command-panel-hint">加载命令…</div>
+                )}
+                {commands.map(command => (
+                  <button
+                    key={command.name}
+                    type="button"
+                    className="command-panel-item"
+                    role="option"
+                    onClick={() => pickCommand(command)}
+                  >
+                    <span className="command-panel-name">/{command.name}</span>
+                    <span className="command-panel-desc">{command.description}</span>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+          <button className="input-bar-attach" type="button" title="添加图片" onClick={() => fileRef.current?.click()}>
+            📎
+          </button>
+          <input
+            ref={fileRef}
+            type="file"
+            accept={imageLimits.mediaTypes.join(',')}
+            multiple={false}
+            hidden
+            onChange={(e) => { readFiles(e.target.files); e.target.value = '' }}
+          />
+          <span className="input-bar-prompt" aria-hidden="true">❯</span>
+          <textarea
+            ref={textareaRef}
+            className="input-bar-textarea"
+            placeholder="输入消息…"
+            rows={1}
+            value={draft}
+            onChange={(e) => {
+              const value = e.target.value
+              draftRevRef.current += 1
+              setDraft(value)
+              trackNow(value, e.target.selectionStart ?? value.length)
+            }}
+            onKeyUp={(e) => {
+              // 光标移动(不改 draft)也要刷新触发检测;相同快照由 trackNow 去重。
+              const el = e.currentTarget
+              trackNow(el.value, el.selectionStart ?? el.value.length)
+            }}
+            onKeyDown={(e) => {
+              // 触发菜单打开时先仲裁(↑/↓/Enter/Escape)。
+              const key = e.key === 'ArrowUp' ? 'up'
+                : e.key === 'ArrowDown' ? 'down'
+                  : e.key === 'Enter' ? 'enter'
+                    : e.key === 'Escape' ? 'escape'
+                      : null
+              if (key !== null) {
+                const outcome = trigger.arbitrate(key, e.nativeEvent.isComposing)
+                if (outcome === 'consumed' || outcome === 'pick-highlighted') {
+                  e.preventDefault()
+                  return
+                }
+              }
+              if (e.key === 'Enter' && !e.shiftKey) {
+                // 运行中也允许发送:提示进入队列模式(queue),官方 composer 同姿态。
+                e.preventDefault()
+                submit()
+              }
+              if (e.key === 'Escape' && menuOpen) setMenuOpen(false)
+            }}
+            onPaste={(e) => { readFiles(e.clipboardData?.files ?? null) }}
+            aria-label="Message input"
+          />
+          {running && (
+            <button className="input-bar-stop" type="button" title="停止" aria-label="停止" onClick={() => stop()}>✕</button>
+          )}
+          <button className="input-bar-send" type="button" title="发送" aria-label="发送" onClick={submit} disabled={(draft.trim() === '' && images.length === 0) || imageLimitError !== null}>↑</button>
+        </div>
+      </div>
       {(imageLimitError !== null || intakeError !== null) && (
         <div className="input-bar-error">{imageLimitError ?? intakeError}</div>
       )}
-
-      <textarea
-        ref={textareaRef}
-        className="input-bar-textarea"
-        placeholder="输入消息…"
-        rows={1}
-        value={draft}
-        onChange={(e) => {
-          const value = e.target.value
-          draftRevRef.current += 1
-          setDraft(value)
-          trackNow(value, e.target.selectionStart ?? value.length)
-        }}
-        onKeyUp={(e) => {
-          // 光标移动(不改 draft)也要刷新触发检测;相同快照由 trackNow 去重。
-          const el = e.currentTarget
-          trackNow(el.value, el.selectionStart ?? el.value.length)
-        }}
-        onKeyDown={(e) => {
-          // 触发菜单打开时先仲裁(↑/↓/Enter/Escape)。
-          const key = e.key === 'ArrowUp' ? 'up'
-            : e.key === 'ArrowDown' ? 'down'
-              : e.key === 'Enter' ? 'enter'
-                : e.key === 'Escape' ? 'escape'
-                  : null
-          if (key !== null) {
-            const outcome = trigger.arbitrate(key, e.nativeEvent.isComposing)
-            if (outcome === 'consumed' || outcome === 'pick-highlighted') {
-              e.preventDefault()
-              return
-            }
-          }
-          if (e.key === 'Enter' && !e.shiftKey) {
-            // 运行中也允许发送:提示进入队列模式(queue),官方 composer 同姿态。
-            e.preventDefault()
-            submit()
-          }
-          if (e.key === 'Escape' && menuOpen) setMenuOpen(false)
-        }}
-        onPaste={(e) => { readFiles(e.clipboardData?.files ?? null) }}
-        aria-label="Message input"
-      />
       {promptError !== null && <div className="input-bar-error">{String(promptError)}</div>}
-      <div className="input-bar-foot">
-        <button className="input-bar-attach" type="button" title="添加图片" onClick={() => fileRef.current?.click()}>
-          📎
-        </button>
-        <input
-          ref={fileRef}
-          type="file"
-          accept={imageLimits.mediaTypes.join(',')}
-          multiple={false}
-          hidden
-          onChange={(e) => { readFiles(e.target.files); e.target.value = '' }}
-        />
-        {running && (
-          <button className="input-bar-stop" type="button" onClick={() => stop()}>停止</button>
-        )}
-        <button className="input-bar-send" type="button" onClick={submit} disabled={(draft.trim() === '' && images.length === 0) || imageLimitError !== null}>发送</button>
-      </div>
-      {/* StatsLine 会话统计条:位置按官方 = 输入框底部(textarea/foot 之下);
+      {/* StatsLine 会话统计条:位置按官方 = 输入盒(.input-box)之下;
           ContextMeter 环已按评审裁决移除(ui-change-log 2026-08-21)。 */}
       <div className="input-bar-statsline">
         <StatsLineSeat />
