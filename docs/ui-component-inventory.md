@@ -130,7 +130,7 @@ main.tsx Root
 - **交互入口**:空态「设定目标」;创建表单(objective/上限轮次/设定/取消 → `goalActions.create`);有目标态 edit/pause(active)/resume(paused|blocked)/complete(非 complete)/clear;编辑表单(保存 → `goalActions.edit`)[zion-add/goal 官方 /goal 命令的 GUI 面]。
 - **数据**:`useGoal`(GoalProjectionValue:{id,revision,objective,phase,maxGoalRounds})、`goalActions`、`selectedSessionId`。
 
-#### A7. InputBar — 输入栏(入口最密集)
+#### A7. InputBar — 输入栏(入口最密集) ✅ 已迁移(ZION 块 13,2026-08-21;demo: `ui-prototype/input-bar/`)
 - **挂载**:`ComposerSeat`(composer-takeover.tsx 无挂起交互时的回退体)。
 - **交互入口**:
   1. 触发管线 `trigger.render()`(→ MenuView + PopupSelectView):输入 `/` 弹命令/技能菜单;`/permission` → popupSelect(Full access 风险确认 → `session.command('/permission <id>')`);↑/↓/Enter/Escape 仲裁 [official]

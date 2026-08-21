@@ -31,7 +31,7 @@ description: 迁移 pi-martix-ui-dev 的 UI 块进 deepseek-zion 的强制流程
    - **探针联动**:先 `grep` 全部 `probe-*.mjs` 中对该组件 class 的断言,**更新腐化断言**(组件结构变了,旧断言不是失败是腐化);再按改动面选探针子集,串行跑,fixture 轨先行、real 轨能跑则跑(3080 常驻勿重启),全绿;
    - **形态比对**:真组件同视口/同状态截图与第 3 步 replica 基准比对,一致或差异可逐条归因(数据驱动,非形态);
    - **残留清理**:被替换的旧入口/旧结构的样式与断言一并清理(死样式三处 grep 零引用才可删:`renderer/src`、`renderer/vendor`、`probe-*.mjs`;注意动态拼接类名如 ``chat-node--${kind}``)。
-5. **收尾记账**:删入口/删展示元素先立 `ui-change-log/` 记录(规则见 AGENTS.md §8);回勾 `docs/zion-ui-visual-inventory.md` 与 HANDOFF.md;提交(推送等用户指示)。
+5. **收尾记账**:删入口/删展示元素先立 `ui-change-log/` 记录(规则见 AGENTS.md §8);提交(推送等用户指示)。**进度打勾(迁移完成的固定动作)**:在 `docs/zion-ui-visual-inventory.md` 对应块标题追加 `✅ 已迁移` + 一行落点(日期 / 落地文件 / demo 路径);在 `docs/ui-component-inventory.md` 对应组件标题追加同款勾(标注 ZION 块号)。这两处勾选是两份清单迁移进度的唯一口径——只勾**本次实际迁移完成**的块/组件,部分迁移不勾;同时回勾 HANDOFF.md。
 
 ## 硬性判定(违反即返工)
 

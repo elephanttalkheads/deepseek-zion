@@ -265,7 +265,9 @@
 
 ---
 
-### 13. 输入栏：微簇状态条 + 输入行 + 命令面板（InputBar / .micro / .palette)
+### 13. 输入栏：微簇状态条 + 输入行 + 命令面板（InputBar / .micro / .palette) ✅ 已迁移
+
+> 2026-08-21 落地:`renderer/src/ui/InputBar.tsx`(+ 微簇 .micro 单行、输入盒 .input-box/.input-row、命令面板;TodoDock/GoalBar/QueueDock 入 dock 排);demo 与截图:`ui-prototype/input-bar/`。
 
 **精确定位**
 - 组件：`src/renderer/src/components/InputBar.tsx`(:204 `.palette` 命令面板 listbox;:227 `.micro` 微簇状态条）
