@@ -97,22 +97,23 @@
 
   /** 关掉「内测声明」欢迎弹窗(fixture 模式无法持久化确认,每次都会弹)。 */
   async function dismissWelcomeModal() {
-    if (!/内测声明|欢迎|welcome/i.test(document.body.innerText || '')) return false
-    const candidates = [...document.querySelectorAll('button')]
-    const btn = candidates.find((b) => {
+    // 先只查 dialog(便宜);innerText 扫全页在长会话下很重,不干。
+    let dialog = document.querySelector('[role="dialog"]')
+    if (!dialog || !/内测声明|欢迎|welcome/i.test(dialog.textContent || '')) return false
+    const btn = [...dialog.querySelectorAll('button')].find((b) => {
       const txt = (b.textContent || '').trim()
       const r = b.getBoundingClientRect()
       return /^(继续|继续使用|continue)/i.test(txt) && r.width > 0 && r.height > 0
     })
     if (btn) {
       btn.click()
-      await sleep(700)
+      await sleep(500)
     }
     // fixture 模式无法持久化确认(保存必失败),弹窗会一直盖着 → dev 工具直接摘掉 dialog。
-    const dialog = document.querySelector('[role="dialog"]')
+    dialog = document.querySelector('[role="dialog"]')
     if (dialog && /内测声明|欢迎|welcome/i.test(dialog.textContent || '')) {
       dialog.remove()
-      await sleep(300)
+      await sleep(200)
     }
     return true
   }
@@ -435,4 +436,11 @@
     })
   }
   buildPanel()
+
+  // fixture 模式:「内测声明」弹窗无法持久化确认(点「继续」保存必失败)→ 持续监控,
+  // 弹窗一出现就自动点继续/移除,避免一直盖住 UI(真实模式可正常确认,不干预)。
+  if (new URLSearchParams(location.search).has('fixture')) {
+    setInterval(() => { void dismissWelcomeModal() }, 1500)
+    void dismissWelcomeModal() // 首帧立即清一次
+  }
 })()
