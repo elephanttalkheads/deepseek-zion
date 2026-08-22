@@ -19,7 +19,6 @@ export function AppFrame(): JSX.Element {
   const [query, setQuery] = useState('')
   const [workspaceMenuOpen, setWorkspaceMenuOpen] = useState(false)
   const current = workspaces.length > 0 ? workspaces[0] : undefined
-  const workspaceName = current?.title ?? 'fixture'
 
   return (
     <div className="app-frame" data-connection={connectionState}>

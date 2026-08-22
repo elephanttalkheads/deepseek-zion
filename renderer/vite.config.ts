@@ -56,8 +56,8 @@ function proxy3080(): Record<string, object> {
       changeOrigin: true,
       ws: true,
       configure: (proxy: { on: (event: string, cb: (req: unknown, socket: unknown, head?: unknown) => void) => void }) => {
-        proxy.on('proxyReq', (proxyReq: { removeHeader: (name: string) => void }) => { stripOrigin(proxyReq) })
-        proxy.on('proxyReqWs', (proxyReq: { removeHeader: (name: string) => void }) => { stripOrigin(proxyReq) })
+        proxy.on('proxyReq', (req: unknown) => { stripOrigin(req as { removeHeader: (name: string) => void }) })
+        proxy.on('proxyReqWs', (req: unknown) => { stripOrigin(req as { removeHeader: (name: string) => void }) })
       },
     },
   }

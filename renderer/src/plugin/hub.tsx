@@ -54,7 +54,7 @@ function handle(): PluginRuntimeHandle {
     const runtime = new PluginRuntime({
       slots: registry,
       invoke: async (pluginId, pluginRunId, method, args) => {
-        const answered = await remote.invoke(pluginId, pluginRunId, method, args)
+        const answered = await remote!.invoke(pluginId, pluginRunId, method, args)
         if (!answered.ok) {
           throw new Error(`host.call("${method}") on ${pluginId} did not complete: ${answered.error.code}: ${answered.error.message}`)
         }
@@ -78,16 +78,16 @@ function handle(): PluginRuntimeHandle {
       runtime,
       {
         runHostHalf: async (agentId, pluginId, packageId, mode, requestId, approveFutureVersions) => {
-          const answered = await remote.runHostHalf(agentId, pluginId, packageId, mode, requestId, approveFutureVersions)
+          const answered = await remote!.runHostHalf(agentId, pluginId, packageId, mode, requestId, approveFutureVersions)
           return answered.ok ? answered.value : { ok: false, message: `${answered.error.code}: ${answered.error.message}` }
         },
         getClientCode: async (agentId, pluginId, pluginRunId) => {
-          const answered = await remote.getClientCode(agentId, pluginId, pluginRunId)
+          const answered = await remote!.getClientCode(agentId, pluginId, pluginRunId)
           if (!answered.ok) throw new Error(`${answered.error.code}: ${answered.error.message}`)
           return answered.value
         },
         resolveRequestRun: async (requestId, resolution) => {
-          const answered = await remote.resolveRequestRun(requestId, resolution)
+          const answered = await remote!.resolveRequestRun(requestId, resolution)
           if (!answered.ok) throw new Error(`${answered.error.code}: ${answered.error.message}`)
           return answered.value
         },

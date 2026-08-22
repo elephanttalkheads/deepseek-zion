@@ -85,6 +85,21 @@ deepseek-zion 对官方的耦合有 **4 个面**,同步时逐面核对:
 
 ---
 
+## 5. 当前基线(2026-08-22 更新:链 0.1.1-rc.2 轻适配后)
+
+| 项 | 值 |
+|---|---|
+| file: 链版本 | `0.1.1-rc.2`(本机 `C:\Users\zyf\.dsh\profiles\node_modules\@deepseek-ai\*`;npm latest,2026-08-22 升级) |
+| 3080 后端 | 已由用户重启为新版本(新 PID;勿再重启) |
+| wire 契约(面 D) | **rc.7→0.1.1-rc.2 未破坏**:RPC 仅追加式(gateway 内部重构)、节点 kinds 零 diff、投影键未删改、`host/workspace-added` **被移除**(新增也发 workspace-changed,zion 已删死分支)、HostDescription 新增必填 `home`;`session.export`/`updateQueue`/`dynamicCordisRunner`/credentials/llm 实测全通 |
+| 类型面 | 链引入**品牌类型**(GoalId/SessionId/WorkspaceId/RpcId 带 BRAND)+ 投影注册改 stateSchema/wire 分层;zion src/ 已轻适配(8 文件,边界 `as` 转换,接口面保持 string);**src/ 0 错**;新基线 `baseline-errors.txt`(14 vendor 文件,旧基线丢失已重生成) |
+| vendor(面 B) | **仍拷自 rc.6/7,漂移扩大**:rc.7→0.1.1-rc.2 共 117 文件 diff;**官方删除 `dsh-client-web-react` 包**(功能并入 client-runtime)→ 下次 vendor 同步是大工程(结构重构),已记录暂缓 |
+| 上游 bug | 0.1.1-rc.2 后端 settings 写盘在 Windows **EPERM 自锁**(tmp→rename 失败;外部改名 OK)→ 官方 UI 与 zion 的 settings 写入都受影响,与 zion 无关,待上游修复;backend-only 探针 B1-B3 因此失败 |
+| 验收 | probe-checklist 24/24、probe-plugin-settings real 9/9、probe-queue-activation 7/7(新链下实测) |
+| 官方源码 clone | `D:\github-Clone\deepseek-harness`,已 fetch 至 `dsh-v0.1.1-rc.2`(本地 tag 已拉) |
+
+> 说明(2026-08-22 轻适配记录):wire 未破坏 → 按 §2 判读不升 vendor;类型面违约已修复(src/ 8 文件 30 处:品牌类型边界转换 + host/workspace-added 死分支移除 + 槽声明对齐 InputZone + model ns 等位声明 + 杂项)。后续官方再更新仍先看 wire。
+
 ## 5. 当前基线(写文件时)
 
 | 项 | 值 |

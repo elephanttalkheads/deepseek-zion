@@ -16,12 +16,19 @@ import type { SnapshotSelectorHook } from '@deepseek-ai/dsh-client-ui-slots'
 import { assembleWire, type AssembledWire } from '../protocol/assemble.ts'
 import type { SessionListSnapshot } from '../../vendor/client-runtime/client/sessions/manager.ts'
 import { EMPTY_CHAT_SNAPSHOT, EMPTY_CONVERSATION_VIEWS, type ConversationSnapshot } from '../../vendor/client-runtime/client/sessions/conversation.ts'
-import type { ModelSelection, PromptContentPart, SessionModels, WorkspaceId, WorkspaceView } from '../../vendor/client-connection/client/api.ts'
+import type { ModelSelection, PromptContentPart, SessionModels, WorkspaceView } from '../../vendor/client-connection/client/api.ts'
 import type { MuxFrame } from '../../vendor/client-connection/client/api.ts'
+import { RpcId, type GoalRef, type SessionId as ChainSessionId, type WorkspaceId as ChainWorkspaceId } from '../../vendor/client-connection/client/api.ts'
 import { getConversationRuntime } from './conversation.ts'
 import { getPluginRuntimeHandle } from '../plugin/hub.tsx'
 
 type SessionId = SessionListSnapshot['items'][number]['sessionId']
+
+// 链 0.1.1-rc.2 起官方把 id 升级为品牌类型(编译期断言,零运行时成本;
+// 官方 SessionId()/GoalId()/WorkspaceId() 构造即此转换)。zion 内部保持
+// string 面,只在链契约边界转换。
+const asSessionId = (s: string): ChainSessionId => s as ChainSessionId
+const asWorkspaceId = (s: string): ChainWorkspaceId => s as ChainWorkspaceId
 
 /** Deployment image intake bytes (wire ImageMediaType narrowing for prompt parts). */
 export type MediaType = 'image/png' | 'image/jpeg' | 'image/webp' | 'image/gif'
@@ -135,13 +142,13 @@ export interface AppRuntime {
   workspaceActions: {
     /** Open the native directory picker, then workspace.create(path); returns the workspace or null. */
     create(): Promise<WorkspaceView | null>
-    rename(workspaceId: WorkspaceId, title: string): Promise<boolean>
-    delete(workspaceId: WorkspaceId): Promise<boolean>
-    refresh(): Promise<void>
+    rename(workspaceId: string, title: string): Promise<boolean>
+    delete(workspaceId: string): Promise<boolean>
+    refresh(): void
     /** Move a workspace in the registry display order (DOM-insertBefore-like). */
-    insertBefore(workspaceId: WorkspaceId, beforeWorkspaceId?: WorkspaceId): Promise<boolean>
+    insertBefore(workspaceId: string, beforeWorkspaceId?: string): Promise<boolean>
     /** Move an accounted session within its workspace's manual order. */
-    insertSessionBefore(workspaceId: WorkspaceId, sessionId: string, beforeSessionId?: string): Promise<boolean>
+    insertSessionBefore(workspaceId: string, sessionId: string, beforeSessionId?: string): Promise<boolean>
   }
   /** Selected session's direct-child subagent catalogs; read via
    *  `useSessions(s => s.subagentsByParent)` on the full list snapshot. */
@@ -238,7 +245,8 @@ export function RuntimeProvider({ children }: { children: ReactNode }): JSX.Elem
       // 宿主工作区变更帧(建/改/删/归档)驱动账目刷新:分组与手动排序跟着变。
       onHost: (env) => {
         const type = env.payload.type
-        if (type === 'host/workspace-changed' || type === 'host/workspace-removed' || type === 'host/workspace-added' || type === 'host/archived-sessions-changed') {
+        // 0.1.1-rc.2 起 HostFrame 移除 host/workspace-added(新增也发 workspace-changed)。
+        if (type === 'host/workspace-changed' || type === 'host/workspace-removed' || type === 'host/archived-sessions-changed') {
           reloadWorkspaces()
         }
       },
@@ -255,7 +263,7 @@ export function RuntimeProvider({ children }: { children: ReactNode }): JSX.Elem
     if (runtime.wire.isFixture) {
       const win = window as unknown as Record<string, unknown>
       win.__zionProbePushMuxFrame = (frame: MuxFrame, rpcId?: string): void => {
-        runtime.wire.sessions.handleMuxEnvelope({ rpcId: rpcId ?? crypto.randomUUID(), payload: frame })
+        runtime.wire.sessions.handleMuxEnvelope({ rpcId: RpcId(rpcId ?? crypto.randomUUID()), payload: frame })
       }
     }
     return () => {
@@ -422,28 +430,28 @@ export function RuntimeProvider({ children }: { children: ReactNode }): JSX.Elem
       goalActions: {
         create: (objective, maxGoalRounds) => {
           if (selectedId === undefined) return Promise.resolve(false)
-          return wire.api.goals.create({ sessionId: selectedId, objective, ...(maxGoalRounds === undefined ? {} : { maxGoalRounds }) })
+          return wire.api.goals.create({ sessionId: asSessionId(selectedId), objective, ...(maxGoalRounds === undefined ? {} : { maxGoalRounds }) })
             .then(res => res.result.ok)
         },
         edit: (ref, update) => {
           if (selectedId === undefined) return Promise.resolve(false)
-          return wire.api.goals.edit({ sessionId: selectedId, ref, ...update }).then(res => res.result.ok)
+          return wire.api.goals.edit({ sessionId: asSessionId(selectedId), ref: ref as GoalRef, ...update }).then(res => res.result.ok)
         },
         pause: (ref) => {
           if (selectedId === undefined) return Promise.resolve(false)
-          return wire.api.goals.pause({ sessionId: selectedId, ref }).then(res => res.result.ok)
+          return wire.api.goals.pause({ sessionId: asSessionId(selectedId), ref: ref as GoalRef }).then(res => res.result.ok)
         },
         resume: (ref) => {
           if (selectedId === undefined) return Promise.resolve(false)
-          return wire.api.goals.resume({ sessionId: selectedId, ref }).then(res => res.result.ok)
+          return wire.api.goals.resume({ sessionId: asSessionId(selectedId), ref: ref as GoalRef }).then(res => res.result.ok)
         },
         complete: (ref) => {
           if (selectedId === undefined) return Promise.resolve(false)
-          return wire.api.goals.complete({ sessionId: selectedId, ref }).then(res => res.result.ok)
+          return wire.api.goals.complete({ sessionId: asSessionId(selectedId), ref: ref as GoalRef }).then(res => res.result.ok)
         },
         clear: (ref) => {
           if (selectedId === undefined) return Promise.resolve(false)
-          return wire.api.goals.clear({ sessionId: selectedId, ref }).then(res => res.result.ok)
+          return wire.api.goals.clear({ sessionId: asSessionId(selectedId), ref: ref as GoalRef }).then(res => res.result.ok)
         },
       },
       connectionState,
@@ -517,35 +525,36 @@ export function RuntimeProvider({ children }: { children: ReactNode }): JSX.Elem
           const picked = await wire.api.host.pickDirectory({}, new AbortController().signal)
           if (!picked.result.ok) return null
           const path = picked.result.value.path
+          if (path === null) return null
           const created = await wire.api.workspace.create({ path })
           if (!created.result.ok) return null
           await reloadWorkspaces()
           return created.result.value.workspace
         },
         rename: async (workspaceId, title) => {
-          const res = await wire.api.workspace.rename({ workspaceId, title })
+          const res = await wire.api.workspace.rename({ workspaceId: asWorkspaceId(workspaceId), title })
           if (res.result.ok) await reloadWorkspaces()
           return res.result.ok
         },
         delete: async (workspaceId) => {
-          const res = await wire.api.workspace.delete({ workspaceId })
+          const res = await wire.api.workspace.delete({ workspaceId: asWorkspaceId(workspaceId) })
           if (res.result.ok) await reloadWorkspaces()
           return res.result.ok
         },
         refresh: () => reloadWorkspaces(),
         insertBefore: async (workspaceId, beforeWorkspaceId) => {
           const res = await wire.api.workspace.insertBefore({
-            workspaceId,
-            ...(beforeWorkspaceId === undefined ? {} : { beforeWorkspaceId }),
+            workspaceId: asWorkspaceId(workspaceId),
+            ...(beforeWorkspaceId === undefined ? {} : { beforeWorkspaceId: asWorkspaceId(beforeWorkspaceId) }),
           })
           if (res.result.ok) await reloadWorkspaces()
           return res.result.ok
         },
         insertSessionBefore: async (workspaceId, sessionId, beforeSessionId) => {
           const res = await wire.api.workspace.insertSessionBefore({
-            workspaceId,
-            sessionId,
-            ...(beforeSessionId === undefined ? {} : { beforeSessionId }),
+            workspaceId: asWorkspaceId(workspaceId),
+            sessionId: asSessionId(sessionId),
+            ...(beforeSessionId === undefined ? {} : { beforeSessionId: asSessionId(beforeSessionId) }),
           })
           if (res.result.ok) await reloadWorkspaces()
           return res.result.ok
@@ -559,22 +568,22 @@ export function RuntimeProvider({ children }: { children: ReactNode }): JSX.Elem
         prompt: (address, text) => {
           if (selectedId === undefined) return Promise.resolve(false)
           return wire.api.subagents.prompt({
-            parentSessionId: address.parentSessionId,
-            childSessionId: address.childSessionId,
+            parentSessionId: asSessionId(address.parentSessionId),
+            childSessionId: asSessionId(address.childSessionId),
             mode: 'continuable',
             content: [{ type: 'text', text }],
           }, new AbortController().signal).then(res => res.result.ok)
         },
         interrupt: (address) => {
           if (selectedId === undefined) return Promise.resolve(false)
-          return wire.api.subagents.interrupt({ ...address, mode: 'continuable' }).then(res => res.result.ok)
+          return wire.api.subagents.interrupt({ ...address, parentSessionId: asSessionId(address.parentSessionId), childSessionId: asSessionId(address.childSessionId), mode: 'continuable' }).then(res => res.result.ok)
         },
       },
       sessionRowActions: {
         rename: (sessionId, title) =>
-          wire.api.sessions.rename({ sessionId, title }).then(res => res.result.ok),
+          wire.api.sessions.rename({ sessionId: asSessionId(sessionId), title }).then(res => res.result.ok),
         fork: async (sessionId) => {
-          const res = await wire.api.sessions.fork({ sessionId })
+          const res = await wire.api.sessions.fork({ sessionId: asSessionId(sessionId) })
           if (!res.result.ok) return false
           const child = res.result.value.sessionId
           // The host/session-added frame can land after the RPC response; select
@@ -592,7 +601,7 @@ export function RuntimeProvider({ children }: { children: ReactNode }): JSX.Elem
           }
         },
         archive: async (sessionId) => {
-          const res = await wire.api.workspace.archiveSession({ sessionId })
+          const res = await wire.api.workspace.archiveSession({ sessionId: asSessionId(sessionId) })
           if (res.result.ok) await reloadWorkspaces()
           return res.result.ok
         },

@@ -317,10 +317,10 @@ function ProviderEditPanel({ wire, view, onBack, onError, onMutate }: {
           }
         }
         setModelPath(path)
-        const ref = block?.apiKeyEnv ?? null
+        const ref = typeof block?.apiKeyEnv === 'string' ? block.apiKeyEnv : null
         setKeyRef(ref)
-        const raw = path !== null
-          ? path.reduce((o, k) => (o === null || typeof o !== 'object' ? undefined : (o as Record<string, unknown>)[k]), root)
+        const raw: unknown = path !== null
+          ? path.reduce<unknown>((o, k) => (o === null || typeof o !== 'object' ? undefined : (o as Record<string, unknown>)[k]), root)
           : undefined
         const list = Array.isArray(raw)
           ? (raw as unknown[]).map(m => typeof m === 'string' ? ({ id: m }) : ({ id: entryId(m), name: (m as { name?: string })?.name, contextWindow: (m as { contextWindow?: number })?.contextWindow }))

@@ -11,11 +11,11 @@ import { zh } from '../../vendor/ui-model-selection/client/locales.ts'
 import type { AssembledWire } from '../protocol/assemble.ts'
 
 /** 官方 zh 字典小型翻译器(NS 'model';支持 {param} 插值)。 */
-function t(key: string, params?: Record<string, string | undefined>): string {
+function t(key: string, params?: Record<string, unknown>): string {
   let text = (zh as Record<string, string>)[key] ?? key
   if (params !== undefined) {
     for (const [name, value] of Object.entries(params)) {
-      text = text.replaceAll(`{${name}}`, value ?? '')
+      text = text.replaceAll(`{${name}}`, String(value ?? ''))
     }
   }
   return text
@@ -29,6 +29,13 @@ export interface ModelSelectAdapterProps {
 }
 
 /** composer 模型席位:挂官方两列菜单(模型/推理等级)选择器。 */
+// 等位声明(官方在 ui-model-selection client/index.ts,不在编译面):
+declare module '@deepseek-ai/dsh-client-ui-slots' {
+  interface LocaleNamespaceMap {
+    /** The composer model-seat copy. */
+    model: import('../../vendor/ui-model-selection/client/locales.ts').ModelKey
+  }
+}
 export function ModelSelectAdapter({ wire, sessionId, locked }: ModelSelectAdapterProps): JSX.Element {
   const [directory] = useState(
     () => new ModelDirectory(
@@ -78,7 +85,7 @@ export function ModelSelectAdapter({ wire, sessionId, locked }: ModelSelectAdapt
         directory={directory.store}
         load={() => { void directory.load().catch(() => { /* noop */ }) }}
         select={select}
-        t={t as never}
+        t={t}
       />
       {effortLabel !== undefined && (
         <span className="input-bar-model-think" data-level={effectiveEffort}>{effortLabel}</span>

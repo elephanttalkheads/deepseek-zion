@@ -176,7 +176,6 @@ export function PluginHost(): JSX.Element {
             {rows.length === 0 && <span className="plugin-console-empty">无动态插件(运行编排由 host 经审批流驱动)</span>}
             {rows.map((row, idx) => {
               const id = row.pluginId ?? String(idx)
-              const agentId = typeof row.agentId === 'string' ? row.agentId : ''
               const packages = rowPackages(row)
               const selectedPackageId = selectedPackageOf(row)
               const status = row.activeRun !== undefined ? 'running' : 'idle'

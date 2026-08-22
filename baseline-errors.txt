@@ -1,0 +1,18 @@
+# typecheck 错误基线(2026-08-22,链 0.1.1-rc.2 轻适配后生成;替代丢失的旧基线)
+# 验收口径:src/ 不新增错误;vendor 错误文件列表不超此清单(当前 14 文件 / 95 行)。
+# 复跑:
+px tsc --noEmit -p renderer/tsconfig.json > typecheck-now.txt,对比 ^renderer/ 行。
+renderer/vendor/client-connection/client/fixture.ts
+renderer/vendor/client-runtime/client/agents/scope.ts
+renderer/vendor/client-runtime/client/conversation/definition-registry.ts
+renderer/vendor/client-runtime/client/conversation/event-registry.ts
+renderer/vendor/client-runtime/client/conversation/view-registry.ts
+renderer/vendor/client-runtime/client/index.ts
+renderer/vendor/client-runtime/client/sessions/service.ts
+renderer/vendor/client-runtime/client/slots.ts
+renderer/vendor/client-runtime/client/workspaces/service.ts
+renderer/vendor/client-ui-conversation/client/conversation-nodes/command.ts
+renderer/vendor/client-ui-conversation/client/conversation-nodes/compaction.ts
+renderer/vendor/ui-primitives/json-tree.tsx
+renderer/vendor/ui-trajectory/client/trajectory-compaction-definition.ts
+renderer/vendor/ui-trajectory/client/TrajectoryView.tsx

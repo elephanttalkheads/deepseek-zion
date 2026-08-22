@@ -13,6 +13,7 @@
  */
 import type { CSSProperties } from 'react'
 import type { ConversationKey } from '../../vendor/client-ui-conversation/client/locales.ts'
+import type { InputZone } from '../../vendor/client-ui-conversation/client/contract/slots.ts'
 import { StatsLine, contextOccupancy } from '../../vendor/client-ui-conversation/client/chat/StatsLine.tsx'
 import { zh as conversationZh } from '../../vendor/client-ui-conversation/client/locales.ts'
 import { useRuntime } from './runtime.tsx'
@@ -25,7 +26,7 @@ declare module '@deepseek-ai/dsh-client-ui-slots' {
   }
   interface SlotMap {
     /** The composer dock list(官方 contract 等位;QueueDock/TodoDock 席位)。 */
-    'conversation.input.dock': { kind: 'list'; scope: 'session'; owner: { zone?: string } }
+    'conversation.input.dock': { kind: 'list'; scope: 'session'; owner: InputZone }
   }
 }
 
