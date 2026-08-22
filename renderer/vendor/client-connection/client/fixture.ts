@@ -1566,8 +1566,10 @@ function createFixtureWorld(options: FixtureOptions): FixtureWorld {
   // The resident fixture sessions all carry history, so none of them is blank.
   const sessions: SessionSummary[] = options.empty ? [] : [
     { sessionId: sid('fx-alpha'), updatedAt: Date.now(), running: true, blank: false, cwd: '/tmp/fixture' },
-    { sessionId: sid('fx-beta'), updatedAt: Date.now() - 60_000, running: false, blank: false, parentSessionId: sid('fx-alpha'), cwd: '/tmp/fixture' },
-    { sessionId: sid('fx-gamma'), updatedAt: Date.now() - 120_000, running: false, blank: false, cwd: '/tmp/fixture' },
+    // [zion patch] 补 lineage 字段:官方会话层级面包屑沿 parentSessionId 上溯,
+    // 需要子代理条目带 origin:'subagent'(真宿主 session.list 即如此)。
+    { sessionId: sid('fx-beta'), updatedAt: Date.now() - 60_000, running: false, blank: false, parentSessionId: sid('fx-alpha'), origin: 'subagent', cwd: '/tmp/fixture' },
+    { sessionId: sid('fx-gamma'), updatedAt: Date.now() - 120_000, running: false, blank: false, parentSessionId: sid('fx-beta'), origin: 'subagent', cwd: '/tmp/fixture' },
   ]
   const logs = new Map<SessionId, SessionEvent[]>([[sid('fx-alpha'), buildAlphaLog()]])
   const modelSelections = new Map<SessionId, ModelSelection>(sessions.map(session => [

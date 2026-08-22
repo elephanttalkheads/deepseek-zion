@@ -51,3 +51,13 @@
 .subagent-panel-btn-danger:hover { color: var(--danger); border-color: var(--danger); }
 .subagent-panel-notice { color: var(--accent); font-size: 12px; }
 
+/* ---- conversation session hierarchy breadcrumb(官方「会话层级」返回主会话) ---- */
+.conversation-header-crumbs { display: inline-flex; align-items: center; gap: 4px; min-width: 0; }
+.conversation-header-crumb-seg { display: inline-flex; align-items: center; gap: 4px; min-width: 0; }
+.conversation-header-crumb-sep { color: var(--fg-muted); opacity: 0.6; user-select: none; }
+.conversation-header-crumb {
+  background: none; border: none; padding: 0; font: inherit; color: var(--fg-muted);
+  cursor: pointer; max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.conversation-header-crumb:hover:not(.conversation-header-crumb-current) { color: var(--fg); text-decoration: underline; }
+.conversation-header-crumb-current { color: var(--fg); font-weight: 600; }

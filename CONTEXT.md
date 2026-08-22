@@ -17,6 +17,10 @@ _Avoid_: 主进程逻辑包办会话
 与官方 dsh web 同一领域语义：后端持久化的对话上下文，左侧列表展示、可切换/新建/删除/归档。复刻 UI 的会话数据来自官方运行时（连接真实 dsh 或 fixture），不另造会话模型。
 _Avoid_: 会话培育仓（那是 ZION 词表）、聊天记录
 
+**会话层级（session hierarchy）**：
+会话头「会话层级」面包屑（`nav.conversation-header-crumbs`，`aria-label="会话层级"`）：沿 `parentSessionId` 上溯祖先链，当前段只读、点祖先段即选中父会话（`selectSession(父)`），是官方与复刻统一的「从子代理会话返回主会话」入口。子代理会话的祖先链以最近的非 subagent 会话为顶。
+_Avoid_: 面包屑当导航栏、把返回主会话做成独立返回按钮
+
 **官方运行时骨架**：
 从 `@deepseek-ai/dsh-client-*` 系列 npm 包引入的数据/状态层：ConnectionController（/api POST + 双 WebSocket + 握手重连）、快照引擎、投影存储、`bindSnapshotSelector`。它承载 wire 契约与事件订阅，确保功能对等，属"可复用层"。
 _Avoid_: 自研协议、二道解析

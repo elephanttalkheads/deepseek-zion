@@ -104,7 +104,7 @@ main.tsx Root
 
 #### A3. ConversationDock — 会话主区
 - **挂载**:AppFrame `main.app-conversation`。
-- **交互入口**:① `button.conversation-header-tab`「Chat」→ `setView('chat')`[official];② 同上「轨迹」→ `setView('trajectory')`(渲染 TrajectoryPane)[official];其余下沉子组件。
+- **交互入口**:① `button.conversation-header-tab`「Chat」→ `setView('chat')`[official];② 同上「轨迹」→ `setView('trajectory')`(渲染 TrajectoryPane)[official];③ `nav.conversation-header-crumbs`「会话层级」面包屑(`aria-label="会话层级"`;沿 parentSessionId 上溯祖先链,点祖先段 → `selectSession(父)`,即官方「返回主会话」入口——进入子代理会话后可点父段回到主会话)[official];其余下沉子组件。
 - **数据**:`useSessions`(选中会话 title)、`useConversation`(chat.order/nodes/timeline/running/composerPhase)、`wire`、`selectedSessionId`;本地 `view`(会话切换重置为 chat)。
 - **挂载子组件**:hero→`AgentPresetSeat`;会话→`AgentPresetLabelSeat` + `SubagentCatalogActionSeat` + `JobListActionSeat`(会话头动作行)、`TrajectoryPane`/`ChatView`、`QueueDock`、streaming 提示、`ComposerSeat`。
 
@@ -122,7 +122,7 @@ main.tsx Root
 
 #### A5. DetailsPanel — 右栏
 - **挂载**:AppFrame `aside.app-details`。
-- **交互入口**:无直接可点;选中会话渲染 `SubagentPanel`;`SlotAnchor slot="settings.plugin.item"` (keyed,ownerProps={sessionId})[slot]。
+- **交互入口**:无直接可点;选中会话渲染 `SubagentPanel`(zion-add,官方右栏无子代理面板——官方把子代理放会话头目录树 + 只读 composer + 会话层级面包屑);`SlotAnchor slot="settings.plugin.item"` (keyed,ownerProps={sessionId})[slot]。
 - **数据**:`selectedSessionId`(未选中显示 "No selection")。
 
 #### A6. GoalBar — 目标条
@@ -286,6 +286,7 @@ main.tsx Root
 | Sidebar | 组溢出「+N」 | 展开折叠组 | official |
 | Sidebar | 「⚙」设置 | 打开 SettingsShell | official |
 | Sidebar | `SlotAnchor sidebar.footer.action` | 插件条目 | slot |
+| 会话头 | 「会话层级」面包屑(`nav.conversation-header-crumbs`,点祖先段) | selectSession(父) | official |
 | 会话头 | Chat/轨迹 tab | setView | official |
 | 会话头 | AgentPresetLabelSeat | 只读标签 | official |
 | 会话头 | SubagentCatalogActionSeat | 目录树展开/打开子会话 | official |
