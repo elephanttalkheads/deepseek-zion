@@ -4,10 +4,12 @@
 
 ## 原理
 
-官方 dsh web 页面在 boot 后暴露两个全局对象:
+DSH 0.1.1 的官方页面会暴露入口图与一个注册门面:
 
 - `window.__DSH_BOOT__` — 主机注入的 client 入口图(`{rev, entries:[{id,url,rev}]}`);
-- `window.__DSH_MODULES__` — **客户端模块系统**(`ClientModuleSystem`),页面内可 `await window.__DSH_MODULES__.import('<包名>', '', {})` 动态 import 任意官方 client 模块,拿到**真实组件**(模块物化时其 CSS 自动注入);`react` / `react-dom/client` 也在静态种子表里,所以可以用官方同款 React 实例把组件挂到悬浮舞台上。
+- `window.__ModuleLoader__` — 仅负责 bundle 注册与一次性 `create()`;boot 后进入 `mode="live"` 并继续承接 `load()`,此时再次调用 `create()` 会报错,且门面本身**没有**动态 `import()`。
+
+召唤器仅在 `--inspector` 模式下由 preload 在页面第一段脚本前包装 `__ModuleLoader__.create()`,把它同步返回的真实 `ClientModuleSystem` 保存为非枚举的 `window.__ZION_INSPECTOR_MODULES__`。页面内可用其 `import('<包名>')` 动态加载任意官方 client 模块并拿到**真实组件**(模块物化时 CSS 自动注入);`react` / `react-dom/client` 也在静态种子表里,因此舞台使用的是官方同一份 React 实例。旧版 DSH 的 `window.__DSH_MODULES__` 仍作为兼容回退。
 
 两种召唤形态:
 
@@ -54,7 +56,7 @@ node inspector/cli.mjs close                        # 关闭舞台
 ### 通用流程(新组件)
 
 1. `list --filter <名字>` 找清单条目;
-2. `eval` 探导出:`Object.keys(await window.__DSH_MODULES__.import('@deepseek-ai/dsh-client-ui-xxx','',{}))`;
+2. `eval` 探导出:`Object.keys(await (window.__ZION_INSPECTOR_MODULES__ || window.__DSH_MODULES__).import('@deepseek-ai/dsh-client-ui-xxx'))`;
 3. 有导出 → `raw` 舞台挂载(纯 JSON props;需要函数 props 的组件建议写进 `recipes.js`);
 4. 无导出 → 只能真实配方(写 `run()` 驱动官方 UI,参考现有 `goal-bar-real` / `todo-dock`)。
 
@@ -91,7 +93,7 @@ node inspector/cli.mjs close                        # 关闭舞台
 
 真实配方内部自动处理 fixture 环境的两大障碍:
 
-- **「内测声明」弹窗**:fixture 无法持久化确认(保存必失败)→ 点「继续」后仍残留则直接移除该 dialog(dev 工具行为,仅影响本窗口);
+- **「内测声明」弹窗**:fixture 没有 `ui-onboarding` 设置命名空间,无法持久化确认(保存必失败)→ 点「继续」后仍残留则移除完整 modal 阻塞层并恢复 `#root` 的交互(dev 工具行为,仅影响 fixture 窗口);真实后端仍走官方确认/持久化,不绕过。
 - **composer 接管**:fx-alpha 有常驻审批与问题组 → 点「拒绝」/「放弃整组问题」让输入条(含 dock 条)恢复显示。
 
 ## manifest 生成
@@ -102,6 +104,16 @@ node inspector/cli.mjs close                        # 关闭舞台
 npm run inspector:gen
 ```
 
+## 回归探针
+
+3080 已在运行时执行:
+
+```sh
+node probe-inspector-fixture.mjs
+```
+
+探针会启动真实的 `main.mjs --inspector --fixture --hidden` 链路,使用隔离控制口执行 8 项断言:召唤入口、真实模块捕获、GoalBar 舞台挂载、内测声明关闭、官方根节点与召唤入口恢复点击,以及整页刷新后的模块重捕获/面板重注入。它只结束自己启动的 Electron 进程,不会接管现有 inspector,也不会重启或关闭现有 3080。
+
 `gen-manifest.mjs` 里的 `OFFICIAL` 表是「清单条目 → 官方 client 模块/组件」的 curated 映射;新增可舞台挂载的组件先核对该模块**确实导出该值**(`eval` 探导出),再补进映射与 `recipes.js`。
 
 ## 注意
@@ -110,7 +122,7 @@ npm run inspector:gen
 - **`--fixture` 零副作用**;`goal-bar-real` 在**真实后端**会真的创建会话目标(与用户在 UI 里敲 `/goal` 等价),验证完可点清除。
 - **`queue-dock` 有真实副作用**:在真后端会话里发两条消息(长生成 + 排队),验证后跑 `recipe queue-dock-clean`(停止+移除排队行);会话保留,需要的话自行归档。
 - 舞台挂载不改动官方应用状态;真实配方只走官方自己的 UI 动作(等价人工操作)。
-- 页面刷新后召唤面板需重新注入(主进程在 `did-finish-load` 时自动重注入)。
+- 页面刷新后主进程会在新的 `did-finish-load` 自动重新注入面板;preload 也会为新文档重新捕获模块系统。
 - **重启与占口(已自动处理)**:新实例启动时若发现 5198 已被「旧 inspector 实例」占用(杀 npm 包装进程常见的孤儿 electron),会自动按端口找 PID **杀掉旧进程树并接管**,无需手工清场;若 5198 被非 inspector 占用则退避到 5208/5218/5228,并把实际端口写入 `inspector/.port`(cli 自动读取)。手动清场用 `node inspector/cli.mjs kill`。
-- **配方热更新**:改 `recipes.js` / `page-panel.js` / `manifest.json` 后执行 `node inspector/cli.mjs reload` 即可(主进程显式销毁旧面板 → 重新读盘注入),**不必重启 app**;`eval location.reload()` 的重注入不可靠,别再用了。
+- **配方热更新**:改 `recipes.js` / `page-panel.js` / `manifest.json` 后执行 `node inspector/cli.mjs reload` 即可(主进程显式销毁旧面板 → 重新读盘注入),**不必重启 app**;整页刷新也会重新捕获/注入,但会同时重置官方页面状态,日常改配方仍优先 `reload`。
 - 多实例共用 user-data 的缓存噪音已处理:inspector 模式使用独立 cache 目录(按 fixture/real 区分)。

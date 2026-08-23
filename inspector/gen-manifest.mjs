@@ -23,7 +23,7 @@ const DOC = path.join(ROOT, 'docs', 'ui-component-inventory.md')
 const OUT = path.join(ROOT, 'inspector', 'manifest.json')
 
 // --- curated 官方组件映射(v1:已核验可 import 的官方 client 模块导出) ----
-// modes: 'overlay' = 可用 window.__DSH_MODULES__ 动态 import 后舞台挂载;
+// modes: 'overlay' = 可用 inspector 在 document-start 捕获的 ClientModuleSystem 动态 import 后舞台挂载;
 //        'real'    = 有「真实状态配方」(recipes.js),驱动官方 UI 真实出现。
 const OFFICIAL = {
   GoalBar: {

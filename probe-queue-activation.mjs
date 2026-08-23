@@ -56,7 +56,13 @@ app.whenReady().then(async () => {
     height: 900,
     show: false,
     x: -32000, y: -32000, // 屏外:capturePage 可用又不打扰桌面
-    webPreferences: { contextIsolation: true, nodeIntegration: false, sandbox: true },
+    webPreferences: {
+      contextIsolation: true,
+      nodeIntegration: false,
+      sandbox: true,
+      preload: path.join(__dirname, 'preload.cjs'),
+      additionalArguments: ['--zion-inspector-capture-modules'],
+    },
   })
   win.webContents.setBackgroundThrottling(false) // 屏外窗口节流会卡死等待
   const errors = []
@@ -68,9 +74,9 @@ app.whenReady().then(async () => {
   const mark = (id, ok, label, note = '') => { results[id] = !!ok; out(`${ok ? '✅' : '❌'} ${label} ${note}`.trim()) }
 
   await win.loadURL(URL)
-  const booted = await waitFor(win, '!!window.__DSH_MODULES__', 60000)
+  const booted = await waitFor(win, `typeof (window.__ZION_INSPECTOR_MODULES__ || window.__DSH_MODULES__)?.import === 'function'`, 60000)
   if (!booted) {
-    out(`❌ 页面 60s 内未完成 boot(window.__DSH_MODULES__ 缺失)—— 3080 真后端在跑吗?URL=${URL}`)
+    out(`❌ 页面 60s 内未捕获可 import 的 ClientModuleSystem —— 3080 真后端在跑吗?URL=${URL}`)
     fs.writeFileSync(path.join(OUT, 'queue-activation.txt'), lines.join('\n'))
     app.exit(1)
     return

@@ -41,7 +41,12 @@ const SPAWN_PROBE_INTERVAL = 800
 const INSPECTOR_MODE = process.argv.includes('--inspector')
 const FIXTURE_MODE = process.argv.includes('--fixture')
 const HIDDEN_MODE = process.argv.includes('--hidden')
-const INSPECTOR_PORT = 5198
+const inspectorPortOverride = Number(process.env.ZION_INSPECTOR_PROBE_CONTROL_PORT)
+const INSPECTOR_PORT_OVERRIDDEN = Number.isInteger(inspectorPortOverride) && inspectorPortOverride > 0 && inspectorPortOverride <= 65535
+const INSPECTOR_PORT = INSPECTOR_PORT_OVERRIDDEN
+  ? inspectorPortOverride
+  : 5198
+const INSPECTOR_DEFAULT_PORT = !INSPECTOR_PORT_OVERRIDDEN
 const INSPECTOR_FALLBACK_PORTS = [5208, 5218, 5228]
 const INSPECTOR_SHOT_DIR = path.join(__dirname, 'inspector', 'shot-out')
 const INSPECTOR_PORT_FILE = path.join(__dirname, 'inspector', '.port')
@@ -213,6 +218,9 @@ function createWindow(url) {
       nodeIntegration: false,
       sandbox: true,
       preload: path.join(__dirname, 'preload.cjs'),
+      // The inspector preload uses this renderer-only marker to capture the
+      // real ClientModuleSystem before the official page's first script boots.
+      ...(INSPECTOR_MODE ? { additionalArguments: ['--zion-inspector-capture-modules'] } : {}),
     },
   })
 
@@ -228,7 +236,7 @@ function createWindow(url) {
   })
 
   win.loadURL(url)
-  win.webContents.once('did-finish-load', () => {
+  win.webContents.on('did-finish-load', () => {
     console.log(`[zion] window loaded: ${url}`)
     if (INSPECTOR_MODE) void installInspector(win)
   })
@@ -239,22 +247,21 @@ function createWindow(url) {
 // 注入:manifest(JSON) + page-panel.js + recipes.js → 页面 boot 完成后执行。
 // 控制口:127.0.0.1:5198(仅 --inspector;回环绑定,dev 工具)。
 let inspectorServer = null
+let inspectorServerStart = null
 let inspectorQueue = Promise.resolve() // 页面操作串行化(挂载/截图不打架)
 
 const INSPECTOR_MANIFEST_FILE = path.join(__dirname, 'inspector', 'manifest.json')
 const INSPECTOR_PANEL_JS = path.join(__dirname, 'inspector', 'page-panel.js')
 const INSPECTOR_RECIPES_JS = path.join(__dirname, 'inspector', 'recipes.js')
 
-/** 轮询等待页面 boot 完成(window.__DSH_MODULES__ 出现)。 */
-async function waitForPageBoot(wc, limitMs = 60_000) {
-  const start = Date.now()
-  for (;;) {
-    try {
-      const ready = await wc.executeJavaScript('!!window.__DSH_MODULES__')
-      if (ready) return true
-    } catch { /* page mid-load */ }
-    if (Date.now() - start > limitMs) return false
-    await new Promise((r) => setTimeout(r, 500))
+/** True when preload captured the new module system (or an older DSH exposed the legacy global). */
+async function hasInspectorModules(wc) {
+  try {
+    return await wc.executeJavaScript(
+      `typeof (window.__ZION_INSPECTOR_MODULES__ || window.__DSH_MODULES__)?.import === 'function'`,
+    )
+  } catch {
+    return false
   }
 }
 
@@ -277,14 +284,15 @@ async function installInspector(win) {
   const wc = win.webContents
   // 屏外/隐藏窗口会被节流(rAF/定时器暂停)→ 挂载/等待永不完成;关掉节流。
   wc.setBackgroundThrottling(false)
-  const booted = await waitForPageBoot(wc)
-  if (!booted) {
-    console.error('[zion-inspector] 页面 60s 内未暴露 window.__DSH_MODULES__ —— 不注入召唤器')
-    return
-  }
+  // Panel/real recipes must not be gated by overlay import capability: fixture
+  // welcome cleanup still needs to run when a future DSH boot seam drifts.
   const injected = await injectInspectorBundle(wc)
   if (!injected) return
-  console.log('[zion-inspector] 召唤面板已注入(悬浮按钮:右下角「⿻ 组件」;控制口见下方日志)')
+  const modulesReady = await hasInspectorModules(wc)
+  if (!modulesReady) {
+    console.warn('[zion-inspector] 未捕获带 import() 的 ClientModuleSystem；面板与真实配方可用，舞台召唤将给出明确错误')
+  }
+  console.log(`[zion-inspector] 召唤面板已注入(模块导入:${modulesReady ? '就绪' : '不可用'};悬浮按钮:右下角「⿻ 组件」;控制口见下方日志)`)
   await startInspectorServer(win)
 }
 
@@ -294,7 +302,9 @@ async function installInspector(win) {
  * (面板注入成功但控制口 EADDRINUSE、cli 打到旧实例)。
  */
 async function takeoverOldInspector() {
-  if (process.platform !== 'win32') return false
+  // Regression probes use an ephemeral control port and must never disturb a
+  // developer's live inspector on 5198.
+  if (!INSPECTOR_DEFAULT_PORT || process.platform !== 'win32') return false
   try {
     const res = await fetch('http://127.0.0.1:5198/api/inspector/status', { signal: AbortSignal.timeout(1500) })
     const j = await res.json().catch(() => null)
@@ -358,10 +368,17 @@ async function saveShot(win, rect, name) {
 
 async function startInspectorServer(win) {
   if (inspectorServer) return
+  if (!inspectorServerStart) {
+    inspectorServerStart = createInspectorServer(win).finally(() => { inspectorServerStart = null })
+  }
+  return inspectorServerStart
+}
+
+async function createInspectorServer(win) {
   fs.mkdirSync(INSPECTOR_SHOT_DIR, { recursive: true })
   // P0-1:5198 被旧 inspector 实例占用 → 接管清场;非 inspector 占用 → 退避端口。
   await takeoverOldInspector()
-  const candidates = [INSPECTOR_PORT, ...INSPECTOR_FALLBACK_PORTS]
+  const candidates = INSPECTOR_DEFAULT_PORT ? [INSPECTOR_PORT, ...INSPECTOR_FALLBACK_PORTS] : [INSPECTOR_PORT]
   let boundPort = null
   for (const port of candidates) {
     const ok = await new Promise((resolve) => {
@@ -373,14 +390,14 @@ async function startInspectorServer(win) {
     if (ok) { boundPort = port; break }
   }
   if (boundPort === null) {
-    console.error('[zion-inspector] 控制口全部被占(5198/5208/5218/5228)—— 面板仍可用,CLI 控制不可用;请 cli kill 清场后重启')
+    console.error(`[zion-inspector] 控制口全部被占(${candidates.join('/')})—— 面板仍可用,CLI 控制不可用;请清场后重启`)
     return
   }
-  if (boundPort !== INSPECTOR_PORT) {
+  if (INSPECTOR_DEFAULT_PORT && boundPort !== INSPECTOR_PORT) {
     console.log(`[zion-inspector] 5198 被非 inspector 占用,退避到 ${boundPort}`)
   }
   // 机器可读端口文件:cli 未设 ZION_INSPECTOR_URL 时读取。
-  fs.writeFileSync(INSPECTOR_PORT_FILE, String(boundPort))
+  if (INSPECTOR_DEFAULT_PORT) fs.writeFileSync(INSPECTOR_PORT_FILE, String(boundPort))
 
   const send = (res, code, obj) => {
     res.writeHead(code, {
@@ -505,7 +522,10 @@ async function startInspectorServer(win) {
     inspectorServer = null
   })
   inspectorServer.listen(boundPort, '127.0.0.1', () => {
-    console.log(`[zion-inspector] 控制口就绪: http://127.0.0.1:${boundPort} (CLI: node inspector/cli.mjs status;端口文件 inspector/.port)`)
+    const hint = INSPECTOR_DEFAULT_PORT
+      ? 'CLI: node inspector/cli.mjs status;端口文件 inspector/.port'
+      : '回归探针隔离端口'
+    console.log(`[zion-inspector] 控制口就绪: http://127.0.0.1:${boundPort} (${hint})`)
   })
 }
 

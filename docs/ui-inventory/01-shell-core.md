@@ -88,7 +88,7 @@
 |---|---|---|---|---|
 | src/client/system.ts（ClientModuleSystem） | 无渲染：惰性 CJS 表、materialization、require 分支序、静态注册、invalidate | `__DSH_BOOT__` + staticModules | 机制 | CSS 注入副作用经 materialization 到达页面；HMR 无效化钩子 |
 | src/client/manifest.ts（parseBootManifest/BootManifest） | 无渲染：`window.__DSH_BOOT__` 扫描与解析（rev/url 校验），拆分 modules/plugins 两视图 | wire-boundary `window.__DSH_BOOT__` | 机制，无可见 UI | 缺失/畸形 graph 抛错 → 装载页 loud failure |
-| src/client/index.ts（apply） | 无渲染：把内核 slot `window.__DSH_MODULES__` 提供为 `ctx.modules` | kernel slot | 机制 | 图行 id = 裸包名；缺失即 boot 顺序 bug |
+| src/client/index.ts（createClientModuleSystem/apply） | 无渲染：`window.__ModuleLoader__.create()` 创建真实模块系统，包内暂存后由 apply 提供为 `ctx.modules`（不再发布旧 `window.__DSH_MODULES__`） | kernel slot | 机制 | 图行 id = 裸包名；缺失即 boot 顺序 bug |
 | src/index.ts / invariant.ts | 无渲染（host 服务组合侧 / 断言） | — | 机制 | |
 
 ---

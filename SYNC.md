@@ -39,6 +39,10 @@ deepseek-zion 对官方的耦合有 **4 个面**,同步时逐面核对:
 - 复刻侧 `assemble.ts` 的帧分发与 `remote.ts` 的 RPC 通道是否仍需新方法
 若官方只是 UI 内部改、wire 面没动 → **deepseek-zion 可以暂不升**(功能对等不受影响);若 wire 面动了 → 必须同步 vendor(面 B)并补帧分发(面 D)。
 
+### 旁路检查:inspector 的页面启动缝(dev 工具)
+
+官方原版 UI 的组件召唤器需要观察页面模块系统,但不参与 replica 运行时。DSH 0.1.1 起 `window.__ModuleLoader__` 只是注册门面,真实 `ClientModuleSystem` 只由一次性 `create()` 返回;Zion 在 inspector preload 的 document-start 钩子中捕获该返回值。每次升级官方 DSH 都要核对 3080 首页最早的 loader/bootstrap 代码是否仍保持这一时序,并运行 `node probe-inspector-fixture.mjs`;不要把注册门面误当成可 `import()` 的模块系统。
+
 ---
 
 ## 2. 同步流程(建议顺序)
@@ -56,7 +60,7 @@ deepseek-zion 对官方的耦合有 **4 个面**,同步时逐面核对:
    - 官方若新增 `host/remote-event` allowlist 事件 → `protocol/assemble.ts` 的 `onRemoteEvent` case 加名。
    - 官方若新增 `dynamicCordisRunner.*` 方法或改签名 → `plugin/remote.ts` 同步。
    - 官方若改 `MuxFrame/HostFrame` union → 看 vendor 后是否还能编译 + 探针是否仍 0 错。
-6. **全量拍验**(用探针,见 HANDOFF §7):至少 `probe-checklist`(真后端 24 项)、`probe-plugin`、`probe-real`、`probe-queue`;有改 vendor 时全部跑。
+6. **全量拍验**(用探针,见 HANDOFF §7):至少 `probe-checklist`(真后端 24 项)、`probe-plugin`、`probe-real`、`probe-queue`;官方页面 boot/模块包有改动时另跑 `node probe-inspector-fixture.mjs`;有改 vendor 时全部跑。
 7. **提交**:提交信息写"sync to dsh <版本>",附面 B 的 vendor diff 概要;推送 main。
 
 ---
@@ -71,6 +75,7 @@ deepseek-zion 对官方的耦合有 **4 个面**,同步时逐面核对:
 | `dsh-client-runtime` | vendor:manager/session/快照 | `snapshot.queue`/`pending` 字段、`handleHostEnvelope` case |
 | `dsh-client-ui-conversation` | vendor:节点定义 | conversation-node kinds(12+1)、chat snapshot 结构 |
 | `dsh-client-ui-slots` / `dsh-client-web-react` | vendor:槽/绑定 | SlotRegistry 契约、bindSnapshotSelector 签名 |
+| `dsh-client-modules` / `dsh-web-frontend` | inspector 页面启动缝 | `__ModuleLoader__.create()` 时序、真实模块系统 `import()`、fixture 召唤探针 |
 | `@deepseek-ai/cordis` | 类型噪音 | 一般不动;升了重跑 tsc 模板 |
 | `dsh-llm*` / `dsh-tools` | 模型目录/工具视图 | `session.models` shape、`ToolCallView/ToolResultView` |
 

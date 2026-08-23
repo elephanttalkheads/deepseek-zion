@@ -3,7 +3,7 @@
 // 由 Electron 壳(main.mjs --inspector)在页面 boot 完成后注入执行。
 //
 // 能力:
-//   1. 舞台(overlay):经 window.__DSH_MODULES__ 动态 import 官方 client
+//   1. 舞台(overlay):经 inspector 在 document-start 捕获的 ClientModuleSystem
 //      模块 → 用官方同款 React 实例把真实组件挂载到悬浮舞台(带 mock props)。
 //   2. 真实配方(real):驱动官方 UI 真实状态(如 /goal 命令 → 真实 GoalBar)。
 //   3. 悬浮面板:搜索 manifest(ui-component-inventory.md 生成)+ 一键召唤。
@@ -16,7 +16,14 @@
   if (window.__zionInspector) return // 幂等:页面刷新后重注入会覆盖,防双实例
 
   const MANIFEST = window.__ZION_INSPECTOR_MANIFEST__ || { entries: [] }
-  const MODULES = () => window.__DSH_MODULES__
+  const IS_FIXTURE = new URLSearchParams(location.search).has('fixture')
+  // DSH 0.1.1 only leaves a registration facade on __ModuleLoader__; it has no
+  // import().  The preload captures create()'s real return value.  Keep the old
+  // global as a compatibility fallback for earlier DSH builds.
+  const MODULES = () => {
+    const captured = window.__ZION_INSPECTOR_MODULES__
+    return typeof captured?.import === 'function' ? captured : window.__DSH_MODULES__
+  }
   const STAGE_ID = 'zion-inv-stage'
   const NORM = (s) => String(s || '').toLowerCase().replace(/[^a-z0-9]/g, '')
 
@@ -110,12 +117,18 @@
     return true
   }
 
+  const welcomeTrace = { seen: 0, continueClicked: 0, removed: 0, rootRestored: 0 }
+
   /** 关掉「内测声明」欢迎弹窗(fixture 模式无法持久化确认,每次都会弹)。 */
   async function dismissWelcomeModal() {
+    // Hard boundary: real mode must preserve the official acknowledgement and
+    // host persistence semantics, even when a real recipe calls this helper.
+    if (!IS_FIXTURE) return false
     // 先只查 dialog(便宜);innerText 扫全页在长会话下很重,不干。
     let dialog = document.querySelector('[role="dialog"]')
     // 文案匹配多锚点:内测声明 / 无法保存确认状态(保存失败提示,很稳定)/ welcome。官方改文案时任一命中仍有效。
     if (!dialog || !/内测声明|无法保存确认状态|欢迎使用|welcome/i.test(dialog.textContent || '')) return false
+    welcomeTrace.seen += 1
     const btn = [...dialog.querySelectorAll('button')].find((b) => {
       const txt = (b.textContent || '').trim()
       const r = b.getBoundingClientRect()
@@ -123,12 +136,22 @@
     })
     if (btn) {
       btn.click()
+      welcomeTrace.continueClicked += 1
       await sleep(500)
     }
-    // fixture 模式无法持久化确认(保存必失败),弹窗会一直盖着 → dev 工具直接摘掉 dialog。
+    // fixture 模式无法持久化确认(保存必失败),弹窗会一直盖着。官方 modal
+    // 结构是 presentation(root + mask + dialog),且会给 #root 加 inert；只摘
+    // dialog 会留下遮罩和不可交互根节点，因此 dev 工具清理完整阻塞层。
     dialog = document.querySelector('[role="dialog"]')
     if (dialog && /内测声明|欢迎|welcome/i.test(dialog.textContent || '')) {
-      dialog.remove()
+      const blocker = dialog.closest('[role="presentation"]') || dialog
+      blocker.remove()
+      welcomeTrace.removed += 1
+      const appRoot = document.getElementById('root')
+      if (appRoot?.hasAttribute('inert')) {
+        appRoot.removeAttribute('inert')
+        welcomeTrace.rootRestored += 1
+      }
       await sleep(200)
     }
     return true
@@ -204,7 +227,9 @@
    */
   async function mountOverlay(moduleName, componentName, props) {
     const modules = MODULES()
-    if (!modules) throw new Error('window.__DSH_MODULES__ 缺失 —— 页面尚未完成 boot(稍后再试)')
+    if (!modules || typeof modules.import !== 'function') {
+      throw new Error('召唤器未在页面启动前捕获 ClientModuleSystem；真实配方仍可用，舞台召唤请刷新页面后重试')
+    }
     if (!moduleName || !componentName) throw new Error('需要 module 与 component 名')
     await closeStage()
     const [React, ReactDomClient, mod] = await Promise.all([
@@ -285,9 +310,10 @@
   window.__zionInspector = {
     status: () => ({
       ok: true,
-      modules: !!MODULES(),
+      modules: typeof MODULES()?.import === 'function',
       url: location.href,
-      fixture: new URLSearchParams(location.search).has('fixture'),
+      fixture: IS_FIXTURE,
+      welcome: { ...welcomeTrace },
       recipes: Object.keys(window.__ZION_RECIPES__ || {}),
       manifestEntries: MANIFEST.entries.length,
     }),
@@ -462,7 +488,7 @@
 
   // fixture 模式:「内测声明」弹窗无法持久化确认(点「继续」保存必失败)→ 持续监控,
   // 弹窗一出现就自动点继续/移除,避免一直盖住 UI(真实模式可正常确认,不干预)。
-  if (new URLSearchParams(location.search).has('fixture')) {
+  if (IS_FIXTURE) {
     setInterval(() => { void dismissWelcomeModal() }, 1500)
     void dismissWelcomeModal() // 首帧立即清一次
   }
