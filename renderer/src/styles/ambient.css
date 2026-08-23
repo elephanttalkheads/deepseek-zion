@@ -1,0 +1,12 @@
+/* ambient — ZION 块 1+2:数字雨氛围层 + CRT 扫描线(2026-08-23 迁移,数值逐字照源仓)。
+ * #rain 用负 z-index:即使 .app-frame 的层叠上下文在任何异常环境下失效,
+ * 数字雨也永远排在所有 UI 之下。两层均 pointer-events:none,不拦截交互。
+ * z-index 分层(目标仓):#rain=-1;.scanlines=40(低于 vendor Menu 100 /
+ * Modal 1000 / trigger-overlay 200 等一切浮层;与工作区下拉同为 40 但 DOM 序在前)。 */
+#rain { position: fixed; inset: 0; z-index: -1; }
+.scanlines {
+  position: fixed; inset: 0; z-index: 40; pointer-events: none;
+  background: repeating-linear-gradient(0deg,
+    rgba(0, 0, 0, 0.10) 0px, rgba(0, 0, 0, 0.10) 1px,
+    transparent 1px, transparent 4px);
+}

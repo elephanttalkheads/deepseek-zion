@@ -77,11 +77,11 @@ main.tsx Root
 
 ### Part A — `renderer\src\ui\`(自研组件)
 
-#### A1. AppFrame — UI 根壳
+#### A1. AppFrame — UI 根壳 ✅ 已迁移(ZION 块 1+2+16,2026-08-23;demo: `ui-prototype/ambient/`)
 - **挂载**:`main.tsx` 的 Root(`PluginProvider > RuntimeProvider > AppFrame`)。
 - **交互入口**:① `button.shell-new`「新会话」→ `createSession()`(wire.sessions.create + 选中)[official];② `WorkspaceMenu`(顶栏工作区下拉,A13)[official];③ 无其他直接可点元素(`shell-brand`/`shell-badge` 纯展示)。
 - **数据**:`useRuntime()` — `connectionState`/`isFixture`/`workspaces[0]`(current)/`createSession`;本地 `query`、`workspaceMenuOpen`。
-- **挂载子组件**:Sidebar / ConversationDock / DetailsPanel / PluginHost / WorkspaceMenu / `SlotAnchor slot="shell.overlay"` [slot]。
+- **挂载子组件**:`RainCanvas` + `.scanlines`(ZION 氛围层,零交互,pointer-events:none;fx 两档由选中会话 running 经 `app/ambient-fx.ts` 模块级对象驱动)/ Sidebar / ConversationDock / DetailsPanel / PluginHost / WorkspaceMenu / `SlotAnchor slot="shell.overlay"` [slot]。
 
 #### A2. Sidebar — 会话列表(入口最密集之二)
 - **挂载**:AppFrame `aside.app-sidebar`;props `{ query, onQueryChange }`。

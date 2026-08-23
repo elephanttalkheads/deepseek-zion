@@ -78,6 +78,6 @@
   min-height: 0;
 }
 .app-sidebar { border-right: 1px solid var(--border); background: var(--bg-panel); min-width: 0; display: flex; }
-.app-conversation { min-width: 0; overflow: auto; }
+.app-conversation { min-width: 0; overflow: auto; background: var(--bg-panel); /* 源仓 .console: var(--surface) 0.92 压暗雨幕;缺它会话区会露出原始亮度雨 */ }
 .app-details { border-left: 1px solid var(--border); background: var(--bg-panel); min-width: 0; }
 

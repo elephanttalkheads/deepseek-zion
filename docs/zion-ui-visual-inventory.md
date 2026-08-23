@@ -25,7 +25,9 @@
 
 ---
 
-### 1. 数字雨氛围层（RainCanvas / #rain / FX 折算 speed/energy）
+### 1. 数字雨氛围层（RainCanvas / #rain / FX 折算 speed/energy）✅ 已迁移
+
+> 2026-08-23 落地:`renderer/src/ui/RainCanvas.tsx`(算法数值逐字)+ `renderer/src/app/ambient-fx.ts`(模块级 fx 两档,AppFrame 订阅选中会话 running 驱动,不进 React 渲染路径)+ `renderer/src/styles/ambient.css`(#rain/-.scanlines);字符集 `renderer/src/matrixGlyphs.ts`;demo 与截图:`ui-prototype/ambient/`。配套:全 UI 面板统一 alpha 0.92 半透明(tokens.css),雨幕透全屏。
 
 **精确定位**
 - 组件：`src/renderer/src/components/RainCanvas.tsx`(:72 `90/fx.speed` 帧节流；:9-11 字符取自 `MATRIX_CHARS`)
@@ -50,7 +52,9 @@
 
 ---
 
-### 2. CRT 与扫描线氛围（.scanlines)
+### 2. CRT 与扫描线氛围（.scanlines) ✅ 已迁移
+
+> 2026-08-23 落地:`renderer/src/styles/ambient.css`(.scanlines 逐字,z-index 40 / pointer-events:none),挂载于 AppFrame 根;同块 1 一并落地。
 
 **精确定位**
 - 样式：`src/renderer/src/styles.css:56-68`（环境层段；`.scanlines` 在 :60 起）
@@ -333,7 +337,9 @@
 
 ---
 
-### 16. 字体与字形资产（三个 @font-face / matrixGlyphs.ts / assets/fonts)
+### 16. 字体与字形资产（三个 @font-face / matrixGlyphs.ts / assets/fonts) ✅ 已迁移
+
+> 2026-08-23 落地:三个字体文件入 `renderer/src/assets/fonts/`,`@font-face` ×3 在 `renderer/src/styles/tokens.css` 顶部;`matrixGlyphs.ts`(MATRIX_CHARS 单一事实源)拷入 `renderer/src/`;body 全局字体切 Matrix 回退链(`--m-font`)。
 
 **精确定位**
 - 样式：`src/renderer/src/styles.css:1-26`（顶部注释 + 三个 `@font-face`,:6 / :13 / :20);:41(`--font` 回退链）

@@ -1,11 +1,42 @@
 /* M1 replica shell — neutral layout skeleton. Visual 1:1 pass (theme tokens,
    spacing, typography) lands after the first vision pixel diff. */
 
+/* 本地字体(ZION 块 16 迁移,2026-08-23;离线/墙内可用,声明只在本文件一处,
+   组件一律经 var(--m-font) 引用;加载失败按 --m-font 回退链走系统字体):
+   - Share Tech Mono latin 子集(@fontsource/share-tech-mono)——拉丁正文
+   - Sarasa Term SC GB2312 子集(Sarasa-Gothic, OFL)——CJK 回退
+   - Matrix Code(Rezmason/matrix, MIT)——真·电影镜像片假名,数字雨 canvas 与
+     后续雨轨/蠕虫/扰码的统一字形(字符集一律取 renderer/src/matrixGlyphs.ts 的
+     MATRIX_CHARS,超 cmap 会回退系统字体穿帮) */
+@font-face {
+  font-family: "Share Tech Mono";
+  src: url("../assets/fonts/ShareTechMono-Regular.woff2") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Sarasa Term SC";
+  src: url("../assets/fonts/SarasaTermSC-Regular.subset.woff2") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Matrix Code";
+  src: url("../assets/fonts/Matrix-Code.ttf") format("truetype");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
 :root {
-  /* ---- dsw alias tokens(vendored ui css modules 引用;映射到 zion 调色板) ---- */
-  --dsw-alias-bg-layer-2: #101710;
-  --dsw-alias-bg-mask-1: rgba(3, 8, 4, 0.55);
-  --dsw-alias-bg-module-platform: #0e130e;
+  /* ---- dsw alias tokens(vendored ui css modules 引用;映射到 zion 调色板) ----
+     ZION 块 1+2(2026-08-23):表面类令牌统一 alpha 0.92(全 UI 半透明,雨幕透出),
+     遮罩 0.6——色相保持原调色板,只改透明度。 */
+  --dsw-alias-bg-layer-2: rgba(2, 18, 9, 0.92);
+  --dsw-alias-bg-mask-1: rgba(0, 8, 4, 0.6);
+  --dsw-alias-bg-module-platform: rgba(2, 18, 9, 0.92);
   --dsw-alias-border-inverted: #d7e3d7;
   --dsw-alias-border-l1: #1f2a1f;
   --dsw-alias-border-l2: #26332a;
@@ -36,11 +67,13 @@
   --dsw-alias-state-warn-tertiary: rgba(255, 176, 0, 0.16);
   --dsw-mask-blur: blur(6px);
   --dsw-shadow-lv3: 0 8px 28px rgba(0, 0, 0, 0.45);
-  --dsw-specific-menu: #131a13;
+  --dsw-specific-menu: rgba(2, 18, 9, 0.92);
 
-  --bg: #0a0e0a;
-  --bg-panel: #0e130e;
-  --bg-raised: #131a13;
+  /* 块 1+2(2026-08-23):面板/抬升面统一 alpha 0.92(全 UI 半透明,雨幕透出);
+     色相沿用 Matrix 面色系,hover 对比靠 rgba(61,255,143,0.06~0.12) 绿染维持。 */
+  --bg: #010a04;
+  --bg-panel: rgba(2, 18, 9, 0.92);
+  --bg-raised: rgba(2, 18, 9, 0.92);
   --border: #1f2a1f;
   --fg: #d7e3d7;
   --fg-muted: #7f8f7f;
@@ -74,7 +107,9 @@ html, body, #root {
 body {
   background: var(--bg);
   color: var(--fg);
-  font: 14px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif;
+  /* 块 16(2026-08-23):全局字体切 Matrix 回退链(Share Tech Mono 拉丁 /
+     Sarasa Term SC CJK 子集);加载失败自动回退系统字体 */
+  font: 14px/1.5 var(--m-font);
 }
 
 .app-frame {

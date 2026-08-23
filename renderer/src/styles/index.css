@@ -17,6 +17,7 @@
  *   plugin-settings 插件设置分区(配置三卡 + 列表三组)
  *   dock            conversation.input.dock 停靠排条语言 + Todo/Goal/Queue Matrix 条
  *   composer        微簇 .micro/StatsLine + 第二轮 .input-box/.input-row/go-btn/textarea
+ *   ambient         ZION 氛围层:#rain 数字雨 + .scanlines CRT 扫描线(2026-08-23 块 1+2)
  */
 @import './tokens.css';
 @import './layout.css';
@@ -32,3 +33,4 @@
 @import './plugin-settings.css';
 @import './dock.css';
 @import './composer.css';
+@import './ambient.css';
