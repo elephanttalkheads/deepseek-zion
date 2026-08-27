@@ -108,7 +108,7 @@ main.tsx Root
 - **数据**:`useSessions`(选中会话 title)、`useConversation`(chat.order/nodes/timeline/running/composerPhase)、`wire`、`selectedSessionId`;本地 `view`(会话切换重置为 chat)。
 - **挂载子组件**:hero→`AgentPresetSeat`;会话→`AgentPresetLabelSeat` + `SubagentCatalogActionSeat` + `JobListActionSeat`(会话头动作行)、`TrajectoryPane`/`ChatView`、`QueueDock`、streaming 提示、`ComposerSeat`。
 
-#### A4. ChatView — 消息流
+#### A4. ChatView — 消息流 ✅ 已迁移(ZION 块 6+7+11+12,2026-08-27;demo: `ui-prototype/conversation/`)
 - **挂载**:ConversationDock(view=chat 且 nodes 非空);props `{ nodes, wire, timeline, sessionId }`。
 - **交互入口**:
   1. 消息 `MessageIconActions`(vendor): 复制(正文 text)、分支(assistant,`forkNode`→`forkSession(node.anchorSeq)`)、hover 时间戳钟[official]
@@ -161,7 +161,7 @@ main.tsx Root
 - **交互入口**:「刷新」(→ subagents.list);continuable 子代理 投递输入(Enter)+「发」(`subagents.prompt`)+「中断」(`subagents.interrupt`)[zion-add]。
 - **数据**:`useSessions`(subagentsByParent[selected])、`subagentActions`、`selectedSessionId`。
 
-#### A10. ToolCallCard — 工具调用卡
+#### A10. ToolCallCard — 工具调用卡 ✅ 已迁移(ZION 块 8+9,2026-08-27;demo: `ui-prototype/conversation/`)
 - **挂载**:ChatView(tool-call 节点)。
 - **交互入口**:`button.tool-card-row` 展开/收起;展开渲染 ToolBody(按 resultView.card: terminal/diff/结构化 dump/content blocks/args/error)[official]。
 - **数据**:无 useRuntime;props `block`。内部 `MatrixDiffCard`/`ToolBody`。

@@ -10,3 +10,14 @@
     rgba(0, 0, 0, 0.10) 0px, rgba(0, 0, 0, 0.10) 1px,
     transparent 1px, transparent 4px);
 }
+
+/* ---- ZION 块 18:reduced-motion 全套压平 + 终态补偿(逐字适配) ----
+ * 放在级联末位(本文件最后 @import),确保压过各域文件的动画定义。
+ * 覆盖块 6/7/8/9/11/12 落地的全部动画类;JS 侧(canvas/乱码帧)各自判 REDUCED 直出。 */
+@media (prefers-reduced-motion: reduce) {
+  .msg, .trace.track, .matrix-diff, .rail .seal,
+  .matrix-diff-row, .matrix-diff-row .matrix-diff-code, .caret,
+  .trace .unit .contact { animation: none; }
+  .matrix-diff-ring rect { stroke-dashoffset: 0; animation: none; }
+  .think > summary::before { transition: none; }
+}

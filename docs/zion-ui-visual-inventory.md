@@ -139,7 +139,9 @@
 
 ---
 
-### 6. 回合化消息流与 OPERATOR 注入解码（Feed / TurnView / OperatorBody）
+### 6. 回合化消息流与 OPERATOR 注入解码（Feed / TurnView / OperatorBody） ✅ 已迁移
+
+> 2026-08-27 落地:`renderer/src/ui/ChatView.tsx`(user 节点 OPERATOR 头 + 右对齐 .msg.user + 块级排版;**不迁回合聚合数据模型**,R4 守官方节点投影)+ `renderer/src/ui/chat-fx.tsx`(InjectDecode:min(700,240+len*6)ms、MATRIX_CHARS、只入场播一次、reduced-motion 直出;常开无 DEC 开关——用户裁决);样式 `renderer/src/styles/chat.css`;demo 与截图:`ui-prototype/conversation/`。markdown 解析(parseBody)不迁,守官方平铺渲染口径。
 
 **精确定位**
 - 组件：`src/renderer/src/components/Feed.tsx`(:76 `OperatorBody` 注入解码；:121 `Body` 正文解析渲染；:146 `ToolCard`;:200 `TurnView` memo 边界）;`src/renderer/src/markdown.ts`(`parseBody` 纯函数）
@@ -163,7 +165,9 @@
 
 ---
 
-### 7. 脑波褶思考块（.think / EEG / 沉降梯度）
+### 7. 脑波褶思考块（.think / EEG / 沉降梯度） ✅ 已迁移(磁带纹横置重设计)
+
+> 2026-08-27 落地:`renderer/src/ui/ThinkBlock.tsx`——**用户裁决:EEG 脑波褶由 `ui-demo/agent-reply-rail-proto.html` C 磁带纹横置替换**(竖划 1.4×(3~8)px、x 每 5px 一条、2.2px/60ms 向右走带、W+4→-4 回卷、6% 高亮簇、destination-out 0.10 拖尾;静态帧 rgba(20,184,80,0.28);reduced-motion 30 步静态帧);`<details>` 默认折叠(官方 ReasoningRow 等位入口,复刻此前缺失,本次补齐);「· 思考中…」与沉降梯度(0.38/0.55/0.72/0.86/1)保留。demo 与截图:`ui-prototype/conversation/`。
 
 **精确定位**
 - 组件：`src/renderer/src/components/Feed.tsx`(:251 `.think-body` 思考体行切片；`<details class="think">` 在 TurnView 内渲染 thinking 段）
@@ -179,7 +183,9 @@
 
 ---
 
-### 8. 机械继电器工具卡（.trace.track / 触点 LED 三态 / 数码管 / 参数抽屉）
+### 8. 机械继电器工具卡（.trace.track / 触点 LED 三态 / 数码管 / 参数抽屉） ✅ 已迁移
+
+> 2026-08-27 落地:`renderer/src/ui/ToolCallCard.tsx` 外壳重构 `.trace.track > .unit.{run|ok|err}`(触点 LED 三态 coil 0.8s/clack 0.3s/err 红逐字、DIN 导轨 34px 凹槽纹理、.dur 数码管——无真实耗时数据显示 `—`,R4 不伪造);展开区 ToolBody 全分支(terminal/diff/JSON/content/args/error)原样保留;样式 `renderer/src/styles/tool-cards.css`(旧 .tool-card-* 死样式三处 grep 零引用已清);demo 与截图:`ui-prototype/conversation/`。
 
 **精确定位**
 - 组件：`src/renderer/src/components/Feed.tsx`(:146 `ToolCard`);`src/renderer/src/toolfmt.ts`(`formatToolArgs`/`toolExpandTitle` 参数格式化纯函数）
@@ -197,7 +203,9 @@
 
 ---
 
-### 9. diff 卡烧录显影（DiffCard / burn/char / 校验环自绘）
+### 9. diff 卡烧录显影（DiffCard / burn/char / 校验环自绘） ✅ 已迁移
+
+> 2026-08-27 落地:`renderer/src/ui/ToolCallCard.tsx` 内 MatrixDiffCard(M1 已移植)数值审计对齐:BURN_CAP=30、行 delay=min(i,30)×0.09s、ring delay=min(rows,30)×0.09+0.9、ringDraw 1.2s、burn/cool 0.9s、char 1.1s、pathLength=400、基态=终态;**无蠕虫 revealedEdits 门控(块 3 未迁),直接渲染**;`.turn-agent.historical` 压平 + `.ring rect{stroke-dashoffset:0}` 例外随块 11 容器一并落地。
 
 **精确定位**
 - 组件：`src/renderer/src/components/DiffCard.tsx`(:23-25 校验环 SVG `pathLength={400}` + `vector-effect`);Feed 侧渲染门控在 `src/renderer/src/components/Feed.tsx`(ToolCard 内）
@@ -235,7 +243,9 @@
 
 ---
 
-### 11. 凝结雨轨（TurnRail / 闭环凝 ◆)
+### 11. 凝结雨轨（TurnRail / 闭环凝 ◆) ✅ 已迁移
+
+> 2026-08-27 落地:`renderer/src/ui/TurnRail.tsx`(26px 左轨 2 列迷你雨:11px Matrix Code、行距 12、步进 0.8、8% 亮头、destination-out 0.14、节流 `90/fx.speed` 只读 import `renderer/src/app/ambient-fx.ts` 的 fx,不进 React 渲染路径);闭环凝 ◆(sealIn 0.5s),reduced-motion 一帧静态;`ChatView.tsx` 按节点流分组(user 类开新回合,后续非 user 节点包 `.turn-agent[ is-active][ historical]`,纯加法包裹);样式 `renderer/src/styles/chat.css`;demo 与截图:`ui-prototype/conversation/`。
 
 **精确定位**
 - 组件：`src/renderer/src/components/TurnRail.tsx`(:61 `90 / fx.speed` 帧节流；:76-77 活动态 canvas / 闭环 `.seal` ◆ 替身）
@@ -253,7 +263,9 @@
 
 ---
 
-### 12. 字形蛾光标与中断乱码锁定（MothCaret / AbortedMark）
+### 12. 字形蛾光标与中断乱码锁定（MothCaret / AbortedMark） ✅ 已迁移
+
+> 2026-08-27 落地:`renderer/src/ui/chat-fx.tsx`——MothCaret(120ms 换 MATRIX_CHARS 字形 + mothblink 1.1s 呼吸、Matrix Code 字体、挂流式 assistant 末文本块);AbortedMark(450ms 逐位锁定、文案 ` [已被操作员中断]`——用户裁决用源仓文案而非官方 message.stopped、danger 色、挂 `data.status==='interrupted'` 末文本块,复刻此前缺失中断标记,本次补齐);样式 `renderer/src/styles/chat.css`。
 
 **精确定位**
 - 组件：`src/renderer/src/components/Feed.tsx`(:28 `MothCaret` 字形蛾流式光标；:48 `AbortedMark` 中断乱码锁定）
@@ -318,6 +330,8 @@
 ---
 
 ### 15. 日志抽屉与状态栏（LogDrawer / #term)
+
+> 2026-08-27 决策:**不落地**。经用户裁决:日志抽屉+日志按钮【删除】、SND 开关【删除,音效块 17 未迁】、DEC 开关【删除,注入解码常开】、TLS 1.3/uptime 装饰【删除,R4 不伪造遥测】;纯展示状态栏(连接+tokens+状态字)用户决定亦不落地——复刻顶栏 badge 已承载连接状态、composer StatsLine 已承载 tokens,状态栏属重复信息面。本块仅留此决策记录,不打迁移勾。
 
 **精确定位**
 - 组件：`src/renderer/src/components/LogDrawer.tsx`(:17 `.term-head`)
@@ -384,7 +398,9 @@
 
 ---
 
-### 18. 横切纪律：设计令牌位置、z-index 分层、reduced-motion 降级、动画数值纪律
+### 18. 横切纪律：设计令牌位置、z-index 分层、reduced-motion 降级、动画数值纪律 ✅ 已迁移
+
+> 2026-08-27 落地:`renderer/src/styles/tokens.css`(全局统一滚动条 6px #00ff66 胶囊 hover #66ff99、::selection rgba(0,255,102,0.22)+白字、:focus-visible outline);`renderer/src/styles/ambient.css` 末位(@media prefers-reduced-motion 全套压平 + 终态补偿,覆盖会话区全部动画类);设计令牌 --m-* 调色板随块 16 已在 tokens.css;动画数值纪律(逐字提取、禁优化)适用于本次落地的全部块。
 
 **精确定位**
 - 令牌：`src/renderer/src/styles.css:1`（头注释「令牌照 ui-demo/index-v4.html，勿改数值」);:28-42(`:root` 设计令牌：`--bg`/`--surface`/`--text-*`/`--accent: #00ff41`/`--warning`/`--danger`/`--border`/`--font`)

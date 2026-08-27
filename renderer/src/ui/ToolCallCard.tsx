@@ -1,10 +1,11 @@
 /**
  * M3 — ToolCallCard (Q19A self-authored presentational layer).
  *
- * Renders one atomic tool call as a foldable row: icon + vendor title +
- * summary; expanding reveals call args and the card body (terminal/diff/read/
- * search/web by resultView.card, else IN/OUT text). Mirrors the official
- * ToolRow + GenericToolCard posture at the level this milestone needs.
+ * ZION 块 8 机械继电器:外壳 = .trace.track > .unit.{run|ok|err}[.open]
+ * (button + aria-expanded 语义与键盘可达保留),.contact 触点 LED 三态
+ * (coil/clack/err),.urest(.tname 线名 + .desc 摘要),.dur 数码管耗时。
+ * 展开区 ToolBody 全部分支(terminal/diff/JSON/content/args/error)不变;
+ * diff 卡 = MatrixDiffCard 烧录显影(块 9,数值照 demo)。
  */
 import { useState } from 'react'
 import type { RunningToolCall, ToolCallBlock, ToolResultNode } from '../../vendor/client-runtime/client/sessions/conversation.ts'
@@ -42,10 +43,10 @@ function classifyTool(name: string): string {
   return 'others'
 }
 
-function toolTitle(name: string): string {
-  if (TOOL_TITLES[name] !== undefined) return TOOL_TITLES[name]
-  const variant = classifyTool(name)
-  return variant === 'others' ? name : TOOL_TITLES[variant] ?? variant
+/** Settled 真实耗时秒(wire 字段 time - callTime;无配对数据返回 null → 数码管显 —)。 */
+function settledDurationSec(block: ToolResultNode): number | null {
+  if (block.callTime === null) return null
+  return (block.time - block.callTime) / 1000
 }
 
 /** File-ish tools summarize the path; others summarize args. */
@@ -128,7 +129,11 @@ function narrowDiffs(view: unknown): DiffHunk[] | null {
   return out.length === 0 ? null : out
 }
 
-/** Matrix diff 卡:校验环 + 文件头(+/- 计数/MODIFIED)+ 烧录显影行(M1 port from pi-martix) */
+/** 块 9 烧录显影上限:行 delay 与 ring delay 的行数都按 BURN_CAP 封顶(demo 逐字)。 */
+const BURN_CAP = 30
+
+/** Matrix diff 卡:校验环 + 文件头(+/- 计数/MODIFIED)+ 烧录显影行(M1 port from pi-martix;
+ *  块 9 数值审计:行 delay=min(i,30)*0.09s,ring delay=min(rows,30)*0.09+0.9,pathLength=400) */
 function MatrixDiffCard({ file, rows }: { file: string; rows: DiffRow[] }): JSX.Element {
   let plus = 0
   let minus = 0
@@ -137,10 +142,11 @@ function MatrixDiffCard({ file, rows }: { file: string; rows: DiffRow[] }): JSX.
     else if (r.t === '-') minus++
   }
   const dFile = file.startsWith('✎ ') ? file : `✎ ${file}`
+  const ringDelay = Math.min(rows.length, BURN_CAP) * 0.09 + 0.9
   return (
     <div className="matrix-diff">
       <svg className="matrix-diff-ring" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
-        <rect x="1" y="1" width="98" height="98" pathLength={400} />
+        <rect x="1" y="1" width="98" height="98" pathLength={400} style={{ animationDelay: `${ringDelay}s` }} />
       </svg>
       <div className="matrix-diff-head">
         <span className="matrix-diff-file">{dFile}</span>
@@ -150,7 +156,11 @@ function MatrixDiffCard({ file, rows }: { file: string; rows: DiffRow[] }): JSX.
       </div>
       <div className="matrix-diff-body">
         {rows.map((r, i) => (
-          <div key={i} className={`matrix-diff-row ${r.t === '+' ? 'add' : r.t === '-' ? 'del' : 'ctx'}`}>
+          <div
+            key={i}
+            className={`matrix-diff-row ${r.t === '+' ? 'add' : r.t === '-' ? 'del' : 'ctx'}`}
+            style={{ animationDelay: `${Math.min(i, BURN_CAP) * 0.09}s` }}
+          >
             <span className="matrix-diff-ln">{r.n ?? ''}</span>
             <span className="matrix-diff-sign">{r.t === '+' ? '+' : r.t === '-' ? '−' : '·'}</span>
             <span className="matrix-diff-code">{r.c || ' '}</span>
@@ -221,26 +231,34 @@ export function ToolCallCard({ block }: { block: ToolCallBlock }): JSX.Element {
   const name = toolName(block)
   const summary = deriveSummary(block)
   const isError = settled && block.isError === true
+  // 块 8 数码管耗时(R4:只用 wire 真实字段,禁止伪造):running→执行中…、
+  // err→失败、settled 有 callTime 配对→x.xs(time-callTime),无耗时数据→—。
+  const sec = settled ? settledDurationSec(block) : null
+  const dur = !settled ? '执行中…' : isError ? '失败' : sec === null ? '—' : `${sec.toFixed(1)}s`
+  const state = !settled ? 'run' : isError ? 'err' : 'ok'
 
   return (
     <div
-      className="tool-card"
+      className="trace track"
       data-tool={name}
       data-state={settled ? (isError ? 'error' : 'done') : 'running'}
-      data-variant="generic"
     >
       <button
-        className="tool-card-row"
+        className={`unit ${state}${expanded ? ' open' : ''}`}
         type="button"
         aria-expanded={expanded}
         onClick={() => setExpanded(v => !v)}
       >
-        <span className="tool-card-icon" aria-hidden="true">{settled ? (isError ? '✗' : '✓') : '…'}</span>
-        <span className="tool-card-title">{toolTitle(name)}</span>
-        <span className="tool-card-summary">{summary}</span>
+        <span className="contact" aria-hidden="true" />
+        <span className="urest">
+          <span className="tname">[{name}]</span>
+          <span className="desc">{summary}</span>
+        </span>
+        <span className="dur">{dur}</span>
       </button>
       {expanded && (
-        <div className="tool-card-body">
+        <div className="trace-expand">
+          <div className="te-title">{name} → {summary}</div>
           <ToolBody block={block} />
         </div>
       )}

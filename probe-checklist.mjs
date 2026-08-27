@@ -66,7 +66,7 @@ app.whenReady().then(async () => {
   await check('12', `!!document.querySelector('.input-bar-attach') || document.querySelectorAll('.input-bar [type=file]').length >= 1`, '12 附件按钮/文件输入')
 
   // M3: tool/interaction/model
-  const toolCards = await js(win, `document.querySelectorAll('.tool-card').length`)
+  const toolCards = await js(win, `document.querySelectorAll('.trace.track').length`)
   details['13'] = `工具卡共 ${toolCards} 张`
   await check('13', `true`, '13 工具卡渲染(计数见 details)')
   await check('14', `!!document.querySelector('.InteractionDock') || !!document.querySelector('.conversation .interaction-dock') || document.querySelectorAll('.interaction-dock').length >= 0`, '14 InteractionDock 插槽就位')
