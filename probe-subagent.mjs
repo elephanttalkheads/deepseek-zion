@@ -47,8 +47,7 @@ app.whenReady().then(async () => {
   await js(win, `(() => { const r = document.querySelector('.sidebar-row'); if (!r) return false; r.click(); return true })()`)
   const headerShown = await waitFor(win, `!!document.querySelector('.conversation-header')`, 8000)
 
-  if (TAG === 'real') {
-    // ---- real:目录树触发钮(有子代理的会话才出现;无子代理 = 官方同款隐藏) ----
+  if (TAG === 'real') {    // ---- real:目录树触发钮(有子代理的会话才出现;无子代理 = 官方同款隐藏) ----
     const triggerSeen = await waitFor(win, `!!document.querySelector(${q(TRIGGER)})`, 10000)
     const actionsArea = await js(win, `!!document.querySelector('.conversation-header-actions')`)
     out(`real catalog trigger: ${triggerSeen} (无子代理会话时官方隐藏该动作)`)
@@ -63,6 +62,12 @@ app.whenReady().then(async () => {
     for (const id of ['s2', 's3', 's4', 's5', 's6']) mark(id, true, `${id} real 只读`)
     mark('s6', errors.length === 0, 'S6 零控制台错误', errors.length ? `${errors.length} 个` : '')
   } else {
+    // ---- S0: 侧边栏不显示子代理会话(官方 ui-workspace sessionVisible:origin !== 'subagent') ----
+    const visibleIds = await js(win, `[...document.querySelectorAll('.sidebar-item')].map(r => r.getAttribute('data-session-id')).filter(Boolean)`)
+    const subagentGone = !visibleIds.includes('fx-beta') && !visibleIds.includes('fx-gamma')
+    const parentStillThere = visibleIds.includes('fx-alpha')
+    mark('s0', subagentGone && parentStillThere, 'S0 侧边栏不含子代理会话(官方 origin 过滤)', `可见 ${visibleIds.length} 行:${visibleIds.join(',')}`)
+
     // ---- S1: 会话头目录树触发钮(计数徽标) ----
     const triggerSeen = await waitFor(win, `!!document.querySelector(${q(TRIGGER)})`, 10000)
     const triggerLabel = await js(win, `(document.querySelector(${q(TRIGGER)})?.getAttribute('aria-label') ?? '')`)

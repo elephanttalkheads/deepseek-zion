@@ -7,6 +7,8 @@
  * - 会话行 … 菜单(重命名/分叉会话/归档会话):rename 走 Modal + session.rename;
  *   fork 走 session.fork(省略 atSeq = 最后完成的回合)并选中子会话;archive 走
  *   workspace.archiveSession(无确认弹窗,官方同)。
+ * - 子代理会话不进侧边栏(官方 ui-workspace sessionVisible:origin !== 'subagent';
+ *   子代理由会话头目录树 + 会话层级面包屑呈现)。
  * - 拖拽重排(官方 ui-workspace DragState 等位,仅按工作区分组模式):
  *   会话行拖到组内目标行上/下半 → workspace.insertSessionBefore;工作区组头
  *   拖拽 → workspace.insertBefore;原生拖拽期间文档级 accept(dragover/drop)。
@@ -70,7 +72,6 @@ export function Sidebar({ query, onQueryChange }: { query: string; onQueryChange
   const { useSessions, selectSession, selectedSessionId, createSession, workspaces, archivedSessionIds, sessionRowActions, workspaceActions } = useRuntime()
   const items = useSessions(s => s.items)
   const listState = useSessions(s => s.state)
-  const [expanded, setExpanded] = useState<Record<string, boolean>>({})
   const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({})
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [view, setView] = useState<ViewOptions>({ groupBy: 'flat', orderBy: 'updated' })
@@ -85,10 +86,12 @@ export function Sidebar({ query, onQueryChange }: { query: string; onQueryChange
     const q = query.trim().toLowerCase()
     const archived = new Set(archivedSessionIds)
     const source = items
+    // 官方 ui-workspace sessionVisible:origin !== 'subagent'(子代理不进侧边栏,
+    // 经会话头目录树呈现)+ 归档排除 + blank 仅当前。
     const filtered = q === ''
-      ? source.filter(entry => !entry.blank && !archived.has(entry.sessionId))
+      ? source.filter(entry => entry.origin !== 'subagent' && !entry.blank && !archived.has(entry.sessionId))
       : source.filter(entry =>
-        !entry.blank && !archived.has(entry.sessionId) &&
+        entry.origin !== 'subagent' && !entry.blank && !archived.has(entry.sessionId) &&
         ((entry.title ?? '').toLowerCase().includes(q) || entry.sessionId.toLowerCase().includes(q)),
       )
     if (view.orderBy === 'manual') return filtered
@@ -178,8 +181,6 @@ export function Sidebar({ query, onQueryChange }: { query: string; onQueryChange
   const renderEntry = (entry: SessionListEntry, now: number, groupKey: string | undefined) => {
     const id = entry.sessionId
     const isSelected = selectedSessionId === id
-    const isOpen = expanded[id] ?? false
-    const hasChildren = items.some(child => child.parentSessionId === entry.sessionId)
     const title = entry.title ?? basename(entry.cwd) ?? 'Untitled session'
     // 拖拽仅限按工作区分组内的账目行(官方:workspace-group sessions outside search)。
     const draggable = groupKey !== undefined && groupKey !== UNGROUPED_KEY && drag?.kind !== 'workspace'
@@ -213,16 +214,6 @@ export function Sidebar({ query, onQueryChange }: { query: string; onQueryChange
         onDrop={(e) => { commitSessionDrop(e, groupKey ?? '', id) }}
         style={{ paddingLeft: (entry.depth ?? 0) * 14 + 10 }}
       >
-        {hasChildren && (
-          <button
-            className="sidebar-caret"
-            type="button"
-            aria-expanded={isOpen}
-            onClick={() => setExpanded(prev => ({ ...prev, [id]: !isOpen }))}
-          >
-            {isOpen ? '▾' : '▸'}
-          </button>
-        )}
         <button
           className="sidebar-row"
           type="button"
