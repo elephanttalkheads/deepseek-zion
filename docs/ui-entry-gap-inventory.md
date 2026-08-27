@@ -1,6 +1,6 @@
 # zion UI 功能入口差距盘库(2026-08 · 对照官方 packages/client 源码)
 
-> 依据:官方 clone `D:\github-Clone\deepseek-harness`(HEAD `dsh-v0.1.0-rc.7`)的
+> 依据:官方 clone `D:\github-Clone\deepseek-harness`(HEAD `dsh-v0.1.1-rc.2`)的
 > `packages/client`(UI 侧)+ `packages/extensions`(ui-cordis),逐一读源码盘点「用户可交互入口」,
 > 对照 zion 现状(`renderer/src/ui/*` + `src/app/runtime.tsx` + `renderer/vendor/*`)。
 > 三色/三档:🟢 已具备;🟡 部分;❌ 缺失。补法:vendor=拷官方源码进 `renderer/vendor` 直编;

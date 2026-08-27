@@ -1,7 +1,7 @@
 # deepseek-zion 与官方 deepseek harness 的同步机制(SYNC)
 
 > 适用:官方 `@deepseek-ai/*` 或 harness 本体更新后,如何把 deepseek-zion 对到新版本。
-> 本文件是**机制向导**;现状基线(file: 链 rc.7 + official clone HEAD `dsh-v0.1.0-rc.7`,wire 未变故 vendor 保持 rc.6)见文末「当前基线」。
+> 本文件是**机制向导**;现状基线(file: 链 rc.7 + official clone HEAD `dsh-v0.1.1-rc.2`,wire 未变故 vendor 保持 rc.6)见文末「当前基线」。
 > 写文件时间:2025-08(M6 后,官方已发 rc.7)。
 
 ---
@@ -101,7 +101,7 @@ deepseek-zion 对官方的耦合有 **4 个面**,同步时逐面核对:
 | vendor(面 B) | **仍拷自 rc.6/7,漂移扩大**:rc.7→0.1.1-rc.2 共 117 文件 diff;**官方删除 `dsh-client-web-react` 包**(功能并入 client-runtime)→ 下次 vendor 同步是大工程(结构重构),已记录暂缓 |
 | 上游 bug | 0.1.1-rc.2 后端 settings 写盘在 Windows **EPERM 自锁**(tmp→rename 失败;外部改名 OK)→ 官方 UI 与 zion 的 settings 写入都受影响,与 zion 无关,待上游修复;backend-only 探针 B1-B3 因此失败 |
 | 验收 | probe-checklist 24/24、probe-plugin-settings real 9/9、probe-queue-activation 7/7(新链下实测) |
-| 官方源码 clone | `D:\github-Clone\deepseek-harness`,已 fetch 至 `dsh-v0.1.1-rc.2`(本地 tag 已拉) |
+> 官方源码 clone | `D:\github-Clone\deepseek-harness`,已更新到 `dsh-v0.1.1-rc.2`(2026-08-27 checkout 至 tag,HEAD b150a551b8,与运行时一致) |
 
 > 说明(2026-08-22 轻适配记录):wire 未破坏 → 按 §2 判读不升 vendor;类型面违约已修复(src/ 8 文件 30 处:品牌类型边界转换 + host/workspace-added 死分支移除 + 槽声明对齐 InputZone + model ns 等位声明 + 杂项)。后续官方再更新仍先看 wire。
 
@@ -115,7 +115,7 @@ deepseek-zion 对官方的耦合有 **4 个面**,同步时逐面核对:
 | vendor 的官方包 | client-connection / client-runtime / client-web-react / client-ui-slots / client-ui-conversation(**仍拷自 rc.6**) |
 | vendor 相对 rc.7 的漂移 | **无实质 drift**:rc.6→rc.7 内 4 包源码 0 diff,ui-conversation 仅 1 处 Safari textarea 渲染修复(非 wire) |
 | wire 契约(面 D) | **rc.6→rc.7 未变**(RPC map / MuxFrame-HostFrame / remote-event allowlist / dynamicCordisRunner / session.export-QueueAction 全部 0 diff) |
-| 官方源码 clone | `D:\github-Clone\deepseek-harness`,HEAD = `dsh-v0.1.0-rc.7` |
+| 官方源码 clone | `D:\github-Clone\deepseek-harness`,HEAD = `dsh-v0.1.0-rc.7`(rc.7 写作时快照) |
 | 官方已发 | rc.7(deepseek-zion 已升 file: 链;探针 24/24 + probe-real 通过) |
 
 > 说明(2025-08 rc.7 同步记录):本次按 §2 判读 —— wire 面(面 D)未变,故 **vendor 保持 rc.6 源码不升**;仅把 file: 链(面 A)升到 rc.7,`vite build` + `tsc(src/ 0 错)` + `probe-checklist 24/24` + `probe-real` 全部通过。 rc.6→rc.7 期间 apiproxy settings 表面有变化(删 `settings-not-exposed` 错码、namespace 全量暴露),zion 客户端不依赖这些,无影响。下次官方更新仍按 §2 先看 wire。

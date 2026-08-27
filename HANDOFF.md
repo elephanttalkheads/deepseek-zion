@@ -224,7 +224,7 @@
 
 - 工作区 `D:\deepseek-zion`;origin=github.com/elephanttalkheads/deepseek-zion(main)。
 - Node/DSH:Windows;`C:\Users\zyf\AppData\Local\nvm\v24.19.0\node_modules\@deepseek-ai\dsh\`(rc.7);DSH_HOME=`C:\Users\zyf\.dsh`;官方 npm 链 `...\.dsh\profiles\node_modules\@deepseek-ai\`(rc.7,file: 引用;junction 到底层链)。
-- 官方源码 clone:`D:\github-Clone\deepseek-harness`(HEAD `dsh-v0.1.0-rc.7`;vendor 源、契约查证都看它)。
+- 官方源码 clone:`D:\github-Clone\deepseek-harness`(HEAD `dsh-v0.1.1-rc.2`;vendor 源、契约查证都看它)。
 - 常用命令:`npm run build:web`(= vite build -c renderer/vite.config.ts)、`npx tsc --noEmit -p renderer/tsconfig.json`、`npx vite preview --config renderer/vite.config.ts --port 5199 --strictPort`。
 - ⚠️ `npm run dev/start` 是 Electron 壳(proto 遗留,加载官方 3080 UI,非复刻);看复刻走 5199/`dev:web`,或 `npm run start:replica`(Electron 窗口加载复刻界面,自动 ensure 3080 + 缺 dist 先 build + 起 5199 preview,main.mjs `--replica` 分支)。
 - 换机:`npm install`;`file:` 依赖是机器绝对路径(C 盘 profile / dsh 内嵌),换机改路径或 vendor 面包(SYNC.md 换机链);vendor 已含 10 包不额外装。

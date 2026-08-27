@@ -97,7 +97,7 @@ npm run pack / npm run dist # electron-builder 打包(--dir / 安装包:win nsis
 ## 6. 开发约定
 
 - **vendor 官方 UI 包的标准流程**(补差距/同步都用它,详见 HANDOFF §2):
-  1. 从官方源码 clone(`D:\github-Clone\deepseek-harness`,HEAD `dsh-v0.1.0-rc.7`)的 `packages/client/<pkg>/src` 拷到 `renderer/vendor/<pkg>`;
+  1. 从官方源码 clone(`D:\github-Clone\deepseek-harness`,HEAD `dsh-v0.1.1-rc.2`)的 `packages/client/<pkg>/src` 拷到 `renderer/vendor/<pkg>`;
   2. `renderer/vite.config.ts` 加 alias、`renderer/tsconfig.json` paths 加映射(type-only 缺失包用 `vendor/ts-types/*.d.ts` 空占位);
   3. 新 npm 依赖入 `package.json`;
   4. 写 zion 适配层(官方组件走 cordis 槽注入,zion 手写 adapter 补注入面,参考 `src/app/trajectory-pane.tsx`);
