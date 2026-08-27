@@ -4,8 +4,10 @@
  * Renders the assembled `ChatConversationViewNode[]` (official conversation
  * definitions already turned Session events into these nodes). Kind dispatch is
  * keyed on the node's business kind. 消息行动作 = 官方 vendored MessageIconActions
- * (复制图标 + 分支 + hover 时间戳;user/steering clock=start,assistant clock=end),
- * 分支 fork at anchorSeq(经 runtime.forkSession 真后端 fork 并选中子会话)。
+ * (复制图标 + 分支 + 运行统计;user/steering clock=start;每轮底部 turn-tail
+ * clock=end + 用时/首 token/tok/s 统计 + 消息反馈入口(好的回答/有问题的回答,
+ * 官方 messageFeedback 契约)),分支 fork at anchorSeq(经 runtime.forkSession
+ * 真后端 fork 并选中子会话)。
  * 消息图片 = 官方 vendored ui-attachment(ImageGallery → 点击 MessageImage →
  * ImageLightbox 原图预览;loader 走 session.readAttachment,同官方 resolveImage)。
  *
@@ -41,6 +43,7 @@ import { TurnRail } from './TurnRail.tsx'
 import { ThinkBlock } from './ThinkBlock.tsx'
 import { AbortedMark, InjectDecode, MothCaret } from './chat-fx.tsx'
 import { SlotAnchor } from '../plugin/anchors.tsx'
+import { MessageFeedbackSeat } from '../app/message-feedback.tsx'
 
 /** conversation 字典 + common 词表投影翻译器(官方 locale 查链等位)。 */
 const chatT = makeT(conversationZh as Record<string, string>)
@@ -76,16 +79,16 @@ function nodeImages(node: ChatConversationViewNode): { attachment: ImageAttachme
   return out
 }
 
-/** 助手消息的可复制正文:仅 text 块(不含 reasoning/tool-call 标记)。 */
-function assistantText(node: ChatConversationViewNode): string {
-  const data = node.data as { blocks?: unknown }
-  if (!Array.isArray(data.blocks)) return ''
-  return (data.blocks as BlockLike[])
+/** 助手正文的可复制文本:仅 text 块(不含 reasoning/tool-call 标记)。 */
+function assistantBlocksText(blocks: unknown): string {
+  if (!Array.isArray(blocks)) return ''
+  return (blocks as BlockLike[])
     .filter(b => b.kind === 'text')
     .map(b => b.text ?? '')
     .filter(Boolean)
     .join('\n')
 }
+
 
 function nodeBody(node: ChatConversationViewNode): string {
   const data = node.data as Record<string, unknown>
@@ -289,16 +292,51 @@ export function ChatView({ nodes, sessionId, wire, timeline, streaming }: {
           }
         })}
         {gallery}
+      </div>
+    )
+  }
+
+  /** turn 底部 Footer(官方 TurnTailNodeView 等位):产物行 + 行动作行(复制/分支/
+   *  统计/消息反馈)。assistant 消息本体不再挂动作行(官方同:每轮一个 turn-tail)。 */
+  const renderTurnTailNode = (node: ChatConversationViewNode): JSX.Element => {
+    const data = node.data as {
+      turn?: number; time?: number; ttftMs?: number; tokensPerSecond?: number;
+      branchUnavailable?: boolean;
+      closing?: { finalNode?: { messageId?: string }; blocks?: unknown } | null;
+    }
+    const location = node.location
+    const turn = location.kind === 'turn' || location.kind === 'step' ? location.turn : undefined
+    const runMs = turn !== undefined && turn.start !== undefined && turn.end !== undefined
+      ? Math.max(0, turn.end.time - turn.start.time)
+      : undefined
+    const closing = data.closing ?? null
+    const messageId = typeof closing?.finalNode?.messageId === 'string' ? closing.finalNode.messageId : undefined
+    const deliverables = typeof data.turn === 'number'
+      ? <ProducedFilesSeat timeline={timeline} turn={data.turn} seq={node.anchorSeq} />
+      : null
+    return (
+      <div
+        key={node.key}
+        className="chat-node chat-node--turn-tail"
+        data-kind="turn-tail"
+        data-turn-tail={data.turn}
+        data-time-hover-root
+      >
+        {deliverables}
         <MessageIconActions
-          text={assistantText(node)}
-          time={nodeTime(node)}
+          text={closing === null ? '' : assistantBlocksText(closing.blocks)}
+          time={typeof data.time === 'number' ? data.time : undefined}
+          runMs={runMs}
+          ttftMs={data.ttftMs}
+          tokensPerSecond={data.tokensPerSecond}
           clock="end"
+          onBranch={() => { forkNode(node) }}
+          branchUnavailable={data.branchUnavailable === true}
           className="chat-node-actions"
           t={chatT}
-          onBranch={() => { forkNode(node) }}
-          extraActions={(
-            <SlotAnchor slot="conversation.chat.assistant-actions" ownerProps={{ kind: node.kind }} />
-          )}
+          extraActions={messageId === undefined
+            ? null
+            : <MessageFeedbackSeat remote={wire.messageFeedback} sessionId={sessionId} messageId={messageId} />}
         />
       </div>
     )
@@ -342,15 +380,6 @@ export function ChatView({ nodes, sessionId, wire, timeline, streaming }: {
         </div>
       )
     }
-    // 产物行:turn-tail 节点处读 timeline turn 数据(deliverables 累积)。
-    const deliverables = node.kind === 'turn-tail'
-      ? (() => {
-        const turn = (node.data as { turn?: unknown }).turn
-        return typeof turn === 'number'
-          ? <ProducedFilesSeat timeline={timeline} turn={turn} seq={node.anchorSeq} />
-          : null
-      })()
-      : null
     return (
       <div
         key={node.key}
@@ -358,7 +387,6 @@ export function ChatView({ nodes, sessionId, wire, timeline, streaming }: {
         data-kind={node.kind}
       >
         <div className="chat-node-body">{nodeBody(node)}</div>
-        {deliverables}
       </div>
     )
   }
@@ -381,7 +409,9 @@ export function ChatView({ nodes, sessionId, wire, timeline, streaming }: {
             {group.nodes.map(node =>
               node.kind === 'assistant' || node.kind === 'assistant-step'
                 ? renderAssistantNode(node)
-                : renderGenericNode(node))}
+                : node.kind === 'turn-tail'
+                  ? renderTurnTailNode(node)
+                  : renderGenericNode(node))}
           </div>
         )
       })}

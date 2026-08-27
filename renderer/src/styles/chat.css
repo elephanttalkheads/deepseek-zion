@@ -23,15 +23,12 @@
 .msg-body .decoding { font-family: "Matrix Code", var(--m-font); }
 /* assistant 块内联 tool-call 引用(工具卡本体在 tool-call 节点) */
 .msg-toolref { font-size: 13px; color: var(--m-text-tertiary); }
-/* 既有官方入口共存(复制/分支/hover 时间戳;vendor MessageIconActions):
-   demo .msg-actions 等位——hover 浮现的悬浮条;DOM 常挂,仅视觉隐藏,功能不删。 */
-.msg .chat-node-actions {
-  position: absolute; top: -6px; right: 0; display: none; gap: 4px; z-index: 2;
-  background: var(--m-surface-2); border: 1px solid var(--m-border); padding: 2px 4px;
-  /* 抵消 plugin.css/settings.css 动作行的流内形态(border-top/margin-top) */
-  margin-top: 0; border-top: 0;
-}
-.msg:hover .chat-node-actions, .msg .chat-node-actions:focus-within { display: flex; }
+/* 既有官方入口共存(复制/分支/运行统计;vendor MessageIconActions):
+   官方位置 = user 气泡下方 / 每轮底部 turn-tail(data-turn-tail),流内常显,
+   不是悬浮条;功能不删,仅对齐官方位置与可见性。 */
+.msg .chat-node-actions { margin-top: 6px; }
+.chat-node--turn-tail { margin-top: 18px; padding-top: 10px; border-top: 1px dashed var(--m-border); }
+.chat-node--turn-tail .chat-node-actions { margin-top: 2px; }
 
 /* ---- 块 11:回合容器 + 凝结雨轨(逐字) ---- */
 .turn-agent { position: relative; padding-left: 40px; }
@@ -93,11 +90,25 @@
 
 /* ---- 其余节点形态(命令/compaction/turn 标记;面板盒样式已随块 6 退役) ---- */
 .chat-node--command { color: var(--accent); font-family: ui-monospace, monospace; }
-.chat-node--compaction, .chat-node--turn-tail, .chat-node--turn-error,
+.chat-node--compaction, .chat-node--turn-error,
 .chat-node--turn-max-tokens, .chat-node--model-retry {
   color: var(--fg-muted); font-size: 12px; text-align: center;
 }
 .conversation-streaming { color: var(--accent); font-size: 12px; margin-top: 8px; }
+
+/* ---- 消息反馈(官方 ui-message-feedback 等位:好的回答/有问题的回答 + 补充说明) ---- */
+.msg-feedback { display: inline-flex; align-items: center; gap: 4px; margin-left: 4px; }
+.msg-feedback-action { border: 0; background: none; color: var(--m-text-tertiary); cursor: pointer; padding: 2px; display: inline-flex; }
+.msg-feedback-action[data-active] { color: var(--m-accent); }
+.msg-feedback-action:hover { color: var(--m-text-primary); }
+.msg-feedback-action:disabled { opacity: 0.5; cursor: default; }
+.msg-feedback-note-open { border: 0; background: none; color: var(--m-text-tertiary); cursor: pointer; font-size: 12px; padding: 2px 4px; }
+.msg-feedback-note-open:hover { color: var(--m-text-primary); }
+.msg-feedback-note-editor { display: inline-flex; flex-direction: column; gap: 4px; padding: 4px 6px; border: 1px solid var(--m-border); background: var(--m-surface-2); }
+.msg-feedback-note-input { background: transparent; border: 1px solid var(--m-border); color: var(--m-text-primary); font: inherit; font-size: 13px; padding: 4px 6px; resize: vertical; }
+.msg-feedback-note-save, .msg-feedback-note-cancel { border: 1px solid var(--m-border); background: none; color: var(--m-text-secondary); cursor: pointer; font-size: 12px; padding: 3px 8px; }
+.msg-feedback-note-save:hover, .msg-feedback-note-cancel:hover { color: var(--m-text-primary); }
+.msg-feedback-error { font-size: 12px; color: var(--m-danger); }
 
 /* ---- composer / input bar ---- */
 .input-bar { margin-top: auto; border-top: 1px solid var(--border); padding: 10px; background: var(--bg-panel); }

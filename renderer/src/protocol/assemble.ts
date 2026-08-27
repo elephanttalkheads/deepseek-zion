@@ -23,6 +23,9 @@ import { createWebConnectionRpc } from '../../vendor/client-connection/client/rp
 import type { ClientConnectionRpc } from '../../vendor/client-connection/rpc.ts'
 import type { RemoteResult } from '@deepseek-ai/dsh-typert-protocol'
 import type { CommandDescriptor, CommandExecution } from '@deepseek-ai/dsh-commands/types'
+import type {
+  FeedbackOutcome, MessageFeedbackItem, MessageFeedbackRemote,
+} from '../app/message-feedback.tsx'
 
 /**
  * Functional-wiring remote (M2): the Session cluster's generic `commands`
@@ -44,12 +47,59 @@ function buildSessionRemote(rpc: ClientConnectionRpc) {
   }
 }
 
+/** 官方 messageFeedback Remote 的 fixture 内存实现(零副作用,探针可验证 CAS 语义)。 */
+function buildFixtureMessageFeedbackRemote(): MessageFeedbackRemote {
+  const rows = new Map<string, MessageFeedbackItem & { sessionId: string }>()
+  let seq = 0
+  const key = (sessionId: string, messageId: string) => `${sessionId}\u0000${messageId}`
+  const nextVersion = () => `fx-${++seq}`
+  return {
+    async list({ sessionId }) {
+      const items = [...rows.values()].filter(i => i.sessionId === sessionId).map(i => ({ messageId: i.messageId, rating: i.rating, ...(i.note === undefined ? {} : { note: i.note }), version: i.version }))
+      return { ok: true, value: { ok: true, value: { items } } }
+    },
+    async put({ sessionId, messageId, rating, note, ifVersion }) {
+      const existing = rows.get(key(sessionId, messageId))
+      const have = existing?.sessionId === sessionId
+      if ((have ? existing.version : null) !== ifVersion) {
+        return { ok: true, value: { ok: false, error: { code: 'version-conflict', current: have ? existing : null } } }
+      }
+      if (note !== undefined && note.trim().length === 0) {
+        return { ok: true, value: { ok: false, error: { code: 'note-blank' } } }
+      }
+      const next = { sessionId, messageId, rating, version: nextVersion(), ...(note === undefined ? {} : { note }) }
+      rows.set(key(sessionId, messageId), next)
+      return { ok: true, value: { ok: true, value: { messageId, rating, ...(note === undefined ? {} : { note }), version: next.version } } }
+    },
+    async delete({ sessionId, messageId, ifVersion }) {
+      const existing = rows.get(key(sessionId, messageId))
+      const have = existing?.sessionId === sessionId
+      if (have && existing.version !== ifVersion) {
+        return { ok: true, value: { ok: false, error: { code: 'version-conflict', current: existing } } }
+      }
+      rows.delete(key(sessionId, messageId))
+      return { ok: true, value: { ok: true, value: undefined as never } }
+    },
+  }
+}
+
+/** 官方 messageFeedback Remote 的 wire 面:HTTP POST /api/<endpoint>(复刻只消费契约)。 */
+function buildWebMessageFeedbackRemote(rpc: ClientConnectionRpc): MessageFeedbackRemote {
+  return {
+    list: (payload) => rpc.call('/api', 'messageFeedback.list', payload) as Promise<RemoteResult<FeedbackOutcome<{ items: MessageFeedbackItem[] }>>>,
+    put: (payload) => rpc.call('/api', 'messageFeedback.put', payload) as Promise<RemoteResult<FeedbackOutcome<MessageFeedbackItem>>>,
+    delete: (payload) => rpc.call('/api', 'messageFeedback.delete', payload) as Promise<RemoteResult<FeedbackOutcome<never>>>,
+  }
+}
+
 export interface AssembledWire {
   api: IApiClient
   /** Generic Connection RPC (fixture-in-memory when ?fixture, HTTP otherwise). */
   rpc: ClientConnectionRpc
   isFixture: boolean
   sessions: SessionManager
+  /** 消息反馈 Remote(官方 messageFeedback 契约;fixture 内存 / real HTTP)。 */
+  messageFeedback: MessageFeedbackRemote
   start(sinks: {
     onMux?: (e: RpcRequest<MuxFrame>) => void
     onHost?: (e: RpcRequest<HostFrame>) => void
@@ -76,6 +126,7 @@ export function assembleWire(conversation?: ConversationRuntime): AssembledWire 
   const { api, isFixture } = pickApi()
   const rpc = (api as { rpc?: ClientConnectionRpc }).rpc ?? createWebConnectionRpc()
   const sessions = new SessionManager(api, buildSessionRemote(rpc), undefined, undefined, conversation)
+  const messageFeedback = isFixture ? buildFixtureMessageFeedbackRemote() : buildWebMessageFeedbackRemote(rpc)
 
   let started = false
 
@@ -84,6 +135,7 @@ export function assembleWire(conversation?: ConversationRuntime): AssembledWire 
     rpc,
     isFixture,
     sessions,
+    messageFeedback,
     start(sinks) {
       if (started) throw new Error('wire: stream loop already started once')
       started = true

@@ -44,7 +44,8 @@ app.whenReady().then(async () => {
 
   const COPY = 'button[aria-label="复制"]'
   const BRANCH = 'button[aria-label="在新对话中分支"]'
-  const ASSISTANT_ROW = `.chat-node[data-kind="assistant"] .chat-node-actions, .chat-node[data-kind="assistant-step"] .chat-node-actions`
+  // 官方 TurnTail(每轮底部)拥有行动作行:data-turn-tail 节点内。
+  const ASSISTANT_ROW = `.chat-node[data-turn-tail] .chat-node-actions`
 
   // ---- M1: 进入含 assistant 节点的会话 ----
   const found = tag === 'fixture'
@@ -78,7 +79,18 @@ app.whenReady().then(async () => {
   // ---- M2: 动作行含 复制/分支 图标按钮 ----
   const hasCopy = await js(win, `!!document.querySelector(${JSON.stringify(`${ASSISTANT_ROW} ${COPY}`)})`)
   const hasBranch = await js(win, `!!document.querySelector(${JSON.stringify(`${ASSISTANT_ROW} ${BRANCH}`)})`)
-  mark('m2', hasCopy && hasBranch, 'M2 assistant 动作行:复制 + 分支图标按钮')
+  mark('m2', hasCopy && hasBranch, 'M2 turn-tail 动作行:复制 + 分支图标按钮')
+
+  // ---- M2d: 官方位置对齐——每轮底部(turn-tail)流内常显,非 hover 悬浮 ----
+  const alwaysShown = await js(win, `(() => {
+    const rows = [...document.querySelectorAll('.chat-node[data-turn-tail] .chat-node-actions')]
+    if (rows.length === 0) return false
+    const r = rows[0]
+    const s = getComputedStyle(r)
+    const firstAssistantActions = !!document.querySelector('.chat-node[data-kind="assistant"] .chat-node-actions, .chat-node[data-kind="assistant-step"] .chat-node-actions')
+    return s.display !== 'none' && !firstAssistantActions
+  })()`)
+  mark('m2d', alwaysShown, 'M2d 官方位置对齐:actions 仅在 turn-tail 底部(流内常显,assistant 本体无动作行)')
 
   // ---- M2b: 时钟文案 + data-time-hover-root(hover 时间戳) ----
   const clockText = await js(win, `(() => {
@@ -123,6 +135,49 @@ app.whenReady().then(async () => {
     out(`copy feedback: ${JSON.stringify(afterCopy)}`)
     mark('m3', copyClicked && (afterCopy === '复制成功' || afterCopy === '复制'), 'M3 复制 → check-swap 反馈(成功换勾;环境拒剪贴板则无反馈)', afterCopy)
 
+    // ---- M-fb: 消息反馈(好的回答/有问题的回答 + 补充说明;fixture 内存实现,零副作用) ----
+    const likeBtn = await js(win, `!!document.querySelector(${JSON.stringify(`${ASSISTANT_ROW} button[aria-label="好的回答"]`)})`)
+    const dislikeBtn = await js(win, `!!document.querySelector(${JSON.stringify(`${ASSISTANT_ROW} button[aria-label="有问题的回答"]`)})`)
+    mark('mfb1', likeBtn && dislikeBtn, 'M-fb1 turn-tail 动作行含 好的回答/有问题的回答 反馈按钮')
+    await waitFor(win, `!!document.querySelector(${JSON.stringify(`${ASSISTANT_ROW} button[aria-label="好的回答"]`)})`, 8000)
+    const likeClicked = await js(win, `(() => { const b = document.querySelector(${JSON.stringify(`${ASSISTANT_ROW} button[aria-label="好的回答"]`)}); if (!b) return false; b.click(); return true })()`)
+    const likePressed = await waitFor(win, `document.querySelector(${JSON.stringify(`${ASSISTANT_ROW} button[aria-label="取消标记"]`)})?.getAttribute('aria-pressed') === 'true'`, 6000)
+    mark('mfb2', likeClicked && likePressed, 'M-fb2 点「好的回答」→ 标记生效(aria-pressed,按钮切换为「取消标记」)')
+    // M-fb2 已标记「好的回答」→ 按钮此刻是「取消标记」;点它=撤回,再点「有问题的回答」=反向标记
+    // (负向激活后该按钮 label 同为「取消标记」;断言限定在被点击的这一行内——fixture 有多轮 turn-tail)。
+    const toggled = await js(win, `(() => { const b = document.querySelector(${JSON.stringify(`${ASSISTANT_ROW} button[aria-label="取消标记"]`)}); if (!b) return false; b.click(); return true })()`)
+    const dislikeClicked = await js(win, `(() => { const b = document.querySelector(${JSON.stringify(`${ASSISTANT_ROW} button[aria-label="有问题的回答"]`)}); if (!b) return false; b.click(); return true })()`)
+    const dislikeNow = await waitFor(win, `(() => {
+      const row = document.querySelector(${JSON.stringify(ASSISTANT_ROW)})
+      if (!row) return false
+      const active = row.querySelector('button[aria-label="取消标记"]')
+      const released = row.querySelector('button[aria-label="有问题的回答"]')
+      return active !== null && active.getAttribute('aria-pressed') === 'true' && released === null
+    })()`, 6000)
+    mark('mfb3', toggled && dislikeClicked && dislikeNow, 'M-fb3 再点「取消标记」→ 撤回;点「有问题的回答」→ 反向标记')
+    const noteOpen = await js(win, `(() => { const b = document.querySelector(${JSON.stringify(`${ASSISTANT_ROW} button.msg-feedback-note-open`)}); if (!b) return false; b.click(); return true })()`)
+    const noteEditor = await waitFor(win, `!!document.querySelector(${JSON.stringify(`${ASSISTANT_ROW} textarea.msg-feedback-note-input`)})`, 4000)
+    mark('mfb4', noteOpen && noteEditor, 'M-fb4 标记后「补充说明」编辑器可打开')
+    if (noteEditor) {
+      // 受控 textarea:必须用原生 value setter(HANDOFF §5)。
+      const typed = await js(win, `(() => {
+        const t = document.querySelector(${JSON.stringify(`${ASSISTANT_ROW} textarea.msg-feedback-note-input`)})
+        if (!t) return false
+        const setter = Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, 'value').set
+        setter.call(t, '这条回答很好')
+        t.dispatchEvent(new Event('input', { bubbles: true }))
+        return true
+      })()`)
+      const saved = await js(win, `(() => { const b = document.querySelector(${JSON.stringify(`${ASSISTANT_ROW} button.msg-feedback-note-save`)}); if (!b) return false; b.click(); return true })()`)
+      const noteShown = await waitFor(win, `(() => {
+        const b = document.querySelector(${JSON.stringify(`${ASSISTANT_ROW} button.msg-feedback-note-open`)})
+        return b !== null && (b.innerText ?? '').includes('这条回答很好')
+      })()`, 6000)
+      mark('mfb5', typed && saved && noteShown, 'M-fb5 保存补充说明 → 行内显示备注')
+    } else {
+      mark('mfb5', false, 'M-fb5 保存补充说明(编辑器未打开,跳过)')
+    }
+
     // ---- M4/M5: 分支(fork 真后端)→ 选中切换 + 子会话更深缩进 ----
     const beforeSel = await js(win, `document.querySelector('.sidebar-item[data-selected] .sidebar-row')?.innerText?.replace(/\\n/g,' ').slice(0,40) ?? ''`)
     const forkClicked = await js(win, `(() => { const b = document.querySelector(${JSON.stringify(`${ASSISTANT_ROW} ${BRANCH}`)}); if (!b) return false; b.click(); return true })()`)
@@ -140,6 +195,20 @@ app.whenReady().then(async () => {
     mark('m5', selChanged && selectedPad > 12, 'M5 fork 生成子会话并被选中(派生行 deeper 缩进)', `pad=${selectedPad}`)
   } else {
     mark('m3', true, 'M3 real:只读,不点复制')
+    const fbReal = await js(win, `(() => {
+      const row = document.querySelector(${JSON.stringify(ASSISTANT_ROW)})
+      if (!row) return { present: false }
+      return {
+        present: true,
+        like: !!row.querySelector('button[aria-label="好的回答"]'),
+        dislike: !!row.querySelector('button[aria-label="有问题的回答"]'),
+      }
+    })()`)
+    mark('mfb1', fbReal.present && fbReal.like && fbReal.dislike, 'M-fb1 real:turn-tail 动作行含反馈按钮(只读,不点击)', JSON.stringify(fbReal))
+    mark('mfb2', true, 'M-fb2 real:只读,不标记')
+    mark('mfb3', true, 'M-fb3 real:只读,不标记')
+    mark('mfb4', true, 'M-fb4 real:只读,不开编辑器')
+    mark('mfb5', true, 'M-fb5 real:只读,不保存')
     mark('m4', true, 'M4 real:只读,不 fork')
     mark('m5', true, 'M5 real:只读,不 fork')
   }
