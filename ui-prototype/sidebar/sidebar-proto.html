@@ -1,0 +1,2787 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ZION ASCII DISTRICT — deepseek-zion 侧栏迁移合并 Demo</title>
+  <!--
+    PROTOTYPE / THROWAWAY UI — pi-martix-ui-dev → deepseek-zion UI 迁移合并 demo
+    源(canonical): D:\pi-martix-ui-dev\ui-demo\ascii-cyberpunk-sidebar-prototype.html(1928 行,视觉/交互逐行忠实移植)
+    设计纪律:     D:\pi-martix-ui-dev\docs\ascii-cyberpunk-sidebar-design.md
+    目标组件:     renderer/src/ui/Sidebar.tsx(入口清单见 docs/ui-component-inventory.md §A2)
+
+    ══ 入口差集(迁移流程第 1 步书面产出)══
+
+    【共有入口】(迁移视觉,保留语义)
+      · 会话选中 selectSession —— 源原型 Portal / City Index 行 ↔ 目标 sidebar-row:同一语义,保留。
+
+    【缺失入口】(清单有、源原型没有;本 demo 已全部补齐,安置 = 固定工具条 + 索引行内菜单,用户已裁决)
+      工具条(header 下方固定 DOM,不参与相机投影):
+        ① 搜索输入框      #tb-search  —— 本地过滤标题/id,同步 City Index 列表与 Portal
+        ② 视图选项按钮    #tb-view    —— 弹出菜单 4 项:按工作区/单列表/手动排序/最近更新(影响 City Index 排布)
+        ③ 「+」新建会话   #tb-new     —— mock:向当前工作区追加一条
+        ④ 「⚙」设置按钮   #tb-settings—— stub 小面板(落地时打开 SettingsShell)
+      City Index 行内:
+        ⑤ 每行 ⋯ 菜单 —— 重命名(行内编辑 stub)/ 分叉会话(mock 追加)/ 归档会话(mock 移除)
+        ⑥ 有子会话的行 caret 展开/收起(mock 给 neural-link / cross-repo 加了 children)
+        ⑦ 会话行拖拽排序(HTML5 drag,同工作区内重排 mock)
+        ⑧ 工作区组头拖拽换位(HTML5 drag)
+        ⑨ 分组超 5 条折叠 +「+N 个更多…」展开(COLLAPSED=5)
+        ⑩ (官方重命名 Modal —— 本 demo 以行内编辑 stub 呈现,落地走 vendor Modal)
+        ⑪ 底部 sidebar.footer.action 插件槽占位(.sidebar-footer-slot,注释标明)
+
+    【多余入口】(源原型有、清单没有;用户已裁决:全部保留)
+      · 相机行走输入:W/S/A/D + 方向键 / 滚轮 / 空白拖拽
+      · City Index 家族:CITY INDEX 按钮、M/Esc、分组/平铺切换、BAY 章标题
+      · 右缘拖拽调宽 280–420px
+
+    调试参数(沿用源原型):?map=1 初始开索引 / ?mapstyle=flat 平铺 / ?z= 相机纵深 / ?w=280..420 侧栏宽度
+  -->
+  <style>
+    @font-face {
+      font-family: "Matrix Code";
+      src: url("./assets/Matrix-Code.ttf") format("truetype");
+      font-display: block;
+    }
+
+    @font-face {
+      font-family: "Sarasa Term SC";
+      src: url("./assets/SarasaTermSC-Regular.subset.woff2") format("woff2");
+      font-display: swap;
+    }
+
+    @font-face {
+      font-family: "Share Tech Mono";
+      src: url("./assets/ShareTechMono-Regular.woff2") format("woff2");
+      font-display: swap;
+    }
+
+    :root {
+      color-scheme: dark;
+      --sidebar-width: 280px;
+      --void: #010403;
+      --surface: #05100b;
+      --surface-raised: rgba(7, 20, 14, 0.94);
+      --matrix: #37ff79;
+      --matrix-hot: #d9ffe4;
+      --matrix-dim: #0a7f3d;
+      --cyan: #68e9dd;
+      --amber: #ffb45e;
+      --error: #ff5364;
+      --ink: #d7ffe0;
+      --muted: #71977c;
+      --line: rgba(77, 255, 131, 0.22);
+      --display: "Share Tech Mono", "Sarasa Term SC", monospace;
+      --body: "Sarasa Term SC", monospace;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      width: 100%;
+      min-height: 100%;
+      margin: 0;
+      background: #020504;
+      color: var(--ink);
+      font-family: var(--body);
+    }
+
+    button {
+      font: inherit;
+    }
+
+    body {
+      min-height: 100vh;
+      overflow: hidden;
+      display: flex;
+      background:
+        radial-gradient(circle at 18% 44%, rgba(27, 149, 68, 0.08), transparent 36%),
+        linear-gradient(90deg, #010403 0 var(--sidebar-width), #050907 var(--sidebar-width));
+    }
+
+    .zion-sidebar {
+      position: relative;
+      isolation: isolate;
+      width: min(var(--sidebar-width), 100vw);
+      min-width: min(var(--sidebar-width), 100vw);
+      height: 100vh;
+      min-height: 560px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      background: var(--void);
+      border-right: 1px solid rgba(103, 255, 148, 0.32);
+      box-shadow: 16px 0 60px rgba(0, 0, 0, 0.52), inset -1px 0 rgba(196, 255, 215, 0.06);
+    }
+
+    .zion-sidebar::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      z-index: 20;
+      pointer-events: none;
+      background:
+        repeating-linear-gradient(0deg, transparent 0 2px, rgba(122, 255, 163, 0.028) 2px 3px),
+        linear-gradient(90deg, rgba(70, 255, 125, 0.03), transparent 18%, transparent 82%, rgba(70, 255, 125, 0.04));
+      mix-blend-mode: screen;
+    }
+
+    .zion-sidebar::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      z-index: 21;
+      pointer-events: none;
+      box-shadow:
+        inset 0 0 36px rgba(0, 0, 0, 0.88),
+        inset 0 0 3px rgba(121, 255, 160, 0.28);
+    }
+
+    .sidebar-head {
+      position: relative;
+      z-index: 8;
+      height: 58px;
+      flex: 0 0 58px;
+      padding: 9px 11px 7px 13px;
+      display: grid;
+      grid-template-columns: 1fr auto;
+      align-items: start;
+      background:
+        linear-gradient(180deg, rgba(15, 39, 25, 0.98), rgba(3, 11, 7, 0.94)),
+        var(--void);
+      border-bottom: 1px solid var(--line);
+    }
+
+    .sidebar-head::after {
+      content: "";
+      position: absolute;
+      left: 12px;
+      right: 12px;
+      bottom: -1px;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, var(--matrix), transparent);
+      box-shadow: 0 0 12px var(--matrix);
+      opacity: 0.6;
+    }
+
+    .brand-kicker,
+    .brand-name,
+    .head-status,
+    .frame-label,
+    .frame-coordinate,
+    .key,
+    .map-stylebar-kicker,
+    .host-field,
+    .map-toggle {
+      font-family: var(--display);
+      letter-spacing: 0.08em;
+    }
+
+    .brand-kicker {
+      display: block;
+      margin-bottom: 2px;
+      color: var(--matrix);
+      font-size: 8px;
+      line-height: 1;
+    }
+
+    .brand-name {
+      margin: 0;
+      font-size: 17px;
+      line-height: 1;
+      letter-spacing: 0.045em;
+      font-weight: 400;
+      color: #ebfff1;
+      text-shadow: 0 0 13px rgba(80, 255, 135, 0.42);
+    }
+
+    .brand-name em {
+      color: var(--matrix);
+      font-style: normal;
+    }
+
+    .head-status {
+      margin-top: 3px;
+      padding: 4px 5px 3px;
+      border: 1px solid rgba(73, 255, 130, 0.28);
+      color: var(--matrix);
+      background: rgba(38, 255, 99, 0.055);
+      font-size: 7px;
+      line-height: 1;
+      white-space: nowrap;
+    }
+
+    .head-status::before {
+      content: "";
+      display: inline-block;
+      width: 4px;
+      height: 4px;
+      margin-right: 5px;
+      border-radius: 50%;
+      background: var(--matrix);
+      box-shadow: 0 0 7px var(--matrix);
+      vertical-align: 1px;
+      animation: breathe 2.4s ease-in-out infinite;
+    }
+
+    /* ── 迁移补齐:固定工具条(不参与相机投影,与 HUD 同层的 Fixed DOM)── */
+    .sidebar-toolbar {
+      position: relative;
+      z-index: 8;
+      height: 30px;
+      flex: 0 0 30px;
+      padding: 0 9px 0 13px;
+      display: grid;
+      grid-template-columns: 1fr auto auto auto;
+      gap: 5px;
+      align-items: center;
+      background:
+        linear-gradient(180deg, rgba(9, 24, 15, 0.96), rgba(3, 11, 7, 0.94)),
+        var(--void);
+      border-bottom: 1px solid var(--line);
+    }
+
+    .sidebar-search-input {
+      min-width: 0;
+      height: 20px;
+      padding: 1px 7px 0;
+      border: 1px solid rgba(73, 255, 130, 0.22);
+      background: rgba(2, 10, 6, 0.75);
+      color: var(--ink);
+      font: 10px/1 var(--body);
+      letter-spacing: 0.04em;
+    }
+
+    .sidebar-search-input::placeholder {
+      color: rgba(113, 151, 124, 0.55);
+    }
+
+    .sidebar-search-input:focus {
+      outline: none;
+      border-color: var(--matrix);
+      box-shadow: 0 0 8px rgba(55, 255, 121, 0.18);
+    }
+
+    .toolbar-btn {
+      height: 20px;
+      min-width: 22px;
+      padding: 0 5px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: 1px solid rgba(73, 255, 130, 0.28);
+      background: rgba(38, 255, 99, 0.05);
+      color: var(--matrix);
+      cursor: pointer;
+      font: 11px/1 var(--display);
+    }
+
+    .toolbar-btn:hover,
+    .toolbar-btn:focus-visible,
+    .toolbar-btn[aria-expanded="true"] {
+      outline: none;
+      border-color: var(--matrix);
+      color: #eafff0;
+      box-shadow: 0 0 9px rgba(55, 255, 121, 0.25);
+    }
+
+    /* 工具条弹层(视图选项菜单 / 设置 stub 面板):DVD 菜单同族磷光风 */
+    .tb-pop {
+      position: absolute;
+      z-index: 40;
+      top: 87px; /* 58 header + 30 toolbar - 1 接缝;flex 容器内 abspos 的 static 位置在容器原点,必须显式 top */
+      right: 9px;
+      width: 178px;
+      display: none;
+      background: var(--surface-raised);
+      border: 1px solid rgba(77, 255, 131, 0.3);
+      box-shadow: 0 8px 28px rgba(0, 0, 0, 0.6), 0 0 14px rgba(55, 255, 121, 0.08);
+    }
+
+    .tb-pop.is-open {
+      display: block;
+    }
+
+    .tb-pop-head {
+      padding: 7px 10px 6px;
+      color: var(--matrix);
+      font: 8px/1 var(--display);
+      letter-spacing: 0.18em;
+      border-bottom: 1px solid rgba(77, 255, 131, 0.2);
+    }
+
+    .tb-pop-item {
+      width: 100%;
+      padding: 7px 10px;
+      display: flex;
+      align-items: baseline;
+      gap: 8px;
+      border: 0;
+      background: none;
+      cursor: pointer;
+      text-align: left;
+      color: #46e572;
+      font: 11px/1.2 var(--body);
+      letter-spacing: 0.06em;
+    }
+
+    .tb-pop-item .k {
+      flex: 0 0 62px;
+      color: var(--matrix);
+      font: 8px/1.4 var(--display);
+      letter-spacing: 0.1em;
+    }
+
+    .tb-pop-item:hover,
+    .tb-pop-item:focus-visible {
+      outline: none;
+      background: rgba(70, 229, 114, 0.07);
+    }
+
+    /* 当前生效项:索引选中框同款(rgb(48,152,88) + 横纹 rgb(32,144,72,0.9)) */
+    .tb-pop-item.is-on {
+      background:
+        repeating-linear-gradient(0deg, rgba(32, 144, 72, 0.9) 0 1px, transparent 1px 3px),
+        rgb(48, 152, 88);
+      color: rgb(2, 24, 4);
+    }
+
+    .tb-pop-item.is-on .k {
+      color: rgba(2, 24, 4, 0.7);
+    }
+
+    .tb-pop-note {
+      padding: 8px 10px 9px;
+      color: var(--muted);
+      font: 10px/1.5 var(--body);
+      letter-spacing: 0.03em;
+    }
+
+    .tb-pop-note em {
+      color: var(--cyan);
+      font-style: normal;
+    }
+
+    .city-frame {
+      position: relative;
+      min-height: 335px;
+      flex: 1 1 auto;
+      overflow: hidden;
+      background: #010403;
+      border-bottom: 1px solid rgba(77, 255, 131, 0.2);
+      touch-action: none;
+    }
+
+    #city-canvas {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      display: block;
+      cursor: ns-resize;
+    }
+
+    .frame-chrome,
+    .projection-layer,
+    .session-layer {
+      position: absolute;
+      inset: 0;
+    }
+
+    .frame-chrome,
+    .projection-layer,
+    .session-layer {
+      pointer-events: none;
+    }
+
+    .frame-topline {
+      position: absolute;
+      top: 8px;
+      left: 9px;
+      right: 9px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      color: rgba(190, 255, 207, 0.72);
+      text-shadow: 0 0 8px rgba(56, 255, 112, 0.5);
+    }
+
+    .frame-label,
+    .frame-coordinate {
+      font-size: 7px;
+      line-height: 1;
+    }
+
+    .frame-coordinate {
+      color: var(--matrix);
+    }
+
+    .crosshair {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      width: 17px;
+      height: 17px;
+      transform: translate(-50%, -50%);
+      opacity: 0.62;
+      transition: opacity 160ms ease;
+    }
+
+    .crosshair::before,
+    .crosshair::after {
+      content: "";
+      position: absolute;
+      background: var(--matrix-hot);
+      box-shadow: 0 0 8px var(--matrix);
+    }
+
+    .crosshair::before {
+      width: 1px;
+      height: 17px;
+      left: 8px;
+      top: 0;
+    }
+
+    .crosshair::after {
+      width: 17px;
+      height: 1px;
+      left: 0;
+      top: 8px;
+    }
+
+    .horizon-tag {
+      position: absolute;
+      right: 8px;
+      top: 50%;
+      writing-mode: vertical-rl;
+      color: rgba(91, 255, 140, 0.42);
+      font: 7px/1 var(--display);
+      letter-spacing: 0.14em;
+    }
+
+    .district-marker,
+    .session-portal {
+      position: absolute;
+      pointer-events: auto;
+      opacity: 0;
+      transform-origin: center center;
+      will-change: transform, left, top, opacity;
+    }
+
+    .district-marker {
+      min-width: 86px;
+      max-width: 148px;
+      padding: 4px 6px 4px 7px;
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      gap: 5px;
+      align-items: center;
+      color: #a9cdb2;
+      background: linear-gradient(90deg, rgba(2, 8, 5, 0.94), rgba(4, 18, 10, 0.78));
+      border: 1px solid rgba(77, 255, 131, 0.22);
+      border-left-color: var(--workspace-color, var(--matrix));
+      clip-path: polygon(0 0, calc(100% - 6px) 0, 100% 6px, 100% 100%, 5px 100%, 0 calc(100% - 5px));
+      text-align: left;
+      cursor: pointer;
+      font: 8px/1.05 var(--display);
+      letter-spacing: 0.035em;
+      white-space: nowrap;
+      overflow: hidden;
+      transition: color 140ms ease, border-color 140ms ease, background 140ms ease;
+    }
+
+    .district-marker:hover,
+    .district-marker:focus-visible,
+    .district-marker.is-active {
+      color: #edfff1;
+      border-color: color-mix(in srgb, var(--workspace-color) 68%, transparent);
+      background: linear-gradient(90deg, rgba(3, 10, 7, 0.98), color-mix(in srgb, var(--workspace-color) 14%, rgba(3, 12, 7, 0.9)));
+      outline: none;
+      box-shadow: 0 0 14px color-mix(in srgb, var(--workspace-color) 25%, transparent);
+    }
+
+    .district-marker .code {
+      color: var(--workspace-color);
+    }
+
+    .district-marker .name {
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .district-marker .count {
+      color: rgba(213, 255, 223, 0.58);
+      font-size: 7px;
+    }
+
+    .session-portal {
+      height: 23px;
+      padding: 3px 20px 3px 8px;
+      overflow: hidden;
+      display: block;
+      color: #c4e8cd;
+      border: 0;
+      background:
+        linear-gradient(90deg, rgba(0, 6, 3, 0.82), color-mix(in srgb, var(--status-color) 7%, rgba(5, 22, 12, 0.6)) 62%, rgba(5, 24, 13, 0.15));
+      cursor: pointer;
+      text-align: left;
+      white-space: nowrap;
+      text-overflow: ellipsis;
+      font: 12px/16px var(--body);
+      text-shadow: 0 0 6px color-mix(in srgb, var(--status-color) 55%, transparent);
+      transition: color 110ms ease, background 110ms ease, text-shadow 110ms ease;
+    }
+
+    .session-portal::after {
+      content: attr(data-slot);
+      position: absolute;
+      top: 4px;
+      right: 6px;
+      color: var(--status-color);
+      font: 8px/1 var(--display);
+      opacity: 0.64;
+    }
+
+    .session-portal:hover,
+    .session-portal:focus-visible,
+    .session-portal.is-current {
+      color: #effff3;
+      outline: none;
+      background:
+        linear-gradient(90deg, rgba(3, 16, 8, 0.75), color-mix(in srgb, var(--status-color) 18%, rgba(3, 18, 9, 0.5)) 72%, transparent);
+      text-shadow: 0 0 9px color-mix(in srgb, var(--status-color) 80%, transparent);
+    }
+
+    .session-portal.is-current {
+      background:
+        linear-gradient(90deg, color-mix(in srgb, var(--status-color) 16%, rgba(2, 12, 6, 0.8)), color-mix(in srgb, var(--status-color) 10%, transparent) 78%, transparent);
+    }
+
+    .map-toggle {
+      position: absolute;
+      right: 9px;
+      bottom: 9px;
+      pointer-events: auto;
+      height: 22px;
+      padding: 0 6px 0 8px;
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      border: 1px solid rgba(104, 233, 221, 0.26);
+      border-left: 2px solid var(--cyan);
+      color: var(--cyan);
+      background: rgba(2, 14, 12, 0.78);
+      cursor: pointer;
+      font: 8px/1 var(--display);
+      letter-spacing: 0.14em;
+      text-align: left;
+    }
+
+    .map-toggle::before {
+      content: ">";
+      color: rgba(104, 233, 221, 0.62);
+    }
+
+    .map-toggle .key-hint {
+      padding: 1px 3px 0;
+      border: 1px solid rgba(104, 233, 221, 0.3);
+      color: rgba(182, 255, 246, 0.55);
+      font-size: 7px;
+      letter-spacing: 0.06em;
+    }
+
+    .map-toggle:hover,
+    .map-toggle:focus-visible {
+      outline: none;
+      border-color: var(--cyan);
+      color: #e7fffc;
+      box-shadow: 0 0 10px rgba(104, 233, 221, 0.2);
+    }
+
+    .map-toggle:hover .key-hint,
+    .map-toggle:focus-visible .key-hint {
+      color: var(--cyan);
+      border-color: var(--cyan);
+    }
+
+    .city-map {
+      position: absolute;
+      z-index: 30;
+      inset: 88px 0 0; /* 58 header + 30 toolbar(迁移补齐);短窗口媒体查询同步 82 */
+      display: flex;
+      flex-direction: column;
+      background: var(--void);
+      transform: translateX(-102%);
+      visibility: hidden;
+      transition: transform 240ms cubic-bezier(.2, .75, .2, 1), visibility 240ms;
+      border-right: 1px solid var(--matrix-dim);
+    }
+
+    /* DVD 菜单屏数字雨背景(垫底层,map 打开时才启动渲染) */
+    .map-rain {
+      position: absolute;
+      inset: 0;
+      z-index: 0;
+      width: 100%;
+      height: 100%;
+    }
+
+    .city-map.is-open {
+      transform: translateX(0);
+      visibility: visible;
+    }
+
+    .map-stylebar {
+      position: relative;
+      z-index: 1;
+      flex: 0 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      padding: 10px 12px 9px;
+      border-bottom: 1px solid rgba(77, 255, 131, 0.21);
+      background: rgba(3, 12, 7, 0.92);
+    }
+
+    .map-stylebar-kicker {
+      color: var(--matrix);
+      font-size: 8px;
+      line-height: 1;
+    }
+
+    .map-style-toggle {
+      padding: 5px 9px;
+      border: 1px solid rgba(77, 255, 131, 0.3);
+      color: var(--matrix);
+      background: rgba(5, 22, 11, 0.7);
+      cursor: pointer;
+      font: 9px/1 var(--body);
+      letter-spacing: 0.1em;
+    }
+
+    .map-style-toggle:hover,
+    .map-style-toggle:focus-visible {
+      outline: none;
+      border-color: var(--matrix);
+      color: #fff;
+    }
+
+    .map-body {
+      position: relative;
+      z-index: 1;
+      flex: 1 1 auto;
+      min-height: 0;
+      overflow-y: auto;
+      scrollbar-width: thin;
+      scrollbar-color: var(--matrix-dim) transparent;
+      padding: 8px 0 16px;
+      /* 文字区暗色衬底:左强右弱压雨保读,右缘雨幕仍透出 */
+      background: linear-gradient(90deg, rgba(1, 6, 3, 0.82) 0%, rgba(1, 6, 3, 0.62) 68%, rgba(1, 6, 3, 0.3) 100%);
+    }
+
+    .map-session-list {
+      margin: 0;
+      padding: 0;
+      list-style: none;
+    }
+
+    /* ── 分组样式(V1 章节选单):BAY 章标题 + 缩进会话项 ── */
+    /* 明度阶梯(§6):标题 100% / 章节 55% / 时间与序号 38%,单一绿色相内分层 */
+    .map-body.grouped .map-district-head {
+      width: 100%;
+      padding: 14px 12px 6px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      border: 0;
+      background: none;
+      cursor: pointer;
+      color: rgba(70, 229, 114, 0.55);
+      font: 9px/1 var(--display);
+      letter-spacing: 0.3em;
+      text-transform: uppercase;
+      text-align: left;
+    }
+
+    .map-body.grouped .map-district-head::after {
+      content: "";
+      flex: 1;
+      height: 1px;
+      background: linear-gradient(90deg, rgba(70, 229, 114, 0.38), transparent);
+    }
+
+    .map-body.grouped .map-district-head:hover,
+    .map-body.grouped .map-district-head:focus-visible {
+      outline: none;
+      color: #46e572;
+    }
+
+    .map-body.grouped .map-session-button {
+      position: relative;
+      width: 100%;
+      padding: 8px 14px 8px 22px;
+      display: flex;
+      align-items: baseline;
+      gap: 6px;
+      border: 0;
+      background: none;
+      cursor: pointer;
+      text-align: left;
+      color: #46e572;
+      font: 13px/1.15 var(--body);
+      letter-spacing: 0.05em;
+      text-shadow: 0 0 7px rgba(70, 229, 114, 0.6), 0 1px 3px rgba(0, 0, 0, 0.9);
+      transition: background 120ms linear, color 120ms linear;
+    }
+
+    .map-body.grouped .map-session-button .cur {
+      display: none; /* 分组选中态走左缘刻度条(§1),不占中文宽度 */
+    }
+
+    .map-body.grouped .map-session-button .age {
+      margin-left: auto;
+      color: rgba(70, 229, 114, 0.38);
+      font: 10px/1 var(--display);
+      letter-spacing: 0.12em;
+      text-shadow: none;
+    }
+
+    /* 终端选中框(按 002 采样):中绿条 #309858 + 低对比绿横纹 #209048(不遮字)+ 亮边 */
+    .map-body.grouped .map-session-button.is-current {
+      background:
+        repeating-linear-gradient(0deg, rgba(32, 144, 72, 0.9) 0 1px, transparent 1px 3px),
+        rgb(48, 152, 88);
+      color: rgb(2, 24, 4);
+      box-shadow: inset 0 0 0 1px rgba(140, 255, 175, 0.8);
+      text-shadow: none;
+    }
+
+    .map-body.grouped .map-session-button.is-current .age {
+      color: rgba(2, 24, 4, 0.7);
+      text-shadow: none;
+    }
+
+    /* ── 平铺样式(V2):全局序号 + 终端选中框(仅选中行带 CRT 扫描纹理) ── */
+    .map-body.flat .map-session-button {
+      width: 100%;
+      padding: 7px 16px;
+      display: flex;
+      align-items: baseline;
+      border: 0;
+      background: none;
+      cursor: pointer;
+      text-align: left;
+      color: #46e572;
+      font: 12.5px/1.2 var(--body);
+      letter-spacing: 0.04em;
+      text-shadow: 0 0 6px rgba(70, 229, 114, 0.55), 0 1px 3px rgba(0, 0, 0, 0.9);
+      transition: background 120ms linear, color 120ms linear;
+    }
+
+    .map-body.flat .map-session-button .idx {
+      flex: 0 0 30px;
+      color: rgba(70, 229, 114, 0.38);
+      font: 10px/1 var(--display);
+      text-shadow: none;
+    }
+
+    .map-body.flat .map-session-button .cur {
+      display: none;
+      margin-right: 4px;
+    }
+
+    .map-body.flat .map-session-button .age {
+      margin-left: auto;
+      color: rgba(70, 229, 114, 0.38);
+      font: 9px/1 var(--display);
+      text-shadow: none;
+    }
+
+    /* 终端选中框(按 002 采样):中绿条 #309858 + 低对比绿横纹 #209048(不遮字)+ 亮边 */
+    .map-body.flat .map-session-button.is-current {
+      background:
+        repeating-linear-gradient(0deg, rgba(32, 144, 72, 0.9) 0 1px, transparent 1px 3px),
+        rgb(48, 152, 88);
+      color: rgb(2, 24, 4);
+      box-shadow: inset 0 0 0 1px rgba(140, 255, 175, 0.8);
+      text-shadow: none;
+    }
+
+    .map-body.flat .map-session-button.is-current .cur {
+      display: inline;
+    }
+
+    .map-body.flat .map-session-button.is-current .idx {
+      visibility: visible;
+      color: rgba(2, 24, 4, 0.7);
+      text-shadow: none;
+    }
+
+    .map-body.flat .map-session-button.is-current .age {
+      color: rgba(2, 24, 4, 0.7);
+      text-shadow: none;
+    }
+
+    /* §8 hover 与 selected 分层:hover 只给 4% 浅底,禁边框/字重防行位移 */
+    .map-body.grouped .map-session-button:hover,
+    .map-body.flat .map-session-button:hover {
+      background: rgba(70, 229, 114, 0.05);
+    }
+
+    /* 选中行 hover 时保持选中态(不被浅底覆盖) */
+    .map-body.grouped .map-session-button.is-current:hover,
+    .map-body.flat .map-session-button.is-current:hover {
+      background:
+        repeating-linear-gradient(0deg, rgba(32, 144, 72, 0.9) 0 1px, transparent 1px 3px),
+        rgb(48, 152, 88);
+    }
+
+    .map-body.grouped .map-session-button:focus-visible,
+    .map-body.flat .map-session-button:focus-visible {
+      outline: 1px solid rgba(70, 229, 114, 0.4);
+      outline-offset: -1px;
+    }
+
+    .map-session-button .title {
+      overflow: hidden;
+      white-space: nowrap;
+      text-overflow: ellipsis;
+    }
+
+    /* ── 迁移补齐:City Index 行内交互(caret / ⋯ 菜单 / 重命名输入 / 拖拽态 / +N 展开) ── */
+    .map-row {
+      position: relative;
+    }
+
+    .map-row .map-session-button {
+      width: 100%;
+    }
+
+    /* caret 子会话展开/收起(仅分组样式;平铺按官方语义无父子邻接) */
+    .map-caret {
+      position: absolute;
+      left: 6px;
+      top: 50%;
+      transform: translateY(-50%);
+      z-index: 2;
+      width: 14px;
+      height: 14px;
+      padding: 0;
+      border: 0;
+      background: none;
+      color: rgba(70, 229, 114, 0.55);
+      font: 9px/14px var(--display);
+      cursor: pointer;
+      text-align: center;
+    }
+
+    .map-caret:hover,
+    .map-caret:focus-visible {
+      outline: none;
+      color: #46e572;
+      text-shadow: 0 0 6px rgba(70, 229, 114, 0.7);
+    }
+
+    /* ⋯ 行菜单:hover 浮出,与官方一致替换时间列(age 让位) */
+    .map-row-menu {
+      position: absolute;
+      right: 6px;
+      top: 50%;
+      transform: translateY(-50%);
+      z-index: 2;
+      width: 18px;
+      height: 18px;
+      padding: 0;
+      border: 0;
+      background: none;
+      color: rgba(70, 229, 114, 0.72);
+      font: 11px/18px var(--display);
+      cursor: pointer;
+      opacity: 0;
+      text-align: center;
+    }
+
+    .map-row:hover .map-row-menu,
+    .map-row:focus-within .map-row-menu,
+    .map-row-menu[aria-expanded="true"] {
+      opacity: 1;
+    }
+
+    .map-row:hover .age,
+    .map-row:focus-within .age {
+      visibility: hidden;
+    }
+
+    .map-row-menu:hover,
+    .map-row-menu:focus-visible {
+      outline: none;
+      color: #b7ffcf;
+    }
+
+    .map-row:has(.map-session-button.is-current) .map-row-menu {
+      color: rgba(2, 24, 4, 0.75);
+    }
+
+    /* 行内重命名输入(落地时走官方 RenameSessionModal;demo 为行内 stub) */
+    .map-rename-input {
+      position: absolute;
+      z-index: 3;
+      left: 20px;
+      right: 26px;
+      top: 50%;
+      transform: translateY(-50%);
+      height: 21px;
+      padding: 0 6px;
+      border: 1px solid var(--matrix);
+      background: rgba(1, 8, 4, 0.96);
+      color: var(--ink);
+      font: 12px/1 var(--body);
+      box-shadow: 0 0 10px rgba(55, 255, 121, 0.25);
+    }
+
+    .map-rename-input:focus {
+      outline: none;
+    }
+
+    /* 拖拽态:被拖行半透明;drop 目标上/下半各一条 matrix 指示线 */
+    .map-row.is-dragging > .map-session-button,
+    .map-district-head.is-dragging {
+      opacity: 0.38;
+    }
+
+    .map-row.is-drop-above::before,
+    .map-row.is-drop-below::after {
+      content: "";
+      position: absolute;
+      left: 10px;
+      right: 10px;
+      height: 2px;
+      z-index: 4;
+      background: var(--matrix);
+      box-shadow: 0 0 8px var(--matrix);
+      pointer-events: none;
+    }
+
+    .map-row.is-drop-above::before {
+      top: -1px;
+    }
+
+    .map-row.is-drop-below::after {
+      bottom: -1px;
+    }
+
+    .map-district-head.is-drop-target {
+      box-shadow: inset 0 2px 0 var(--matrix);
+    }
+
+    .map-body.grouped .map-district-head[draggable="true"] {
+      cursor: grab;
+    }
+
+    /* 子会话行:再缩进一档 */
+    .map-body.grouped .map-row.is-child .map-session-button {
+      padding-left: 34px;
+      font-size: 12px;
+    }
+
+    .map-body.grouped .map-row.is-child .map-caret {
+      left: 18px;
+    }
+
+    /* 分组超 5 条折叠:+N 个更多… */
+    .map-more-row {
+      width: 100%;
+      padding: 6px 14px 6px 22px;
+      border: 0;
+      background: none;
+      cursor: pointer;
+      text-align: left;
+      color: rgba(70, 229, 114, 0.55);
+      font: 10px/1 var(--display);
+      letter-spacing: 0.14em;
+    }
+
+    .map-more-row:hover,
+    .map-more-row:focus-visible {
+      outline: none;
+      color: #46e572;
+      text-shadow: 0 0 6px rgba(70, 229, 114, 0.6);
+    }
+
+    /* 搜索无结果空态 */
+    .map-empty {
+      padding: 18px 14px;
+      color: rgba(113, 151, 124, 0.6);
+      font: 10px/1.6 var(--body);
+      letter-spacing: 0.06em;
+    }
+
+    /* 行 ⋯ 菜单弹层(fixed 定位,避 map-body 滚动裁剪) */
+    .row-menu {
+      position: fixed;
+      z-index: 90;
+      min-width: 152px;
+      display: none;
+      background: var(--surface-raised);
+      border: 1px solid rgba(77, 255, 131, 0.32);
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.65), 0 0 12px rgba(55, 255, 121, 0.08);
+    }
+
+    .row-menu.is-open {
+      display: block;
+    }
+
+    .row-menu button {
+      width: 100%;
+      padding: 7px 10px;
+      display: flex;
+      align-items: baseline;
+      gap: 8px;
+      border: 0;
+      background: none;
+      cursor: pointer;
+      text-align: left;
+      color: #46e572;
+      font: 11px/1.2 var(--body);
+      letter-spacing: 0.05em;
+    }
+
+    .row-menu button .k {
+      flex: 0 0 50px;
+      color: var(--matrix);
+      font: 8px/1.5 var(--display);
+      letter-spacing: 0.12em;
+    }
+
+    .row-menu button:hover,
+    .row-menu button:focus-visible {
+      outline: none;
+      background: rgba(70, 229, 114, 0.07);
+    }
+
+    /* ── 迁移补齐 ⑪:sidebar.footer.action 插件槽占位(list/root,插件可注入动作条目) ── */
+    .sidebar-footer-slot {
+      position: relative;
+      z-index: 8;
+      flex: 0 0 26px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 0 13px;
+      border-top: 1px solid var(--line);
+      background:
+        linear-gradient(0deg, rgba(9, 24, 15, 0.9), rgba(3, 11, 7, 0.85)),
+        var(--void);
+      color: rgba(113, 151, 124, 0.6);
+      font: 8px/1 var(--display);
+      letter-spacing: 0.14em;
+    }
+
+    .sidebar-footer-slot .slot-tag {
+      color: var(--cyan);
+      opacity: 0.55;
+    }
+
+    @keyframes blink {
+      50% { opacity: 0; }
+    }
+
+    .host-field {
+      position: relative;
+      flex: 1 1 auto;
+      min-width: 0;
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+      overflow: hidden;
+      color: rgba(136, 183, 148, 0.2);
+      font-size: 10px;
+      letter-spacing: 0.13em;
+      text-align: center;
+    }
+
+    .host-field::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background:
+        linear-gradient(rgba(95, 255, 142, 0.025) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(95, 255, 142, 0.025) 1px, transparent 1px);
+      background-size: 32px 32px;
+      mask-image: radial-gradient(circle at 10% 50%, black, transparent 65%);
+    }
+
+    .host-field span {
+      position: relative;
+      padding: 13px 17px;
+      border: 1px solid rgba(105, 255, 149, 0.08);
+    }
+
+    .host-field strong {
+      display: block;
+      margin-bottom: 7px;
+      color: rgba(85, 255, 133, 0.27);
+      font-weight: 400;
+      font-size: 19px;
+    }
+
+    [data-experience="focus"] .zion-sidebar::before {
+      opacity: 0.35;
+    }
+
+    [data-experience="focus"] .crosshair,
+    [data-experience="focus"] .horizon-tag {
+      opacity: 0.25;
+    }
+
+    [data-experience="reduced"] .head-status::before {
+      animation: none;
+    }
+
+    [data-experience="reduced"] .city-map,
+    [data-experience="reduced"] .district-marker,
+    [data-experience="reduced"] .session-portal {
+      transition-duration: 0ms;
+    }
+
+    @keyframes breathe {
+      0%, 100% { opacity: 0.42; transform: scale(0.84); }
+      50% { opacity: 1; transform: scale(1.15); }
+    }
+
+    @media (max-width: 560px) {
+      body {
+        width: min(var(--sidebar-width), 100vw);
+        background: var(--void);
+      }
+
+      .host-field {
+        display: none;
+      }
+
+      .zion-sidebar {
+        border-right: 0;
+      }
+    }
+
+    @media (max-height: 650px) {
+      .zion-sidebar {
+        min-height: 520px;
+      }
+
+      .sidebar-head {
+        height: 52px;
+        flex-basis: 52px;
+        padding-top: 7px;
+      }
+
+      .city-map {
+        top: 82px; /* 52 header + 30 toolbar */
+      }
+    }
+
+    .width-handle {
+      position: absolute;
+      top: 0;
+      right: -3px;
+      bottom: 0;
+      width: 8px;
+      z-index: 30;
+      cursor: ew-resize;
+      touch-action: none;
+    }
+
+    .width-handle::after {
+      content: "";
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      left: 3px;
+      width: 2px;
+      background: transparent;
+      transition: background 140ms ease, box-shadow 140ms ease;
+    }
+
+    .width-handle:hover::after,
+    body.resizing-width .width-handle::after {
+      background: var(--matrix);
+      box-shadow: 0 0 10px var(--matrix), 0 0 22px rgba(55, 255, 121, 0.45);
+    }
+
+    body.resizing-width {
+      cursor: ew-resize;
+      user-select: none;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *,
+      *::before,
+      *::after {
+        scroll-behavior: auto !important;
+        animation-duration: 0.001ms !important;
+        animation-iteration-count: 1 !important;
+      }
+    }
+  </style>
+</head>
+<body data-experience="cinematic">
+  <aside class="zion-sidebar" id="zion-sidebar" aria-label="ZION ASCII 多工作区会话栏">
+    <header class="sidebar-head">
+      <div>
+        <span class="brand-kicker">ZION NAVIGATION PROTOCOL</span>
+        <h1 class="brand-name">ASCII <em>DISTRICT</em></h1>
+      </div>
+      <div class="head-status">LINKED</div>
+    </header>
+
+    <!-- 迁移补齐 ①②③④:固定工具条(Fixed DOM,不参与相机投影) -->
+    <div class="sidebar-toolbar" role="toolbar" aria-label="会话浏览工具条">
+      <input class="sidebar-search-input" id="tb-search" type="search" autocomplete="off"
+        placeholder="搜索会话…" aria-label="搜索会话(标题或 id)" />
+      <button class="toolbar-btn" id="tb-view" type="button" aria-haspopup="menu" aria-expanded="false"
+        aria-label="视图选项:分组与排序" title="视图选项">▦</button>
+      <button class="toolbar-btn" id="tb-new" type="button" aria-label="新建会话" title="新建会话">+</button>
+      <button class="toolbar-btn" id="tb-settings" type="button" aria-haspopup="dialog" aria-expanded="false"
+        aria-label="设置" title="设置">⚙</button>
+    </div>
+
+    <!-- 视图选项菜单:按工作区 / 单列表 / 手动排序 / 最近更新 -->
+    <div class="tb-pop" id="tb-view-pop" role="menu" aria-label="视图选项">
+      <div class="tb-pop-head">VIEW // GROUP BY</div>
+      <button class="tb-pop-item" type="button" role="menuitemradio" data-set="groupBy" data-value="workspace"><span class="k">GROUPED</span>按工作区</button>
+      <button class="tb-pop-item" type="button" role="menuitemradio" data-set="groupBy" data-value="flat"><span class="k">FLAT</span>单列表</button>
+      <div class="tb-pop-head">VIEW // ORDER BY</div>
+      <button class="tb-pop-item" type="button" role="menuitemradio" data-set="orderBy" data-value="manual"><span class="k">MANUAL</span>手动排序</button>
+      <button class="tb-pop-item" type="button" role="menuitemradio" data-set="orderBy" data-value="updated"><span class="k">UPDATED</span>最近更新</button>
+    </div>
+
+    <!-- 设置 stub 面板:落地时此入口打开 SettingsShell -->
+    <div class="tb-pop" id="tb-settings-pop" role="dialog" aria-label="设置(迁移 stub)">
+      <div class="tb-pop-head">SETTINGS // STUB</div>
+      <div class="tb-pop-note">
+        迁移 demo 占位面板。<br />
+        落地后此入口打开 <em>SettingsShell</em>(renderer/src/ui/SettingsShell)。<br />
+        后端连接:<em>127.0.0.1:3080</em>(mock 显示)。
+      </div>
+    </div>
+
+    <section class="city-frame" id="city-frame" aria-label="可行走的工作区城市">
+      <canvas id="city-canvas" aria-hidden="true"></canvas>
+
+      <div class="frame-chrome" aria-hidden="true">
+        <div class="frame-topline">
+          <span class="frame-label">W/S WALK · A/D STRAFE</span>
+          <span class="frame-coordinate" id="frame-coordinate">Z:0000</span>
+        </div>
+        <div class="crosshair"></div>
+        <div class="horizon-tag" id="horizon-tag">280PX // HARD LIMIT</div>
+      </div>
+
+      <div class="projection-layer" id="workspace-layer" aria-label="工作区地标"></div>
+      <div class="session-layer" id="session-layer" aria-label="当前工作区会话入口"></div>
+
+      <button class="map-toggle" type="button" id="map-toggle" aria-expanded="false" aria-controls="city-map">
+        CITY INDEX
+        <span class="key-hint" id="map-key-hint">M · 18</span>
+      </button>
+    </section>
+
+    <section class="city-map" id="city-map" aria-hidden="true" aria-label="全部工作区与会话索引">
+      <canvas class="map-rain" id="map-rain" aria-hidden="true"></canvas>
+      <div class="map-stylebar">
+        <span class="map-stylebar-kicker" id="map-stylebar-kicker">SCENE SELECTIONS // 4 DISTRICTS</span>
+        <button class="map-style-toggle" type="button" id="map-style-toggle" aria-label="切换列表样式:按工作区分组或平铺">分组</button>
+      </div>
+      <div class="map-body grouped" id="map-body" role="tree"></div>
+    </section>
+
+    <!-- 迁移补齐 ⑤:行 ⋯ 菜单弹层(fixed,全局单例) -->
+    <div class="row-menu" id="row-menu" role="menu" aria-label="会话行菜单">
+      <button type="button" role="menuitem" data-act="rename"><span class="k">RENAME</span>重命名</button>
+      <button type="button" role="menuitem" data-act="fork"><span class="k">FORK</span>分叉会话</button>
+      <button type="button" role="menuitem" data-act="archive"><span class="k">ARCHIVE</span>归档会话</button>
+    </div>
+
+    <!-- 迁移补齐 ⑪:SlotAnchor slot="sidebar.footer.action"(list/root)插件槽占位。
+         落地时此处由插件底座渲染插件注入的动作条目;demo 仅放占位芯片,非死样式:
+         有插件条目时条目追加在本行内。 -->
+    <div class="sidebar-footer-slot" id="sidebar-footer-slot" aria-label="插件动作槽(占位)">
+      <span class="slot-tag">SLOT</span>
+      <span>sidebar.footer.action // 待插件注入</span>
+    </div>
+
+    <div class="width-handle" id="width-handle" role="separator" aria-orientation="vertical"
+      aria-label="拖拽调整侧栏宽度" title="拖拽调整宽度 (280-420px)"></div>
+  </aside>
+
+  <main class="host-field" aria-hidden="true">
+    <span><strong id="host-width-label">280 PX</strong>SIDEBAR PROTOTYPE BOUNDARY<br />HOST APPLICATION INTENTIONALLY EMPTY</span>
+  </main>
+
+  <script>
+    // ── mock 数据(源原型 4 工作区 18 会话 + 迁移补齐:ts 排序字段、children 子会话)──
+    const WORKSPACES = [
+      {
+        id: "deepseek-zion",
+        code: "Z-01",
+        name: "deepseek-zion",
+        color: "#42ff85",
+        x: -52,
+        z: 230,
+        sessions: [
+          { id: "sidebar-redesign", title: "重新设计多工作区会话栏", time: "现在", status: "streaming", ts: 2 },
+          { id: "read-project", title: "阅读项目说明文件", time: "21小时", status: "ready", ts: 1260 },
+          { id: "neural-link", title: "接入会话脑机链路与动态锚点", time: "1天", status: "tool", ts: 1440,
+            children: [{ id: "neural-link-sub1", title: "子代理 · 链路信号测量", time: "1天", status: "ready", ts: 1500 }] },
+          { id: "scroll-fix", title: "修复侧栏滚动定位漂移", time: "2天", status: "error", ts: 2880 }
+        ]
+      },
+      {
+        id: "claude-code-toolkit",
+        code: "C-07",
+        name: "claude-code-toolkit",
+        color: "#ff9e42",
+        x: 54,
+        z: 570,
+        sessions: [
+          { id: "github-update", title: "更新到 GitHub 最新提交", time: "3天", status: "ready", ts: 4320 },
+          { id: "hook-audit", title: "Hook 启动配置与官方文档核验", time: "5天", status: "thinking", ts: 7200 },
+          { id: "launcher", title: "重构 Claude Launcher 启动协议", time: "6天", status: "ready", ts: 8640 }
+        ]
+      },
+      {
+        id: "skills-guide",
+        code: "S-12",
+        name: "skills-guide",
+        color: "#68e9dd",
+        x: -48,
+        z: 910,
+        sessions: [
+          { id: "dsh-error", title: "安装 dsh 命令未找到报错", time: "2小时", status: "error", ts: 120 },
+          { id: "single-input", title: "Single number input", time: "1天", status: "ready", ts: 1440 },
+          { id: "agent-skills", title: "重写 Agent Skills 中文索引与来源追踪", time: "1天", status: "tool", ts: 1500 },
+          { id: "hello", title: "你好", time: "3天", status: "ready", ts: 4320 },
+          { id: "cross-repo", title: "跨仓库技能组件映射", time: "4天", status: "thinking", ts: 5760,
+            children: [{ id: "cross-repo-sub1", title: "子代理 · 组件映射核对", time: "4天", status: "thinking", ts: 5800 }] }
+        ]
+      },
+      {
+        id: "matrix-lab",
+        code: "M-23",
+        name: "matrix-lab",
+        color: "#c6ff4a",
+        x: 50,
+        z: 1250,
+        sessions: [
+          { id: "perspective-test", title: "协议透视墙中文可读性压力测试", time: "12分", status: "thinking", ts: 12 },
+          { id: "orbit-collision", title: "神经轨道二十三节点碰撞实验", time: "37分", status: "tool", ts: 37 },
+          { id: "memory-bus", title: "记忆总线横向滚动与键盘路径", time: "1小时", status: "streaming", ts: 60 },
+          { id: "reduced-mode", title: "Reduced Motion 平坦化验证", time: "5小时", status: "ready", ts: 300 },
+          { id: "long-title", title: "这是一个用于验证极端情况下标题截断策略的超长中文会话名称", time: "8小时", status: "ready", ts: 480 },
+          { id: "error-recovery", title: "局部故障节点恢复入口", time: "11小时", status: "error", ts: 660 }
+        ]
+      }
+    ];
+
+    const STATUS = {
+      ready: { label: "READY", color: "#42ff85", glyph: ":" },
+      thinking: { label: "THINKING", color: "#ffcf4a", glyph: "*" },
+      streaming: { label: "STREAMING", color: "#68e9dd", glyph: "+" },
+      tool: { label: "TOOL ACTIVE", color: "#a7ff4a", glyph: ">" },
+      error: { label: "ERROR", color: "#ff5364", glyph: "<" }
+    };
+
+    // Matrix-Code.ttf only maps this deliberate glyph set. Keep canvas text inside it.
+    const MATRIX_GLYPHS = "アウエオカキケコサシスセソタツテナニヌネハヒホマミムメモヤヨラリワー012345789*+<>:|";
+    const ARCH_GLYPHS = "|<>:+*";
+    const BUILDING_HEIGHT = 184;
+    const CAMERA_STRAFE_RADIUS = 30;
+    // Portal 从建筑立面浮起的世界距离:全息投影光束的锥长
+    const PORTAL_LIFT = 26;
+    const COLLAPSED = 5; // 官方分组折叠阈值(A2-⑩「+N 个更多…」)
+
+    const canvas = document.querySelector("#city-canvas");
+    const context = canvas.getContext("2d", { alpha: false });
+    const frame = document.querySelector("#city-frame");
+    const workspaceLayer = document.querySelector("#workspace-layer");
+    const sessionLayer = document.querySelector("#session-layer");
+    const coordinateLabel = document.querySelector("#frame-coordinate");
+    const mapPanel = document.querySelector("#city-map");
+    const mapToggle = document.querySelector("#map-toggle");
+    const mapKeyHint = document.querySelector("#map-key-hint");
+    const mapStyleToggle = document.querySelector("#map-style-toggle");
+    const mapStylebarKicker = document.querySelector("#map-stylebar-kicker");
+    const mapBody = document.querySelector("#map-body");
+    const searchInput = document.querySelector("#tb-search");
+    const viewBtn = document.querySelector("#tb-view");
+    const viewPop = document.querySelector("#tb-view-pop");
+    const newBtn = document.querySelector("#tb-new");
+    const settingsBtn = document.querySelector("#tb-settings");
+    const settingsPop = document.querySelector("#tb-settings-pop");
+    const rowMenu = document.querySelector("#row-menu");
+
+    // ── city-map 数字雨背景(DVD 菜单屏:中密中速,拖尾 #4e9e57,亮头磷光)──
+    const mapRain = document.querySelector("#map-rain");
+    const mapRainCtx = mapRain.getContext("2d");
+    const MAP_RAIN_FS = 14;
+    let mapRainCols = [], mapRainRaf = 0, mapRainLast = 0;
+
+    function resizeMapRain() {
+      mapRain.width = Math.max(1, mapRain.clientWidth);
+      mapRain.height = Math.max(1, mapRain.clientHeight);
+      mapRainCtx.font = `${MAP_RAIN_FS}px "Matrix Code"`;
+      mapRainCtx.textAlign = "center";
+      mapRainCtx.textBaseline = "middle";
+      mapRainCols = Array.from({ length: Math.ceil(mapRain.width / (MAP_RAIN_FS * 0.62)) }, (_, i) => ({
+        x: i * MAP_RAIN_FS * 0.62,
+        y: Math.random() * -80 * MAP_RAIN_FS,
+        spd: 0.55 + Math.random() * 0.5
+      }));
+      mapRainCtx.fillStyle = "#010402";
+      mapRainCtx.fillRect(0, 0, mapRain.width, mapRain.height);
+    }
+
+    function putMapRainGlyph(ch, x, y) {
+      mapRainCtx.save();
+      mapRainCtx.translate(x + MAP_RAIN_FS / 2, y);
+      mapRainCtx.scale(0.55, 1);
+      mapRainCtx.fillText(ch, 0, 0);
+      mapRainCtx.restore();
+    }
+
+    function mapRainTick(ts) {
+      if (!state.mapOpen) { mapRainRaf = 0; return; }
+      mapRainRaf = requestAnimationFrame(mapRainTick);
+      if (ts - mapRainLast < 95) return;
+      mapRainLast = ts;
+      mapRainCtx.fillStyle = "rgba(1,4,2,0.09)";
+      mapRainCtx.fillRect(0, 0, mapRain.width, mapRain.height);
+      for (const c of mapRainCols) {
+        const ch = MATRIX_GLYPHS[(Math.random() * MATRIX_GLYPHS.length) | 0];
+        if (Math.random() < 0.1) {
+          mapRainCtx.shadowColor = "rgba(120,220,150,0.8)";
+          mapRainCtx.shadowBlur = 6;
+          mapRainCtx.fillStyle = "#bfeed0";
+        } else {
+          mapRainCtx.shadowBlur = 0;
+          mapRainCtx.fillStyle = "#4e9e57";
+        }
+        putMapRainGlyph(ch, c.x, c.y);
+        mapRainCtx.shadowBlur = 0;
+        c.y += MAP_RAIN_FS * c.spd;
+        if (c.y > mapRain.height && Math.random() > 0.955) c.y = Math.random() * -30 * MAP_RAIN_FS;
+      }
+    }
+
+    function startMapRain() {
+      resizeMapRain();
+      if (state.experience === "reduced") {
+        mapRainCtx.fillStyle = "rgba(78,158,87,0.6)";
+        for (const c of mapRainCols) {
+          for (let y = (c.x * 13) % 28; y < mapRain.height; y += 28) {
+            putMapRainGlyph(MATRIX_GLYPHS[(Math.random() * MATRIX_GLYPHS.length) | 0], c.x, y);
+          }
+        }
+        return;
+      }
+      if (!mapRainRaf) mapRainRaf = requestAnimationFrame(mapRainTick);
+    }
+
+    function stopMapRain() {
+      if (mapRainRaf) {
+        cancelAnimationFrame(mapRainRaf);
+        mapRainRaf = 0;
+      }
+    }
+
+    const widthHandle = document.querySelector("#width-handle");
+    const horizonTag = document.querySelector("#horizon-tag");
+    const hostWidthLabel = document.querySelector("#host-width-label");
+
+    // ── 侧栏拖拽调宽(280-420px):Canvas ResizeObserver + 每帧重投影保证城市不变形 ──
+    const SIDEBAR_MIN_W = 280, SIDEBAR_MAX_W = 420;
+    function setSidebarWidth(px) {
+      const w = Math.round(clamp(px, SIDEBAR_MIN_W, SIDEBAR_MAX_W));
+      document.documentElement.style.setProperty("--sidebar-width", `${w}px`);
+      horizonTag.textContent = `${w}PX // HARD LIMIT`;
+      hostWidthLabel.textContent = `${w} PX`;
+    }
+
+    widthHandle.addEventListener("pointerdown", (event) => {
+      event.stopPropagation();
+      event.preventDefault();
+      const startX = event.clientX;
+      const startW = parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--sidebar-width")) || SIDEBAR_MIN_W;
+      document.body.classList.add("resizing-width");
+      widthHandle.setPointerCapture(event.pointerId);
+      const move = (e) => setSidebarWidth(startW + e.clientX - startX);
+      const up = () => {
+        document.body.classList.remove("resizing-width");
+        widthHandle.removeEventListener("pointermove", move);
+        widthHandle.removeEventListener("pointerup", up);
+      };
+      widthHandle.addEventListener("pointermove", move);
+      widthHandle.addEventListener("pointerup", up);
+    });
+
+    const state = {
+      cameraZ: 0,
+      targetZ: 0,
+      cameraX: WORKSPACES[0].x,
+      targetX: WORKSPACES[0].x,
+      activeWorkspace: 0,
+      selectedWsId: "deepseek-zion",       // 选中以稳定 id 记(工作区拖拽换位后索引会变)
+      selectedSessionId: "sidebar-redesign",
+      experience: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "reduced" : "cinematic",
+      mapOpen: false,
+      mapStyle: "grouped",                  // 索引视觉样式:grouped 章节 / flat 平铺
+      view: { groupBy: "workspace", orderBy: "updated" }, // 官方视图选项:分组方式 + 排序方式
+      query: "",                            // 搜索过滤(标题/id)
+      expandedGroups: new Set(),            // 「+N 个更多…」已展开的工作区 id
+      collapsedCarets: new Set(),           // caret 收起的父会话 id(默认展开)
+      dragging: false,
+      pointerX: 0,
+      pointerY: 0,
+      width: 280,
+      height: 480,
+      dpr: 1
+    };
+
+    let buildingPoints = WORKSPACES.map(createBuildingPoints); // let:数据增删/重排后重建
+    const workspaceMarkers = new Map();
+    let sessionButtons = [];
+    let previousTime = performance.now();
+
+    // ── 3D 世界锚定代码雨(移植自 matrix-rain-flythrough-demo)──
+    const RAIN_LUT = [];
+    for (let i = 0; i < 24; i++) {
+      const b = i / 23;
+      let r, g, bl;
+      if (b < 0.85) {      // 暗部 #0e2f1a → 拖尾主体 #4e9e57
+        const k = b / 0.85;
+        r = 14 + (78 - 14) * k; g = 47 + (158 - 47) * k; bl = 26 + (87 - 26) * k;
+      } else {              // 顶端 15% → 亮头 #a7e6b0
+        const k = (b - 0.85) / 0.15;
+        r = 78 + (167 - 78) * k; g = 158 + (230 - 158) * k; bl = 87 + (176 - 87) * k;
+      }
+      RAIN_LUT.push(`rgb(${r | 0},${g | 0},${bl | 0})`);
+    }
+    const rainColorAt = (b) => RAIN_LUT[Math.min(23, Math.max(0, Math.round(b * 23)))];
+
+    function mulberry32(seed) {
+      return function () {
+        seed |= 0; seed = (seed + 0x6D2B79F5) | 0;
+        let t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
+        t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+        return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+      };
+    }
+
+    const RAIN_ZRANGE = 1400, RAIN_CELL_H = 9, RAIN_GLYPH_SX = 0.55;
+    const rainCols3d = [];
+    (function buildRain() {
+      const rand = mulberry32(20260828);
+      [-1, 1].forEach((side) => {
+        for (let i = 0; i < 40; i++) {
+          const cells = 24 + Math.floor(rand() * 20);
+          const height = cells * RAIN_CELL_H;
+          const drops = [];
+          const dropCount = 2 + Math.floor(rand() * 2);
+          for (let d = 0; d < dropCount; d++) {
+            drops.push({ y: rand() * height, speed: RAIN_CELL_H * 5, trail: 70 + rand() * 70 });
+          }
+          rainCols3d.push({
+            x: side * (55 + rand() * 205),
+            y0: -40 + rand() * 200,
+            z: rand() * RAIN_ZRANGE,
+            cells, height, drops,
+            speedK: 0.85 + rand() * 0.3,
+            seed: rand() * 1000
+          });
+        }
+      });
+    })();
+    let rainPrev = 0;
+
+    function clamp(value, min, max) {
+      return Math.min(max, Math.max(min, value));
+    }
+
+    function mix(a, b, amount) {
+      return a + (b - a) * amount;
+    }
+
+    function workspaceCameraBounds(index = state.activeWorkspace) {
+      const center = WORKSPACES[index]?.x ?? 0;
+      return {
+        min: center - CAMERA_STRAFE_RADIUS,
+        max: center + CAMERA_STRAFE_RADIUS
+      };
+    }
+
+    function centerCameraOnWorkspace(index, snap = false) {
+      state.targetX = WORKSPACES[index].x;
+      if (snap) state.cameraX = state.targetX;
+    }
+
+    function stableGlyph(seed, alphabet = MATRIX_GLYPHS) {
+      const value = Math.abs(Math.sin(seed * 12.9898 + 78.233) * 43758.5453);
+      return alphabet[Math.floor((value % 1) * alphabet.length)];
+    }
+
+    function hexToRgb(hex) {
+      const clean = hex.replace("#", "");
+      return {
+        r: parseInt(clean.slice(0, 2), 16),
+        g: parseInt(clean.slice(2, 4), 16),
+        b: parseInt(clean.slice(4, 6), 16)
+      };
+    }
+
+    function rgba(hex, alpha) {
+      const color = hexToRgb(hex);
+      return `rgba(${color.r}, ${color.g}, ${color.b}, ${alpha})`;
+    }
+
+    function createBuildingPoints(workspace, workspaceIndex) {
+      const points = [];
+      const width = 100;
+      const height = BUILDING_HEIGHT;
+      const depth = 74;
+      const xSteps = 13;
+      const ySteps = 22;
+
+      for (let yi = 0; yi <= ySteps; yi += 1) {
+        const y = yi * (height / ySteps);
+        for (let xi = 0; xi <= xSteps; xi += 1) {
+          const x = -width / 2 + xi * (width / xSteps);
+          const edge = xi === 0 || xi === xSteps || yi === 0 || yi === ySteps;
+          const windowBand = yi > 2 && yi < ySteps - 2 && yi % 3 !== 0 && xi > 1 && xi < xSteps - 1;
+          if (!edge && !windowBand && (xi + yi) % 4 !== 0) continue;
+          points.push({
+            x: workspace.x + x,
+            y,
+            z: workspace.z,
+            glyph: edge ? stableGlyph(xi + yi * 3 + workspaceIndex, "|<>+") : stableGlyph(xi * 7 + yi * 11 + workspaceIndex),
+            energy: edge ? 0.92 : (windowBand ? 0.52 : 0.28),
+            workspaceIndex
+          });
+        }
+      }
+
+      for (let zi = 1; zi <= 8; zi += 1) {
+        const z = workspace.z + zi * (depth / 8);
+        for (let yi = 0; yi <= ySteps; yi += 2) {
+          const y = yi * (height / ySteps);
+          [-width / 2, width / 2].forEach((side, sideIndex) => {
+            points.push({
+              x: workspace.x + side,
+              y,
+              z,
+              glyph: stableGlyph(zi * 17 + yi * 5 + sideIndex + workspaceIndex, ARCH_GLYPHS),
+              energy: 0.42,
+              workspaceIndex
+            });
+          });
+        }
+      }
+
+      workspace.sessions.forEach((session, sessionIndex) => {
+        const y = 127 - sessionIndex * 21;
+        if (y < 0) return; // 超出立面的会话不进点云(索引内仍可达)
+        const status = STATUS[session.status];
+        for (let xi = -5; xi <= 5; xi += 1) {
+          points.push({
+            x: workspace.x + xi * 7.2,
+            y,
+            z: workspace.z - 0.5,
+            glyph: xi === -5 || xi === 5 ? status.glyph : stableGlyph(sessionIndex * 19 + xi + workspaceIndex),
+            energy: 1,
+            workspaceIndex,
+            sessionIndex,
+            statusColor: status.color
+          });
+        }
+      });
+
+      return points;
+    }
+
+    function project(x, y, z) {
+      const depth = z - state.cameraZ;
+      if (depth <= 18) return null;
+      const focal = Math.min(232, state.height * 0.49);
+      const scale = focal / depth;
+      return {
+        x: state.width / 2 + (x - state.cameraX) * scale,
+        y: state.height / 2 - (y - BUILDING_HEIGHT / 2) * scale,
+        depth,
+        scale
+      };
+    }
+
+    function resizeCanvas() {
+      const bounds = frame.getBoundingClientRect();
+      state.width = Math.round(bounds.width);
+      state.height = Math.round(bounds.height);
+      state.dpr = Math.min(2, window.devicePixelRatio || 1);
+      canvas.width = Math.round(state.width * state.dpr);
+      canvas.height = Math.round(state.height * state.dpr);
+      canvas.style.width = `${state.width}px`;
+      canvas.style.height = `${state.height}px`;
+      context.setTransform(state.dpr, 0, 0, state.dpr, 0, 0);
+    }
+
+    function drawBackground(time) {
+      const gradient = context.createLinearGradient(0, 0, 0, state.height);
+      gradient.addColorStop(0, "#010705");
+      gradient.addColorStop(0.48, "#020a06");
+      gradient.addColorStop(1, "#010302");
+      context.fillStyle = gradient;
+      context.fillRect(0, 0, state.width, state.height);
+
+      const horizon = state.height / 2;
+      const haze = context.createRadialGradient(state.width / 2, horizon, 0, state.width / 2, horizon, state.width * 0.72);
+      haze.addColorStop(0, "rgba(68,255,123,0.12)");
+      haze.addColorStop(0.35, "rgba(30,112,55,0.035)");
+      haze.addColorStop(1, "rgba(0,0,0,0)");
+      context.fillStyle = haze;
+      context.fillRect(0, horizon - 100, state.width, 210);
+    }
+
+    function drawRain3D(time) {
+      const dt = Math.min(0.05, (time - rainPrev) / 1000);
+      rainPrev = time;
+      const reduced = state.experience === "reduced";
+      const focusFactor = state.experience === "focus" ? 0.3 : 1;
+      const rainK = reduced ? 0 : 1 + (state.motion || 0) * 0.8;
+
+      const visible = [];
+      for (const col of rainCols3d) {
+        if (!reduced) {
+          for (const d of col.drops) {
+            d.y -= d.speed * col.speedK * rainK * dt;
+            if (d.y < 0) { d.y = col.height + Math.random() * 30; d.speed = RAIN_CELL_H * 5; }
+          }
+        }
+        const depth = ((col.z - state.cameraZ) % RAIN_ZRANGE + RAIN_ZRANGE) % RAIN_ZRANGE + 20;
+        const point = project(col.x, 0, state.cameraZ + depth);
+        if (!point) continue;
+        if (point.x < -30 || point.x > state.width + 30) continue;
+        visible.push({ col, depth, point });
+      }
+      visible.sort((a, b) => b.depth - a.depth);
+
+      context.textAlign = "center";
+      context.textBaseline = "middle";
+      let lastSize = 0;
+      for (const { col, depth, point } of visible) {
+        const s = point.scale;
+        const size = Math.max(3, Math.min(20, Math.round(s * RAIN_CELL_H)));
+        if (size !== lastSize) {
+          context.font = `${size}px "Matrix Code"`;
+          lastSize = size;
+        }
+        const fade = clamp(1 - depth / 1500, 0.08, 1);
+        const camEyeY = BUILDING_HEIGHT / 2;
+
+        context.save();
+        context.translate(point.x, 0);
+        context.scale(RAIN_GLYPH_SX, 1);
+        for (let ci = 0; ci < col.cells; ci++) {
+          if (depth > 500 && (ci & 1)) continue;
+          const y = ci * RAIN_CELL_H;
+          let b = 0.08;
+          for (const d of col.drops) {
+            const dy = y - d.y;
+            if (dy >= 0 && dy < d.trail) b = Math.max(b, 1 - dy / d.trail);
+          }
+          if (depth > 900 && b < 0.3) continue;
+          const sy = state.height / 2 - (col.y0 + y - camEyeY) * s;
+          if (sy < -16 || sy > state.height + 16) continue;
+          const bright = b * fade * focusFactor;
+          const glyph = stableGlyph(col.seed + ci * 7 + Math.floor((reduced ? 0 : time) * 0.001 * (0.15 + bright * 0.45)));
+          if (b > 0.8) {
+            context.shadowColor = "rgba(140,230,160,0.8)";
+            context.shadowBlur = 8;
+            context.fillStyle = rainColorAt(Math.max(0.85, bright));
+            context.fillText(glyph, 0, sy);
+            context.shadowBlur = 0;
+          } else {
+            context.globalAlpha = Math.min(1, bright * 1.15);
+            context.fillStyle = rainColorAt(bright);
+            context.fillText(glyph, 0, sy);
+            context.globalAlpha = 1;
+          }
+        }
+        context.restore();
+      }
+    }
+
+    function drawWorldLine(a, b, color, width = 1) {
+      const start = project(a.x, a.y, a.z);
+      const end = project(b.x, b.y, b.z);
+      if (!start || !end) return;
+      context.beginPath();
+      context.moveTo(start.x, start.y);
+      context.lineTo(end.x, end.y);
+      context.strokeStyle = color;
+      context.lineWidth = width;
+      context.stroke();
+    }
+
+    function drawStreet(time) {
+      context.font = '9px "Matrix Code"';
+      context.textAlign = "center";
+      context.textBaseline = "middle";
+
+      for (let distance = 42; distance < 1450; distance += 28) {
+        const z = state.cameraZ + distance;
+        [-34, 0, 34].forEach((x, lane) => {
+          const point = project(x, 0, z);
+          if (!point || point.y < 0 || point.y > state.height + 16) return;
+          const alpha = clamp(0.58 - distance / 2400, 0.06, 0.48);
+          context.fillStyle = lane === 1
+            ? `rgba(217,255,229,${alpha * 0.52})`
+            : `rgba(57,255,115,${alpha})`;
+          const glyphSeed = distance + lane * 17 + Math.floor((state.experience === "reduced" ? 0 : time) / 280);
+          context.fillText(stableGlyph(glyphSeed, lane === 1 ? ":*" : "|+"), point.x, point.y);
+        });
+      }
+
+      const farZ = state.cameraZ + 1500;
+      [-62, -34, 34, 62].forEach((x, index) => {
+        drawWorldLine(
+          { x, y: 0, z: state.cameraZ + 24 },
+          { x: x * 0.35, y: 0, z: farZ },
+          index === 1 || index === 2 ? "rgba(83,255,135,0.22)" : "rgba(83,255,135,0.08)"
+        );
+      });
+    }
+
+    function drawBuildingShell(workspace, workspaceIndex) {
+      const active = workspaceIndex === state.activeWorkspace;
+      const width = 100;
+      const height = BUILDING_HEIGHT;
+      const depth = 74;
+      const front = [
+        project(workspace.x - width / 2, 0, workspace.z),
+        project(workspace.x + width / 2, 0, workspace.z),
+        project(workspace.x + width / 2, height, workspace.z),
+        project(workspace.x - width / 2, height, workspace.z)
+      ];
+      if (front.some((point) => !point)) return;
+
+      context.beginPath();
+      context.moveTo(front[0].x, front[0].y);
+      front.slice(1).forEach((point) => context.lineTo(point.x, point.y));
+      context.closePath();
+      context.fillStyle = active ? rgba(workspace.color, 0.055) : "rgba(3,14,8,0.09)";
+      context.fill();
+      context.strokeStyle = active ? rgba(workspace.color, 0.36) : "rgba(69,181,100,0.12)";
+      context.lineWidth = active ? 1 : 0.6;
+      context.stroke();
+
+      const side = workspace.x < 0 ? width / 2 : -width / 2;
+      drawWorldLine(
+        { x: workspace.x + side, y: 0, z: workspace.z },
+        { x: workspace.x + side, y: 0, z: workspace.z + depth },
+        rgba(workspace.color, active ? 0.38 : 0.15)
+      );
+      drawWorldLine(
+        { x: workspace.x + side, y: height, z: workspace.z },
+        { x: workspace.x + side, y: height, z: workspace.z + depth },
+        rgba(workspace.color, active ? 0.3 : 0.12)
+      );
+    }
+
+    function drawBuildings(time) {
+      const drawable = [];
+
+      WORKSPACES.forEach((workspace, workspaceIndex) => {
+        drawBuildingShell(workspace, workspaceIndex);
+        buildingPoints[workspaceIndex].forEach((point) => {
+          const projected = project(point.x, point.y, point.z);
+          if (!projected) return;
+          if (projected.x < -12 || projected.x > state.width + 12 || projected.y < -12 || projected.y > state.height + 12) return;
+          drawable.push({ point, projected, workspace });
+        });
+      });
+
+      drawable.sort((a, b) => b.projected.depth - a.projected.depth);
+      context.textAlign = "center";
+      context.textBaseline = "middle";
+
+      drawable.forEach(({ point, projected, workspace }) => {
+        const active = point.workspaceIndex === state.activeWorkspace;
+        const size = clamp(5.5 + projected.scale * 5.8, 5.8, 13.5);
+        const depthFade = clamp(1 - projected.depth / 1700, 0.11, 0.88);
+        const pulse = state.experience === "cinematic" && point.sessionIndex !== undefined
+          ? 0.78 + Math.sin(time * 0.004 + point.sessionIndex) * 0.22
+          : 1;
+        const alpha = depthFade * point.energy * (active ? 1 : 0.68) * pulse;
+        context.font = `${size}px "Matrix Code"`;
+        context.fillStyle = point.statusColor
+          ? rgba(point.statusColor, alpha)
+          : rgba(workspace.color, alpha);
+        context.fillText(point.glyph, projected.x, projected.y);
+      });
+    }
+
+    // Portal 投射口:建筑立面会话带中心的一小段高亮横线
+    function drawPortalBeams() {
+      const workspace = WORKSPACES[state.activeWorkspace];
+      if (!workspace) return;
+      const buildingDepth = workspace.z - state.cameraZ;
+      if (buildingDepth < 56 || buildingDepth > 510) return;
+      const alphaScale = clamp(1.2 - Math.abs(buildingDepth - 225) / 370, 0.22, 1);
+
+      workspace.sessions.forEach((session, sessionIndex) => {
+        const y = 127 - sessionIndex * 21;
+        if (y < 0) return;
+        const back = project(workspace.x, y, workspace.z);
+        if (!back) return;
+        const color = STATUS[session.status].color;
+
+        context.strokeStyle = rgba(color, 0.5 * alphaScale);
+        context.lineWidth = 1;
+        context.beginPath();
+        context.moveTo(back.x - 6 * back.scale, back.y);
+        context.lineTo(back.x + 6 * back.scale, back.y);
+        context.stroke();
+      });
+    }
+
+    function drawDepthFog() {
+      const fog = context.createLinearGradient(0, 0, 0, state.height);
+      fog.addColorStop(0, "rgba(0,3,2,0.18)");
+      fog.addColorStop(0.38, "rgba(0,0,0,0)");
+      fog.addColorStop(1, "rgba(0,3,1,0.36)");
+      context.fillStyle = fog;
+      context.fillRect(0, 0, state.width, state.height);
+    }
+
+    function renderCanvas(time) {
+      drawBackground(time);
+      drawRain3D(time);
+      drawStreet(time);
+      drawBuildings(time);
+      drawPortalBeams();
+      drawDepthFog();
+    }
+
+    // ── Projected DOM:空间中的真实控件(建筑标牌 + 会话 Portal)──
+    function sessionMatchesQuery(session) {
+      if (!state.query) return true;
+      const q = state.query.toLowerCase();
+      return session.title.toLowerCase().includes(q) || session.id.toLowerCase().includes(q);
+    }
+
+    function createWorkspaceMarkers() {
+      workspaceLayer.replaceChildren();
+      workspaceMarkers.clear();
+      WORKSPACES.forEach((workspace, index) => {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = "district-marker";
+        button.style.setProperty("--workspace-color", workspace.color);
+        button.setAttribute("aria-label", `前往工作区 ${workspace.name},${workspace.sessions.length} 个会话`);
+
+        const code = document.createElement("span");
+        code.className = "code";
+        code.textContent = workspace.code;
+        const name = document.createElement("span");
+        name.className = "name";
+        name.textContent = workspace.name;
+        const count = document.createElement("span");
+        count.className = "count";
+        count.textContent = String(workspace.sessions.length).padStart(2, "0");
+
+        button.append(code, name, count);
+        button.addEventListener("click", () => navigateToWorkspace(index));
+        workspaceLayer.append(button);
+        workspaceMarkers.set(workspace.id, button);
+      });
+    }
+
+    function rebuildSessionPortals() {
+      const workspace = WORKSPACES[state.activeWorkspace];
+      sessionLayer.replaceChildren();
+      // 搜索过滤同步作用于 Portal;子会话不上建筑立面(索引内可达)
+      sessionButtons = workspace.sessions.filter(sessionMatchesQuery).map((session) => {
+        const sessionIndex = workspace.sessions.indexOf(session);
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = "session-portal";
+        button.textContent = session.title;
+        button.dataset.slot = String(sessionIndex + 1).padStart(2, "0");
+        button.dataset.sessionIndex = String(sessionIndex);
+        button.style.setProperty("--status-color", STATUS[session.status].color);
+        button.title = `${session.title} · ${STATUS[session.status].label} · ${session.time}`;
+        button.setAttribute("aria-label", `${session.title},${STATUS[session.status].label},${session.time}`);
+        if (state.selectedWsId === workspace.id && state.selectedSessionId === session.id) {
+          button.classList.add("is-current");
+        }
+        button.addEventListener("click", () => selectSession(workspace.id, session.id));
+        sessionLayer.append(button);
+        return button;
+      });
+    }
+
+    function updateProjectedDom() {
+      WORKSPACES.forEach((workspace, index) => {
+        const marker = workspaceMarkers.get(workspace.id);
+        const point = project(workspace.x, 203, workspace.z);
+        if (!point || point.depth > 1500 || point.x < -100 || point.x > state.width + 100) {
+          marker.style.opacity = "0";
+          marker.style.pointerEvents = "none";
+          return;
+        }
+
+        const scale = clamp(point.scale, 0.58, 1.08);
+        marker.style.left = `${point.x}px`;
+        marker.style.top = `${point.y}px`;
+        marker.style.opacity = String(clamp(1 - point.depth / 1750, 0.2, 0.96));
+        marker.style.transform = `translate(-50%, -100%) scale(${scale})`;
+        marker.style.pointerEvents = "auto";
+        marker.classList.toggle("is-active", index === state.activeWorkspace);
+      });
+
+      const workspace = WORKSPACES[state.activeWorkspace];
+      const buildingDepth = workspace.z - state.cameraZ;
+      const centerAnchor = project(workspace.x, BUILDING_HEIGHT / 2, workspace.z - PORTAL_LIFT);
+      sessionButtons.forEach((button) => {
+        const sessionIndex = Number(button.dataset.sessionIndex);
+        const y = 127 - sessionIndex * 21;
+        const point = project(workspace.x, y, workspace.z - PORTAL_LIFT);
+        if (!point || y < 0 || buildingDepth < 56 || buildingDepth > 510) {
+          button.style.opacity = "0";
+          button.style.pointerEvents = "none";
+          return;
+        }
+        const spread = clamp(1.5 / point.scale, 0.55, 1);
+        const screenY = centerAnchor ? centerAnchor.y + (point.y - centerAnchor.y) * spread : point.y;
+        if (screenY < 24 || screenY > state.height - 50) {
+          button.style.opacity = "0";
+          button.style.pointerEvents = "none";
+          return;
+        }
+        const scale = clamp(point.scale, 0.72, 1.04) * (1 + (state.motion || 0) * 0.1);
+        const width = clamp(130 * scale + 28, 132, 182);
+        button.style.width = `${width}px`;
+        button.style.left = `${point.x}px`;
+        button.style.top = `${screenY}px`;
+        const base = clamp(1.2 - Math.abs(buildingDepth - 225) / 370, 0.22, 1);
+        button.style.opacity = String(mix(base, 1, (state.motion || 0) * 0.9));
+        button.style.transform = `translate(-50%, -50%) scale(${scale})`;
+        button.style.pointerEvents = "auto";
+      });
+
+      coordinateLabel.textContent = `Z:${String(Math.round(state.cameraZ + 100)).padStart(4, "0")} X:${Math.round(state.cameraX)}`;
+    }
+
+    function closestWorkspaceIndex() {
+      let bestIndex = 0;
+      let bestDistance = Infinity;
+      WORKSPACES.forEach((workspace, index) => {
+        const distance = Math.abs(state.cameraZ - (workspace.z - 230));
+        if (distance < bestDistance) {
+          bestDistance = distance;
+          bestIndex = index;
+        }
+      });
+      return bestIndex;
+    }
+
+    function syncActiveWorkspaceFromCamera() {
+      const next = closestWorkspaceIndex();
+      if (next === state.activeWorkspace) return;
+      state.activeWorkspace = next;
+      centerCameraOnWorkspace(next, state.experience === "reduced");
+      rebuildSessionPortals();
+    }
+
+    function navigateToWorkspace(index, selectFirst = false) {
+      const workspace = WORKSPACES[index];
+      state.activeWorkspace = index;
+      state.targetZ = workspace.z - 230;
+      centerCameraOnWorkspace(index, state.experience === "reduced");
+      if (state.experience === "reduced") {
+        state.cameraZ = state.targetZ;
+      }
+      if (selectFirst) selectSession(workspace.id, workspace.sessions[0].id);
+      rebuildSessionPortals();
+    }
+
+    function selectSession(wsId, sessionId) {
+      const workspaceIndex = WORKSPACES.findIndex((w) => w.id === wsId);
+      if (workspaceIndex < 0) return;
+      const workspace = WORKSPACES[workspaceIndex];
+      const found = workspace.sessions.some((s) => s.id === sessionId)
+        || workspace.sessions.some((s) => (s.children || []).some((c) => c.id === sessionId));
+      if (!found) return;
+      state.selectedWsId = wsId;
+      state.selectedSessionId = sessionId;
+      if (state.activeWorkspace !== workspaceIndex) navigateToWorkspace(workspaceIndex);
+      rebuildSessionPortals();
+      updateMapSelection();
+    }
+
+    // 数据变更(新建/归档/分叉/重命名/拖拽)后的统一重建:点云 + Portal + 索引 + 计数
+    function regenCity() {
+      buildingPoints = WORKSPACES.map(createBuildingPoints);
+      rebuildSessionPortals();
+      buildMap();
+      updateMapCount();
+    }
+
+    function updateMapCount() {
+      let total = 0;
+      WORKSPACES.forEach((w) => {
+        w.sessions.forEach((s) => { total += 1 + (s.children ? s.children.length : 0); });
+      });
+      mapKeyHint.textContent = `M · ${total}`;
+    }
+
+    // ── City Index(DVD 菜单索引 + 迁移补齐:⋯菜单/caret/拖拽/+N/搜索过滤/视图选项)──
+    let rowMenuTarget = null; // { wsId, sessionId, isChild }
+
+    function findSession(wsId, sessionId) {
+      const workspace = WORKSPACES.find((w) => w.id === wsId);
+      if (!workspace) return {};
+      const top = workspace.sessions.find((s) => s.id === sessionId);
+      if (top) return { workspace, session: top, isChild: false };
+      for (const parent of workspace.sessions) {
+        const child = (parent.children || []).find((c) => c.id === sessionId);
+        if (child) return { workspace, session: child, parent, isChild: true };
+      }
+      return { workspace };
+    }
+
+    function sortedSessions(workspace) {
+      const list = workspace.sessions.filter((s) => {
+        if (sessionMatchesQuery(s)) return true;
+        return (s.children || []).some(sessionMatchesQuery);
+      });
+      if (state.view.orderBy === "updated") {
+        return [...list].sort((a, b) => a.ts - b.ts);
+      }
+      return list; // manual:数组序即手动排序结果
+    }
+
+    function makeMapRow(workspace, session, { isChild = false, flatIndex = 0, flat = false } = {}) {
+      const li = document.createElement("li");
+      li.setAttribute("role", "none");
+      const row = document.createElement("div");
+      row.className = "map-row" + (isChild ? " is-child" : "");
+
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = "map-session-button";
+      button.dataset.wsId = workspace.id;
+      button.dataset.sessionId = session.id;
+      button.style.setProperty("--status-color", STATUS[session.status].color);
+      button.setAttribute("role", "treeitem");
+      button.setAttribute("aria-label", `${workspace.name},${session.title},${STATUS[session.status].label},${session.time}`);
+      button.title = `${session.title} · ${STATUS[session.status].label} · ${session.time}`;
+      // 迁移补齐 ⑦:会话行拖拽排序(分组样式内;落地仅「按工作区」非未分组行)
+      if (!flat && !isChild) {
+        button.draggable = true;
+        button.addEventListener("dragstart", (e) => {
+          e.dataTransfer.setData("text/zion-session", `${workspace.id}/${session.id}`);
+          e.dataTransfer.effectAllowed = "move";
+          row.classList.add("is-dragging");
+        });
+        button.addEventListener("dragend", () => {
+          row.classList.remove("is-dragging");
+          clearDropHints();
+        });
+      }
+
+      if (flat) {
+        const idx = document.createElement("span");
+        idx.className = "idx";
+        idx.textContent = String(flatIndex).padStart(2, "0");
+        button.append(idx);
+      }
+      const cursor = document.createElement("span");
+      cursor.className = "cur";
+      cursor.textContent = ">";
+      const title = document.createElement("span");
+      title.className = "title";
+      title.textContent = session.title;
+      const age = document.createElement("span");
+      age.className = "age";
+      age.textContent = session.time;
+      button.append(cursor, title, age);
+      button.addEventListener("click", () => {
+        selectSession(workspace.id, session.id);
+        navigateToWorkspace(WORKSPACES.indexOf(workspace));
+        closeMap();
+      });
+      row.append(button);
+
+      // 迁移补齐 ⑥:caret 子会话展开/收起(仅分组样式)
+      if (!flat && !isChild && session.children && session.children.length) {
+        const caret = document.createElement("button");
+        caret.type = "button";
+        caret.className = "map-caret";
+        const collapsed = state.collapsedCarets.has(session.id);
+        caret.textContent = collapsed ? "▸" : "▾";
+        caret.setAttribute("aria-label", collapsed ? "展开子会话" : "收起子会话");
+        caret.setAttribute("aria-expanded", String(!collapsed));
+        caret.addEventListener("click", (e) => {
+          e.stopPropagation();
+          if (state.collapsedCarets.has(session.id)) state.collapsedCarets.delete(session.id);
+          else state.collapsedCarets.add(session.id);
+          buildMap();
+        });
+        row.append(caret);
+      }
+
+      // 迁移补齐 ⑤:⋯ 行菜单(重命名/分叉/归档,hover 浮出让位时间列)
+      const acts = document.createElement("button");
+      acts.type = "button";
+      acts.className = "map-row-menu";
+      acts.textContent = "⋯";
+      acts.setAttribute("aria-label", `会话“${session.title}”的操作`);
+      acts.setAttribute("aria-haspopup", "menu");
+      acts.setAttribute("aria-expanded", "false");
+      acts.addEventListener("click", (e) => {
+        e.stopPropagation();
+        openRowMenu({ wsId: workspace.id, sessionId: session.id, isChild }, acts);
+      });
+      row.append(acts);
+
+      li.append(row);
+      return li;
+    }
+
+    function clearDropHints() {
+      mapBody.querySelectorAll(".is-drop-above, .is-drop-below, .is-drop-target").forEach((el) => {
+        el.classList.remove("is-drop-above", "is-drop-below", "is-drop-target");
+      });
+    }
+
+    function buildMap() {
+      mapBody.replaceChildren();
+      // 视图选项「单列表」强制平铺视觉;「按工作区」跟随 mapStyle 分组/平铺开关
+      const flat = state.view.groupBy === "flat" || state.mapStyle === "flat";
+      mapBody.classList.toggle("grouped", !flat);
+      mapBody.classList.toggle("flat", flat);
+      mapStylebarKicker.textContent = flat
+        ? "SESSION PORTALS // ALL DISTRICTS"
+        : `SCENE SELECTIONS // ${WORKSPACES.length} DISTRICTS`;
+      mapStyleToggle.textContent = state.mapStyle === "grouped" ? "分组" : "平铺";
+
+      let itemNo = 0;
+      let anyRow = false;
+
+      if (flat) {
+        // 单列表:全工作区合并,updated 按 ts、manual 按工作区序+数组序
+        const merged = [];
+        WORKSPACES.forEach((workspace) => {
+          workspace.sessions.filter(sessionMatchesQuery).forEach((s) => merged.push({ workspace, session: s }));
+        });
+        if (state.view.orderBy === "updated") merged.sort((a, b) => a.session.ts - b.session.ts);
+        const list = document.createElement("ul");
+        list.className = "map-session-list";
+        list.setAttribute("role", "group");
+        merged.forEach(({ workspace, session }) => {
+          itemNo += 1;
+          anyRow = true;
+          list.append(makeMapRow(workspace, session, { flat: true, flatIndex: itemNo }));
+        });
+        mapBody.append(list);
+      } else {
+        WORKSPACES.forEach((workspace, workspaceIndex) => {
+          const visible = sortedSessions(workspace);
+          if (!visible.length) return;
+
+          const head = document.createElement("button");
+          head.type = "button";
+          head.className = "map-district-head";
+          head.textContent = `BAY ${String(workspaceIndex + 1).padStart(2, "0")} · ${workspace.name}`;
+          head.setAttribute("aria-label", `前往工作区 ${workspace.name},${workspace.sessions.length} 个会话`);
+          // 迁移补齐 ⑧:工作区组头拖拽换位
+          head.draggable = true;
+          head.addEventListener("dragstart", (e) => {
+            e.dataTransfer.setData("text/zion-workspace", workspace.id);
+            e.dataTransfer.effectAllowed = "move";
+            head.classList.add("is-dragging");
+          });
+          head.addEventListener("dragend", () => {
+            head.classList.remove("is-dragging");
+            clearDropHints();
+          });
+          head.addEventListener("click", () => {
+            navigateToWorkspace(workspaceIndex);
+            closeMap();
+          });
+          mapBody.append(head);
+
+          const expanded = state.expandedGroups.has(workspace.id) || !!state.query;
+          const shown = expanded ? visible : visible.slice(0, COLLAPSED);
+          const hiddenCount = visible.length - shown.length;
+
+          const list = document.createElement("ul");
+          list.className = "map-session-list";
+          list.setAttribute("role", "group");
+          list.setAttribute("aria-label", workspace.name);
+          shown.forEach((session) => {
+            itemNo += 1;
+            anyRow = true;
+            list.append(makeMapRow(workspace, session));
+            if (session.children && session.children.length && !state.collapsedCarets.has(session.id)) {
+              session.children.filter(sessionMatchesQuery).forEach((child) => {
+                list.append(makeMapRow(workspace, child, { isChild: true }));
+              });
+            }
+          });
+          mapBody.append(list);
+
+          // 迁移补齐 ⑨:分组折叠「+N 个更多…」
+          if (hiddenCount > 0) {
+            const more = document.createElement("button");
+            more.type = "button";
+            more.className = "map-more-row";
+            more.textContent = `+${hiddenCount} 个更多…`;
+            more.setAttribute("aria-label", `展开 ${workspace.name} 折叠的 ${hiddenCount} 个会话`);
+            more.addEventListener("click", () => {
+              state.expandedGroups.add(workspace.id);
+              buildMap();
+            });
+            mapBody.append(more);
+          }
+        });
+      }
+
+      if (!anyRow) {
+        const empty = document.createElement("div");
+        empty.className = "map-empty";
+        empty.textContent = state.query ? `没有匹配「${state.query}」的会话` : "暂无会话";
+        mapBody.append(empty);
+      }
+      updateMapSelection();
+    }
+
+    function updateMapSelection() {
+      mapBody.querySelectorAll(".map-session-button").forEach((button) => {
+        const isCurrent = button.dataset.wsId === state.selectedWsId
+          && button.dataset.sessionId === state.selectedSessionId;
+        button.classList.toggle("is-current", isCurrent);
+        button.setAttribute("aria-current", isCurrent ? "page" : "false");
+      });
+    }
+
+    // ── 行 ⋯ 菜单(全局单例 fixed 弹层)──
+    function openRowMenu(target, anchor) {
+      rowMenuTarget = target;
+      const rect = anchor.getBoundingClientRect();
+      rowMenu.classList.add("is-open");
+      // 钳制在侧栏内:弹层 fixed 定位,右缘不溢出 280px 栏宽(对齐官方菜单不出栏)
+      const sidebarRight = document.querySelector(".zion-sidebar").getBoundingClientRect().right;
+      const left = Math.max(6, Math.min(rect.right - 8, sidebarRight - rowMenu.offsetWidth - 4));
+      rowMenu.style.left = `${left}px`;
+      rowMenu.style.top = `${rect.bottom + 4}px`;
+      anchor.setAttribute("aria-expanded", "true");
+      const first = rowMenu.querySelector("button");
+      if (first) first.focus();
+    }
+
+    function closeRowMenu() {
+      if (!rowMenu.classList.contains("is-open")) return;
+      rowMenu.classList.remove("is-open");
+      mapBody.querySelectorAll('.map-row-menu[aria-expanded="true"]').forEach((b) => b.setAttribute("aria-expanded", "false"));
+      rowMenuTarget = null;
+    }
+
+    rowMenu.addEventListener("click", (event) => {
+      const item = event.target.closest("button[data-act]");
+      if (!item || !rowMenuTarget) return;
+      const act = item.dataset.act;
+      const { workspace, session, parent, isChild } = findSession(rowMenuTarget.wsId, rowMenuTarget.sessionId);
+      closeRowMenu();
+      if (!workspace || !session) return;
+
+      if (act === "rename") {
+        startInlineRename(workspace, session);
+      } else if (act === "fork") {
+        // 分叉:官方语义 = 从该会话分出子会话;mock 追加一条 child
+        const host = isChild ? parent : session;
+        host.children = host.children || [];
+        const forked = {
+          id: `${host.id}-fork-${Date.now() % 100000}`,
+          title: `分叉 · ${session.title}`,
+          time: "现在",
+          status: "ready",
+          ts: 0
+        };
+        host.children.push(forked);
+        state.collapsedCarets.delete(host.id);
+        state.selectedWsId = workspace.id;
+        state.selectedSessionId = forked.id;
+        regenCity();
+      } else if (act === "archive") {
+        // 归档:mock 从列表移除
+        if (isChild) {
+          parent.children = parent.children.filter((c) => c.id !== session.id);
+        } else {
+          workspace.sessions = workspace.sessions.filter((s) => s.id !== session.id);
+        }
+        if (state.selectedSessionId === session.id) {
+          const fallback = workspace.sessions[0];
+          if (fallback) {
+            state.selectedWsId = workspace.id;
+            state.selectedSessionId = fallback.id;
+          }
+        }
+        regenCity();
+      }
+    });
+
+    // 行内重命名(落地走官方 RenameSessionModal;demo 行内 stub)
+    function startInlineRename(workspace, session) {
+      const row = [...mapBody.querySelectorAll(".map-session-button")]
+        .find((b) => b.dataset.wsId === workspace.id && b.dataset.sessionId === session.id)
+        ?.closest(".map-row");
+      if (!row) return;
+      const input = document.createElement("input");
+      input.type = "text";
+      input.className = "map-rename-input";
+      input.value = session.title;
+      input.setAttribute("aria-label", "重命名会话");
+      row.append(input);
+      input.focus();
+      input.select();
+      let done = false;
+      const commit = (save) => {
+        if (done) return;
+        done = true;
+        if (save && input.value.trim()) session.title = input.value.trim();
+        input.remove();
+        regenCity();
+      };
+      input.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") { e.preventDefault(); commit(true); }
+        if (e.key === "Escape") { e.preventDefault(); e.stopPropagation(); commit(false); }
+      });
+      input.addEventListener("blur", () => commit(true));
+    }
+
+    // ── 拖拽 drop 处理(会话行同工作区重排 / 工作区组头换位)──
+    mapBody.addEventListener("dragover", (event) => {
+      const row = event.target.closest(".map-row");
+      const head = event.target.closest(".map-district-head");
+      clearDropHints();
+      if (row) {
+        const button = row.querySelector(".map-session-button");
+        if (!button || button.dataset.wsId !== dragSessionWs()) return;
+        event.preventDefault();
+        const rect = row.getBoundingClientRect();
+        row.classList.add(event.clientY < rect.top + rect.height / 2 ? "is-drop-above" : "is-drop-below");
+      } else if (head) {
+        event.preventDefault();
+        head.classList.add("is-drop-target");
+      }
+    });
+
+    mapBody.addEventListener("drop", (event) => {
+      event.preventDefault();
+      clearDropHints();
+      const wsDrag = event.dataTransfer.getData("text/zion-workspace");
+      if (wsDrag) {
+        const head = event.target.closest(".map-district-head");
+        if (!head) return;
+        const targetName = head.textContent.split("·")[1].trim();
+        const from = WORKSPACES.findIndex((w) => w.id === wsDrag);
+        const to = WORKSPACES.findIndex((w) => w.name === targetName);
+        if (from < 0 || to < 0 || from === to) return;
+        const [moved] = WORKSPACES.splice(from, 1);
+        WORKSPACES.splice(to, 0, moved);
+        // z 必须单调稳定:按新顺序重排街区坐标
+        WORKSPACES.forEach((w, i) => { w.z = 230 + i * 340; });
+        state.activeWorkspace = WORKSPACES.findIndex((w) => w.id === state.selectedWsId);
+        if (state.activeWorkspace < 0) state.activeWorkspace = 0;
+        state.targetZ = WORKSPACES[state.activeWorkspace].z - 230;
+        if (state.experience === "reduced") state.cameraZ = state.targetZ;
+        createWorkspaceMarkers();
+        regenCity();
+        return;
+      }
+      const sessionDrag = event.dataTransfer.getData("text/zion-session");
+      if (sessionDrag) {
+        const row = event.target.closest(".map-row");
+        if (!row) return;
+        const button = row.querySelector(".map-session-button");
+        const [fromWs, sessionId] = sessionDrag.split("/");
+        if (!button || button.dataset.wsId !== fromWs) return;
+        const workspace = WORKSPACES.find((w) => w.id === fromWs);
+        const from = workspace.sessions.findIndex((s) => s.id === sessionId);
+        const to = workspace.sessions.findIndex((s) => s.id === button.dataset.sessionId);
+        if (from < 0 || to < 0 || from === to) return;
+        const rect = row.getBoundingClientRect();
+        const insertAt = event.clientY < rect.top + rect.height / 2 ? to : to + 1;
+        const [moved] = workspace.sessions.splice(from, 1);
+        workspace.sessions.splice(insertAt > from ? insertAt - 1 : insertAt, 0, moved);
+        regenCity();
+      }
+    });
+
+    let lastDragWs = "";
+    document.addEventListener("dragstart", (event) => {
+      const data = event.target.closest?.(".map-session-button");
+      lastDragWs = data ? data.dataset.wsId : "";
+    });
+    function dragSessionWs() { return lastDragWs; }
+
+    // ── City Index 开关 ──
+    function openMap() {
+      state.mapOpen = true;
+      mapPanel.classList.add("is-open");
+      startMapRain();
+      mapPanel.setAttribute("aria-hidden", "false");
+      mapToggle.setAttribute("aria-expanded", "true");
+      buildMap();
+      const current = mapBody.querySelector(".map-session-button.is-current");
+      if (current) {
+        current.scrollIntoView({ block: "center" });
+        current.focus({ preventScroll: true });
+      } else {
+        mapStyleToggle.focus();
+      }
+    }
+
+    function closeMap() {
+      state.mapOpen = false;
+      stopMapRain();
+      closeRowMenu();
+      mapPanel.classList.remove("is-open");
+      mapPanel.setAttribute("aria-hidden", "true");
+      mapToggle.setAttribute("aria-expanded", "false");
+      mapToggle.focus({ preventScroll: true });
+    }
+
+    function toggleMap() {
+      if (state.mapOpen) closeMap();
+      else openMap();
+    }
+
+    function moveCamera(direction, amount = 76) {
+      if (direction === "forward") state.targetZ += amount;
+      if (direction === "back") state.targetZ -= amount;
+      if (direction === "left") state.targetX -= 13;
+      if (direction === "right") state.targetX += 13;
+      state.targetZ = clamp(state.targetZ, -15, WORKSPACES.at(-1).z - 128);
+      if (direction === "left" || direction === "right") {
+        const bounds = workspaceCameraBounds();
+        state.targetX = clamp(state.targetX, bounds.min, bounds.max);
+      }
+      if (state.experience === "reduced") {
+        state.cameraZ = state.targetZ;
+        state.cameraX = state.targetX;
+        syncActiveWorkspaceFromCamera();
+      }
+    }
+
+    function setExperience(experience) {
+      state.experience = experience;
+      document.body.dataset.experience = experience;
+      if (experience === "reduced") {
+        state.cameraZ = state.targetZ;
+        state.cameraX = state.targetX;
+      }
+    }
+
+    // ── 工具条(迁移补齐 ①②③④)──
+    // ① 搜索:本地过滤,同步 Portal 与索引
+    searchInput.addEventListener("input", () => {
+      state.query = searchInput.value.trim();
+      rebuildSessionPortals();
+      if (state.mapOpen) buildMap();
+    });
+
+    // ② 视图选项:分组方式(按工作区/单列表)+ 排序方式(手动排序/最近更新)
+    function closePops() {
+      viewPop.classList.remove("is-open");
+      settingsPop.classList.remove("is-open");
+      viewBtn.setAttribute("aria-expanded", "false");
+      settingsBtn.setAttribute("aria-expanded", "false");
+    }
+
+    viewBtn.addEventListener("click", () => {
+      const open = !viewPop.classList.contains("is-open");
+      closePops();
+      if (open) {
+        syncViewPopTicks();
+        viewPop.classList.add("is-open");
+        viewBtn.setAttribute("aria-expanded", "true");
+      }
+    });
+
+    function syncViewPopTicks() {
+      viewPop.querySelectorAll(".tb-pop-item").forEach((item) => {
+        item.classList.toggle("is-on", state.view[item.dataset.set] === item.dataset.value);
+        item.setAttribute("aria-checked", String(state.view[item.dataset.set] === item.dataset.value));
+      });
+    }
+
+    viewPop.addEventListener("click", (event) => {
+      const item = event.target.closest(".tb-pop-item");
+      if (!item) return;
+      state.view[item.dataset.set] = item.dataset.value;
+      closePops();
+      if (state.mapOpen) buildMap();
+    });
+
+    // ③ 新建会话:mock 向当前工作区追加并选中
+    newBtn.addEventListener("click", () => {
+      const workspace = WORKSPACES[state.activeWorkspace];
+      const created = {
+        id: `session-${Date.now() % 1000000}`,
+        title: "新会话",
+        time: "现在",
+        status: "ready",
+        ts: 0
+      };
+      workspace.sessions.unshift(created);
+      state.selectedWsId = workspace.id;
+      state.selectedSessionId = created.id;
+      regenCity();
+    });
+
+    // ④ 设置(stub;落地打开 SettingsShell)
+    settingsBtn.addEventListener("click", () => {
+      const open = !settingsPop.classList.contains("is-open");
+      closePops();
+      if (open) {
+        settingsPop.classList.add("is-open");
+        settingsBtn.setAttribute("aria-expanded", "true");
+      }
+    });
+
+    document.addEventListener("pointerdown", (event) => {
+      if (!event.target.closest(".tb-pop") && !event.target.closest(".toolbar-btn")) closePops();
+      if (!event.target.closest(".row-menu") && !event.target.closest(".map-row-menu")) closeRowMenu();
+    });
+
+    function handleKeydown(event) {
+      if (event.target.matches("input, textarea, [contenteditable]")) return;
+      if (event.key === "Escape") {
+        if (rowMenu.classList.contains("is-open")) { event.preventDefault(); closeRowMenu(); return; }
+        if (viewPop.classList.contains("is-open") || settingsPop.classList.contains("is-open")) { event.preventDefault(); closePops(); return; }
+        if (state.mapOpen) { event.preventDefault(); closeMap(); return; }
+        return;
+      }
+      if (event.key.toLowerCase() === "m") {
+        event.preventDefault();
+        toggleMap();
+        return;
+      }
+      if (state.mapOpen) return;
+      const key = event.key.toLowerCase();
+      const directions = {
+        w: "forward",
+        arrowup: "forward",
+        s: "back",
+        arrowdown: "back",
+        a: "left",
+        arrowleft: "left",
+        d: "right",
+        arrowright: "right"
+      };
+      const direction = directions[key];
+      if (!direction) return;
+      event.preventDefault();
+      moveCamera(direction);
+    }
+
+    function animate(time) {
+      const delta = Math.min(0.05, (time - previousTime) / 1000);
+      previousTime = time;
+      const smoothing = state.experience === "reduced" ? 1 : 1 - Math.pow(0.001, delta);
+      const prevZ = state.cameraZ;
+      const prevX = state.cameraX;
+      state.cameraZ = mix(state.cameraZ, state.targetZ, smoothing);
+      state.cameraX = mix(state.cameraX, state.targetX, smoothing);
+      const speed = Math.hypot(state.cameraZ - prevZ, state.cameraX - prevX) / Math.max(delta, 0.001);
+      const motionTarget = state.experience === "reduced" ? 0 : clamp(speed / 260, 0, 1);
+      state.motion = mix(state.motion || 0, motionTarget, 1 - Math.pow(0.01, delta));
+      syncActiveWorkspaceFromCamera();
+      renderCanvas(time);
+      updateProjectedDom();
+      requestAnimationFrame(animate);
+    }
+
+    frame.addEventListener("wheel", (event) => {
+      if (state.mapOpen) return;
+      event.preventDefault();
+      const amount = clamp(event.deltaY * 0.32, -105, 105);
+      state.targetZ = clamp(state.targetZ + amount, -15, WORKSPACES.at(-1).z - 128);
+    }, { passive: false });
+
+    frame.addEventListener("pointerdown", (event) => {
+      if (event.target.closest("button")) return;
+      state.dragging = true;
+      state.pointerX = event.clientX;
+      state.pointerY = event.clientY;
+      frame.setPointerCapture(event.pointerId);
+    });
+
+    frame.addEventListener("pointermove", (event) => {
+      if (!state.dragging) return;
+      const dx = event.clientX - state.pointerX;
+      const dy = event.clientY - state.pointerY;
+      state.pointerX = event.clientX;
+      state.pointerY = event.clientY;
+      const bounds = workspaceCameraBounds();
+      state.targetX = clamp(state.targetX - dx * 0.23, bounds.min, bounds.max);
+      state.targetZ = clamp(state.targetZ + dy * 0.72, -15, WORKSPACES.at(-1).z - 128);
+    });
+
+    frame.addEventListener("pointerup", (event) => {
+      state.dragging = false;
+      if (frame.hasPointerCapture(event.pointerId)) frame.releasePointerCapture(event.pointerId);
+    });
+
+    mapToggle.addEventListener("click", toggleMap);
+    mapStyleToggle.addEventListener("click", () => {
+      state.mapStyle = state.mapStyle === "grouped" ? "flat" : "grouped";
+      if (state.mapStyle === "grouped") state.view.groupBy = "workspace"; // 样式切回分组时视图选项同步
+      buildMap();
+    });
+    document.addEventListener("keydown", handleKeydown);
+
+    const observer = new ResizeObserver(resizeCanvas);
+    observer.observe(frame);
+    const mapRainObserver = new ResizeObserver(() => {
+      if (state.mapOpen) resizeMapRain();
+    });
+    mapRainObserver.observe(mapRain);
+
+    createWorkspaceMarkers();
+    rebuildSessionPortals();
+    if (new URLSearchParams(location.search).get("mapstyle") === "flat") state.mapStyle = "flat";
+    buildMap();
+    updateMapCount();
+    setExperience(state.experience);
+    resizeCanvas();
+    if (new URLSearchParams(location.search).has("map")) openMap();
+    const debugZ = parseFloat(new URLSearchParams(location.search).get("z"));
+    if (!Number.isNaN(debugZ)) {
+      state.cameraZ = debugZ;
+      state.targetZ = debugZ;
+    }
+    const debugW = parseFloat(new URLSearchParams(location.search).get("w"));
+    if (!Number.isNaN(debugW)) setSidebarWidth(debugW);
+
+    document.fonts.load('12px "Matrix Code"').finally(() => {
+      requestAnimationFrame(animate);
+    });
+  </script>
+</body>
+</html>
