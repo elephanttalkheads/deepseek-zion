@@ -77,7 +77,7 @@ app.whenReady().then(async () => {
           const items = [...document.querySelectorAll('.sidebar-item')]
           const t = items[${i}]
           if (!t) return 'done'
-          if (t.hasAttribute('data-running') || (t.style.paddingLeft ?? '') !== '10px') return 'skip'
+          if (t.hasAttribute('data-running')) return 'skip'
           t.querySelector('.sidebar-row')?.click(); return 'clicked'
         })()`)
         if (state === 'done') return false

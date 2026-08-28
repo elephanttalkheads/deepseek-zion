@@ -178,21 +178,19 @@ app.whenReady().then(async () => {
       mark('mfb5', false, 'M-fb5 保存补充说明(编辑器未打开,跳过)')
     }
 
-    // ---- M4/M5: 分支(fork 真后端)→ 选中切换 + 子会话更深缩进 ----
-    const beforeSel = await js(win, `document.querySelector('.sidebar-item[data-selected] .sidebar-row')?.innerText?.replace(/\\n/g,' ').slice(0,40) ?? ''`)
+    // ---- M4/M5: 分支(fork 真后端)→ 选中切换 + 子会话嵌套行(ASCII 城市:
+    //      子会话不进 Portal 面,在 City Index 内以 .is-child 嵌套呈现) ----
+    await js(win, `(() => { const t = document.querySelector('.map-toggle'); if (t) t.click(); return !!t })()`)
+    await waitFor(win, `document.querySelectorAll('.map-row').length >= 1`, 6000)
+    const beforeId = await js(win, `document.querySelector('.map-session-button.is-current')?.closest('.map-row')?.getAttribute('data-session-id') ?? ''`)
     const forkClicked = await js(win, `(() => { const b = document.querySelector(${JSON.stringify(`${ASSISTANT_ROW} ${BRANCH}`)}); if (!b) return false; b.click(); return true })()`)
     await sleep(2500)
-    const selChanged = await js(win, `(() => {
-      const current = document.querySelector('.sidebar-item[data-selected] .sidebar-row')?.innerText?.replace(/\\n/g,' ').slice(0,40) ?? ''
-      return current !== ${JSON.stringify(beforeSel)}
-    })()`)
-    const selectedPad = await js(win, `(() => {
-      const el = document.querySelector('.sidebar-item[data-selected]')
-      return el ? parseInt(el.style.paddingLeft || '10', 10) : -1
-    })()`)
-    out(`before: ${beforeSel}  afterChanged=${selChanged} pad=${selectedPad}`)
-    mark('m4', forkClicked && selChanged, 'M4 分支 → 选中切换(fork 成功 → 子会话)', `pad=${selectedPad}`)
-    mark('m5', selChanged && selectedPad > 12, 'M5 fork 生成子会话并被选中(派生行 deeper 缩进)', `pad=${selectedPad}`)
+    const afterId = await js(win, `document.querySelector('.map-session-button.is-current')?.closest('.map-row')?.getAttribute('data-session-id') ?? ''`)
+    const selChanged = afterId !== '' && afterId !== beforeId
+    const childSelected = await waitFor(win, `!!document.querySelector('.map-row.is-child .map-session-button.is-current')`, 8000)
+    out(`before: ${beforeId}  after: ${afterId}  childSelected=${childSelected}`)
+    mark('m4', forkClicked && selChanged, 'M4 分支 → 选中切换(fork 成功 → 子会话)', `id ${beforeId} → ${afterId}`)
+    mark('m5', selChanged && childSelected, 'M5 fork 生成子会话并被选中(City Index 嵌套 .is-child 行)')
   } else {
     mark('m3', true, 'M3 real:只读,不点复制')
     const fbReal = await js(win, `(() => {

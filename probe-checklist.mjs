@@ -51,7 +51,7 @@ app.whenReady().then(async () => {
 
   // M1: shell/sidebar
   await check('01', `!!document.querySelector('.shell-topbar')`, '01 顶栏 shell-topbar 渲染')
-  await check('02', `!!document.querySelector('.sidebar') && !!document.querySelector('.sidebar-list')`, '02 侧栏 + 会话列表容器渲染')
+  await check('02', `!!document.querySelector('.sidebar') && !!document.querySelector('.city-frame')`, '02 侧栏 + 会话城市容器渲染')
   await check('03', `document.querySelectorAll('.sidebar-row').length >= 1`, '03 真后端会话行 ≥1')
   await check('04', `!!document.querySelector('.sidebar-search-input')`, '04 搜索输入框')
   await check('05', `!!document.querySelector('.shell-workspace-name')`, '05 顶栏工作区名')

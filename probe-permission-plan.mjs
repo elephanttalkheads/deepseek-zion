@@ -28,12 +28,20 @@ const waitFor = async (win, expr, waitMs = 10000, every = 400) => {
 fs.mkdirSync(OUT, { recursive: true })
 const tag = URL.includes('fixture') ? 'fixture' : 'real'
 
-// 选中「根级(depth0)且非运行」的会话行(子代理行/运行中行会拒绝命令 RPC)。
+// 选中「非运行」的会话行(运行中行会拒绝命令 RPC;ASCII 城市 Portal 均为根级行,
+// 子会话只在 City Index 内嵌套,不进 Portal 面)。fixture 活跃工作区可能只有运行中的
+// fx-alpha 一条非 blank 会话——没有现成非运行 Portal 时点「+」新建(创建即选中,
+// blank 非运行,落未分组 District)。
 const SELECT_IDLE_ROOT = `(() => {
   const items = [...document.querySelectorAll('.sidebar-item')]
-  const target = items.find(el => !el.hasAttribute('data-running') && (el.style.paddingLeft ?? '') === '10px')
-  if (!target) return false
-  target.querySelector('.sidebar-row')?.click()
+  const target = items.find(el => !el.hasAttribute('data-running'))
+  if (target) {
+    target.querySelector('.sidebar-row')?.click()
+    return true
+  }
+  const b = document.querySelector('.sidebar-new')
+  if (!b) return false
+  b.click()
   return true
 })()`
 

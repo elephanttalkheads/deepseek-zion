@@ -73,7 +73,21 @@ app.whenReady().then(async () => {
   out(`mode: ${tag}`)
 
   // ---- A. 历史会话(闭环回合) ----
-  await js(win, `(() => { const r = document.querySelector('.sidebar-row'); if (r) r.click(); return !!r })()`)
+  if (tag === 'real') {
+    // real:活跃工作区首条会话不一定有多回合历史——遍历索引行找 .turn-agent ≥ 2 的会话
+    await js(win, `(() => { const t = document.querySelector('.map-toggle'); if (t) t.click(); return !!t })()`)
+    await waitFor(win, `document.querySelectorAll('.map-row').length >= 1`, 8000)
+    const rowCount = await js(win, `document.querySelectorAll('.map-row').length`)
+    for (let i = 0; i < Math.min(rowCount, 12); i++) {
+      await js(win, `(() => { const rows = document.querySelectorAll('.map-row .map-session-button'); const b = rows[${i}]; if (b) b.click(); return !!b })()`)
+      await sleep(1800)
+      const turns = await js(win, `document.querySelectorAll('.turn-agent').length`).catch(() => 0)
+      if (turns >= 2) break
+    }
+    await js(win, `(() => { const t = document.querySelector('.map-toggle'); if (t) t.click(); return !!t })()`) // 关索引
+  } else {
+    await js(win, `(() => { const r = document.querySelector('.sidebar-row'); if (r) r.click(); return !!r })()`)
+  }
   await waitFor(win, `document.querySelectorAll('.chat-node').length >= 1`, 15000)
   await sleep(1200) // 注入解码(≤700ms)收官
 
@@ -140,10 +154,11 @@ app.whenReady().then(async () => {
   mark('a8', decDone !== null && decDone.sample.length > 0
     && await waitFx(win, `document.querySelectorAll('.msg-body .decoding').length === 0`), 'A8 user 注入解码收官(无 .decoding 残留,正文真文本)', JSON.stringify(decDone))
 
-  // A9:既有入口保留(复制按钮 hover 行动作行,DOM 常挂)
+  // A9:既有入口保留(user 复制按钮 + turn-tail 行动作行;官方语义:assistant 本体
+  // 不挂动作,每轮一个 turn-tail 承载复制/分支/统计/反馈)
   mark('a9', await js(win, `!!document.querySelector('.chat-node--user .chat-node-actions button[aria-label="复制"]')`)
-    && await js(win, `!!document.querySelector('.chat-node[data-kind="assistant"] .chat-node-actions button[aria-label="复制"], .chat-node[data-kind="assistant-step"] .chat-node-actions button[aria-label="复制"]')`),
-    'A9 消息行动作入口保留(user/assistant 复制按钮)')
+    && await js(win, `!!document.querySelector('.chat-node[data-kind="turn-tail"] .chat-node-actions button[aria-label="复制"]')`),
+    'A9 消息行动作入口保留(user 复制 + turn-tail 行动作行)')
 
   if (tag === 'fixture') {
     // ---- B. 流式回合(真 prompt → fixture 回放) ----

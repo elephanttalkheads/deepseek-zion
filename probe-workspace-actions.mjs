@@ -57,24 +57,24 @@ app.whenReady().then(async () => {
     ['按工作区', '单列表', '手动排序', '最近更新'].every(x => viewTexts.includes(x)),
     'W1 视图选项菜单(分组/排序两轴)', JSON.stringify(viewTexts))
 
-  // 切「按工作区」→ 分组头出现;切回「单列表」
+  // 切「按工作区」→ 打开 City Index → BAY 章标题出现;切回「单列表」→ 章标题消失
   const groupPicked = await js(win, clickByText('[role="menuitem"]', '按工作区'))
-  const groupShown = await waitFor(win, `document.querySelectorAll('.sidebar-group-header').length >= 1`, 6000)
-  const groupTitles = await js(win, `[...document.querySelectorAll('.sidebar-group-header')].map(x => x.innerText.trim())`)
-  mark('w2', groupPicked && groupShown, 'W2 按工作区分组渲染组头', JSON.stringify(groupTitles))
+  const mapOpened = await js(win, `(() => { const b = document.querySelector('.map-toggle'); if (!b) return false; b.click(); return true })()`)
+  const groupShown = await waitFor(win, `document.querySelectorAll('.map-district-head').length >= 1`, 6000)
+  const groupTitles = await js(win, `[...document.querySelectorAll('.map-district-head')].map(x => x.textContent.trim())`)
+  mark('w2', groupPicked && mapOpened && groupShown, 'W2 按工作区分组渲染 BAY 章标题(City Index)', JSON.stringify(groupTitles))
   const flatPicked = await js(win, `(() => {
     const b = document.querySelector('.sidebar-view-options'); if (!b) return false
     b.click(); return true
   })()`)
   const flatItems = await waitFor(win, `document.querySelectorAll('[role="menuitem"]').length >= 1`, 6000)
   const flatClicked = await js(win, clickByText('[role="menuitem"]', '单列表'))
-  const groupsGone = await waitFor(win, `document.querySelectorAll('.sidebar-group-header').length === 0`, 6000)
-  mark('w3', flatPicked && flatItems && flatClicked && groupsGone, 'W3 切回单列表 → 分组头消失')
+  const groupsGone = await waitFor(win, `document.querySelectorAll('.map-district-head').length === 0`, 6000)
+  mark('w3', flatPicked && flatItems && flatClicked && groupsGone, 'W3 切回单列表 → 章标题消失')
 
-  // ---- W2/W4: 会话行 … 菜单 ----
-  const rowCount0 = await js(win, `document.querySelectorAll('.sidebar-item').length`)
-  const menuBtn = await waitFor(win, `!!document.querySelector('.sidebar-row-menu')`, 6000)
-  const menuOpened = await js(win, `(() => { const b = document.querySelector('.sidebar-row-menu'); if (!b) return false; b.click(); return true })()`)
+  // ---- W2/W4: 会话行 … 菜单(City Index 行内) ----
+  const menuBtn = await waitFor(win, `!!document.querySelector('.map-row-menu')`, 6000)
+  const menuOpened = await js(win, `(() => { const b = document.querySelector('.map-row-menu'); if (!b) return false; b.click(); return true })()`)
   const menuItems = await waitFor(win, `document.querySelectorAll('[role="menuitem"]').length >= 1`, 6000)
   const menuTexts = await js(win, `[...document.querySelectorAll('[role="menuitem"]')].map(b => b.innerText.trim())`)
   out(`row menu items: ${JSON.stringify(menuTexts)}`)
@@ -97,37 +97,46 @@ app.whenReady().then(async () => {
     })()`)
     await sleep(300)
     const saved = await js(win, clickByText('[role="dialog"][aria-label="重命名会话"] button', '保存'))
-    const rowRenamed = await waitFor(win, `[...document.querySelectorAll('.sidebar-row-title')].some(t => (t.innerText ?? '').includes('zion-probe-renamed'))`, 8000)
+    const rowRenamed = await waitFor(win, `[...document.querySelectorAll('.sidebar-row-title')].some(t => (t.textContent ?? '').includes('zion-probe-renamed'))`, 8000)
     mark('w5', renamed && modalShown && typed && saved && rowRenamed, 'W5 重命名 Modal → 保存 → 行标题更新')
 
-    // W6: fork → 子会话行出现且被选中
+    // W6: 切回按工作区(子会话嵌套只在分组视图呈现)→ fork → 子行出现且被选中
+    await js(win, `(() => { const b = document.querySelector('.sidebar-view-options'); if (b) b.click(); return !!b })()`)
+    await waitFor(win, `document.querySelectorAll('[role="menuitem"]').length >= 1`, 6000)
+    await js(win, clickByText('[role="menuitem"]', '按工作区'))
+    await waitFor(win, `document.querySelectorAll('.map-district-head').length >= 1`, 6000)
     const forkMenuOpen = await js(win, `(() => {
-      const rows = [...document.querySelectorAll('.sidebar-item')]
-      const target = rows.find(r => (r.querySelector('.sidebar-row-title')?.innerText ?? '').includes('zion-probe-renamed'))
-      const b = target?.querySelector('.sidebar-row-menu')
+      const rows = [...document.querySelectorAll('.map-row')]
+      const target = rows.find(r => (r.querySelector('.title')?.textContent ?? '').includes('zion-probe-renamed'))
+      const b = target?.querySelector('.map-row-menu')
       if (!b) return false
       b.click(); return true
     })()`)
     const forkItems = await waitFor(win, `document.querySelectorAll('[role="menuitem"]').length >= 1`, 6000)
     const forkClicked = await js(win, clickByText('[role="menuitem"]', '分叉会话'))
-    const forkSelected = await waitFor(win, `!!document.querySelector('.sidebar-item[data-selected]')`, 8000)
-    const rowCount1 = await js(win, `document.querySelectorAll('.sidebar-item').length`)
-    const selectedTitle = await js(win, `document.querySelector('.sidebar-item[data-selected] .sidebar-row-title')?.innerText ?? ''`)
-    mark('w6', forkMenuOpen && forkItems && forkClicked && forkSelected, 'W6 分叉会话 → 子会话行出现且被选中', `rows ${rowCount0}→${rowCount1}, selected=${JSON.stringify(selectedTitle)}`)
+    const forkSelected = await waitFor(win, `!!document.querySelector('.map-row.is-child .map-session-button.is-current')`, 8000)
+    const childRows = await js(win, `document.querySelectorAll('.map-row.is-child').length`)
+    const selectedTitle = await js(win, `document.querySelector('.map-row.is-child .map-session-button.is-current .title')?.textContent ?? ''`)
+    mark('w6', forkMenuOpen && forkItems && forkClicked && forkSelected, 'W6 分叉会话 → 子会话嵌套行出现且被选中', `childRows=${childRows}, selected=${JSON.stringify(selectedTitle)}`)
 
-    // W7: archive → 行实时消失(fork 子行沿用父标题,按行数递减断言)
-    const rowsBeforeArchive = await js(win, `document.querySelectorAll('.sidebar-item').length`)
+    // W7: archive → 城市 Portal 实时消失(归档父行后子代浮为顶层是官方语义,
+    // 断言按 data-session-id 消失,不按总行数)
+    const parentId = await js(win, `(() => {
+      const rows = [...document.querySelectorAll('.map-row:not(.is-child)')]
+      const target = rows.find(r => (r.querySelector('.title')?.textContent ?? '').includes('zion-probe-renamed'))
+      return target?.getAttribute('data-session-id') ?? null
+    })()`)
     const archiveMenuOpen = await js(win, `(() => {
-      const rows = [...document.querySelectorAll('.sidebar-item')]
-      const target = rows.find(r => (r.querySelector('.sidebar-row-title')?.innerText ?? '').includes('zion-probe-renamed'))
-      const b = target?.querySelector('.sidebar-row-menu')
+      const rows = [...document.querySelectorAll('.map-row:not(.is-child)')]
+      const target = rows.find(r => (r.querySelector('.title')?.textContent ?? '').includes('zion-probe-renamed'))
+      const b = target?.querySelector('.map-row-menu')
       if (!b) return false
       b.click(); return true
     })()`)
     const archiveItems = await waitFor(win, `document.querySelectorAll('[role="menuitem"]').length >= 1`, 6000)
     const archiveClicked = await js(win, clickByText('[role="menuitem"]', '归档会话'))
-    const rowGone = await waitFor(win, `document.querySelectorAll('.sidebar-item').length === ${rowsBeforeArchive - 1}`, 8000)
-    mark('w7', archiveMenuOpen && archiveItems && archiveClicked && rowGone, 'W7 归档会话 → 行实时消失(host/session-removed)', `rows ${rowsBeforeArchive}→${rowsBeforeArchive - 1}`)
+    const rowGone = await waitFor(win, `![...document.querySelectorAll('.sidebar-item')].some(r => r.getAttribute('data-session-id') === ${JSON.stringify(parentId)})`, 8000)
+    mark('w7', parentId !== null && archiveMenuOpen && archiveItems && archiveClicked && rowGone, 'W7 归档会话 → 城市 Portal 实时消失(host/session-removed)', `id=${parentId}`)
   } else {
     mark('w5', true, 'W5 真后端只读,不重命名')
     mark('w6', true, 'W6 真后端只读,不分叉')

@@ -1,287 +1,121 @@
 /**
- * Sidebar — session list (M1 + P2)。渲染 SessionListSnapshot:
- * - 搜索过滤 + 行选中高亮 + 运行/完成态。
- * - 视图选项菜单(分组方式:按工作区/单列表;排序方式:手动/最近更新),手写对齐
- *   官方 ui-workspace ViewOptionsMenu(groupBy/orderBy 两轴;按工作区分组用
- *   WorkspaceView.sessionIds 账目,无归属行落入「未分组」)。
- * - 会话行 … 菜单(重命名/分叉会话/归档会话):rename 走 Modal + session.rename;
- *   fork 走 session.fork(省略 atSeq = 最后完成的回合)并选中子会话;archive 走
- *   workspace.archiveSession(无确认弹窗,官方同)。
- * - 子代理会话不进侧边栏(官方 ui-workspace sessionVisible:origin !== 'subagent';
- *   子代理由会话头目录树 + 会话层级面包屑呈现)。
- * - 拖拽重排(官方 ui-workspace DragState 等位,仅按工作区分组模式):
- *   会话行拖到组内目标行上/下半 → workspace.insertSessionBefore;工作区组头
- *   拖拽 → workspace.insertBefore;原生拖拽期间文档级 accept(dragover/drop)。
- * - 溢出展开(官方 COLLAPSED_SESSION_LIMIT=5):组内折叠显示 5 行 + 「+N」展开。
- * 页脚:设置齿轮(打开 SettingsShell)。
+ * Sidebar — ASCII 会话城(ZION sidebar 迁移,2026-08-28 落地;决策记录见
+ * ui-prototype/sidebar/DECISIONS.md,形态基准 ui-prototype/sidebar/replica/)。
+ * 壳:品牌头 + 固定工具条(搜索/视图选项/新建/添加工作区/⚙)+ CityFrame(城市)
+ * + CityIndex(覆盖索引)+ footer(SlotAnchor)+ 右缘调宽 280–420px。
+ * 数据语义全部走既有面:useSessions / selectSession / createSession /
+ * sessionRowActions / workspaceActions / WorkspaceDirectoryBrowser / SettingsShell,
+ * 只动结构与视觉(语义零改动)。旧列表形态删除,行级入口迁入 CityIndex 行内。
  */
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useRuntime } from '../app/runtime.tsx'
 import { SlotAnchor } from '../plugin/anchors.tsx'
 import { SettingsShell } from './SettingsShell.tsx'
+import { WorkspaceDirectoryBrowser } from '../app/directory-browser.tsx'
 import { Menu } from '../../vendor/ui-primitives/Menu.tsx'
-import { Modal } from '../../vendor/ui-primitives/Modal.tsx'
-import {
-  IconArchiveOutline20, IconBranchOutline16, IconEditOutline16,
-  IconEllipsisOutline16, IconPersonalizationOutline16,
-} from '../../vendor/ui-primitives/icons/index.tsx'
-import type { SessionListEntry } from '../../vendor/client-runtime/client/sessions/lineage.ts'
+import { IconPersonalizationOutline16 } from '../../vendor/ui-primitives/icons/index.tsx'
+import type { SessionId } from '../../vendor/client-connection/client/api.ts'
+import { useWorkspaceCityModel } from './sidebar-city/useWorkspaceCityModel.ts'
+import { useCityCamera } from './sidebar-city/useCityCamera.ts'
+import { CityFrame } from './sidebar-city/CityFrame.tsx'
+import { CityIndex } from './sidebar-city/CityIndex.tsx'
 
-/** Relative time in the official style: 刚刚 / N分钟 / N小时 / DD/MM. */
-function relativeTime(ts: number, now: number): string {
-  const diff = Math.max(0, now - ts)
-  const mins = Math.floor(diff / 60_000)
-  if (mins < 1) return '刚刚'
-  if (mins < 60) return `${mins}分钟`
-  const hours = Math.floor(mins / 60)
-  if (hours < 24) return `${hours}小时`
-  const days = Math.floor(hours / 24)
-  return `${days}天`
-}
-
-function basename(p: string | undefined): string {
-  if (p === undefined || p === '') return ''
-  const norm = p.replace(/\\/g, '/')
-  return norm.split('/').filter(Boolean).pop() ?? p
-}
-
-/** 视图选项(官方 ViewOptionsMenu 两轴;本地状态,手写排序/分组投影)。 */
-interface ViewOptions {
-  groupBy: 'workspace' | 'flat'
-  orderBy: 'updated' | 'manual'
-}
-
-const UNGROUPED_KEY = 'ungrouped'
-/** 官方 ui-workspace COLLAPSED_SESSION_LIMIT:组内折叠行数。 */
-const COLLAPSED_SESSION_LIMIT = 5
-
-/** 在飞拖拽(官方 DragState 等位)。 */
-type DragState =
-  | { kind: 'session'; accountKey: string; sessionId: string }
-  | { kind: 'workspace'; workspaceId: string }
-  | null
-
-interface GroupView {
-  key: string
-  title: string
-  entries: SessionListEntry[]
-  isWorkspace: boolean
-}
+/** 侧栏宽度边界(源原型 280–420px,--sidebar-width 驱动 app-grid 列宽)。 */
+const SIDEBAR_MIN_W = 280
+const SIDEBAR_MAX_W = 420
 
 export function Sidebar({ query, onQueryChange }: { query: string; onQueryChange: (q: string) => void }): JSX.Element {
-  const { useSessions, selectSession, selectedSessionId, createSession, workspaces, archivedSessionIds, sessionRowActions, workspaceActions } = useRuntime()
-  const items = useSessions(s => s.items)
+  const { useSessions, selectSession, selectedSessionId, createSession } = useRuntime()
   const listState = useSessions(s => s.state)
-  const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({})
-  const [settingsOpen, setSettingsOpen] = useState(false)
-  const [view, setView] = useState<ViewOptions>({ groupBy: 'flat', orderBy: 'updated' })
+  const [view, setView] = useState<{ groupBy: 'workspace' | 'flat'; orderBy: 'updated' | 'manual' }>({ groupBy: 'workspace', orderBy: 'updated' })
   const [viewMenuOpen, setViewMenuOpen] = useState(false)
-  const [menuFor, setMenuFor] = useState<string | null>(null)
-  const [renaming, setRenaming] = useState<{ sessionId: string; title: string } | null>(null)
-  const [rowError, setRowError] = useState<string | null>(null)
-  const [drag, setDrag] = useState<DragState>(null)
-  const [dropMarker, setDropMarker] = useState<{ id: string; half: 'before' | 'after' } | null>(null)
+  const [settingsOpen, setSettingsOpen] = useState(false)
+  const [browseOpen, setBrowseOpen] = useState(false)
+  const [mapOpen, setMapOpen] = useState(false)
 
-  const rows = useMemo(() => {
-    const q = query.trim().toLowerCase()
-    const archived = new Set(archivedSessionIds)
-    const source = items
-    // 官方 ui-workspace sessionVisible:origin !== 'subagent'(子代理不进侧边栏,
-    // 经会话头目录树呈现)+ 归档排除 + blank 仅当前。
-    const filtered = q === ''
-      ? source.filter(entry => entry.origin !== 'subagent' && !entry.blank && !archived.has(entry.sessionId))
-      : source.filter(entry =>
-        entry.origin !== 'subagent' && !entry.blank && !archived.has(entry.sessionId) &&
-        ((entry.title ?? '').toLowerCase().includes(q) || entry.sessionId.toLowerCase().includes(q)),
-      )
-    if (view.orderBy === 'manual') return filtered
-    return [...filtered].sort((a, b) => b.updatedAt - a.updatedAt)
-  }, [items, query, view.orderBy, archivedSessionIds])
+  const model = useWorkspaceCityModel(query, view.orderBy, selectedSessionId ?? null)
+  const camera = useCityCamera(model.workspaces, mapOpen)
 
-  // 按工作区分组:workspaces 的 sessionIds 账目 → 组;无归属 → 未分组。
-  const groups = useMemo(() => {
-    if (view.groupBy === 'flat') return null
-    const used = new Set<string>()
-    const result: GroupView[] = []
-    for (const ws of workspaces) {
-      const ids = new Set(ws.sessionIds)
-      const members = rows.filter(entry => ids.has(entry.sessionId))
-      if (members.length === 0) continue
-      for (const m of members) used.add(m.sessionId)
-      // 手动排序 → 跟随工作区账目顺序(拖拽重排的落点可见);否则按 rows(updatedAt) 序。
-      const ordered = view.orderBy === 'manual'
-        ? ws.sessionIds
-          .map(id => members.find(m => m.sessionId === id))
-          .filter((e): e is SessionListEntry => e !== undefined)
-        : members
-      result.push({ key: ws.workspaceId, title: ws.title, entries: ordered, isWorkspace: true })
-    }
-    const ungrouped = rows.filter(entry => !used.has(entry.sessionId))
-    if (ungrouped.length > 0) result.push({ key: UNGROUPED_KEY, title: '未分组', entries: ungrouped, isWorkspace: false })
-    return result
-  }, [rows, workspaces, view.groupBy, view.orderBy])
+  /** 城市模型里是 plain string,跨进运行时数据面前回到 SessionId brand。 */
+  const handleSelectSession = (id: string): void => selectSession(id as SessionId)
 
-  // 原生拖拽期间文档级 accept:在列表外释放不算拒绝(官方 useNativeDragAcceptance)。
-  useEffect(() => {
-    if (drag === null) return
-    const acceptDrag = (event: DragEvent): void => {
-      event.preventDefault()
-      if (event.dataTransfer !== null) event.dataTransfer.dropEffect = 'move'
-    }
-    const acceptDrop = (event: DragEvent): void => { event.preventDefault() }
-    document.addEventListener('dragover', acceptDrag)
-    document.addEventListener('drop', acceptDrop)
-    return () => {
-      document.removeEventListener('dragover', acceptDrag)
-      document.removeEventListener('drop', acceptDrop)
-    }
-  }, [drag])
+  const selectedWorkspaceId = useMemo(
+    () => (selectedSessionId != null ? model.workspaceOf.get(selectedSessionId) ?? null : null),
+    [model, selectedSessionId],
+  )
 
-  const runRowAction = (fn: () => Promise<boolean>, failure: string): void => {
-    setRowError(null)
-    void fn().then(ok => { if (!ok) setRowError(failure) })
-  }
-
-  /** 会话行放下:目标行上半=插到其前,下半=插到其后(anchor=下一兄弟)。 */
-  const commitSessionDrop = (event: React.DragEvent, groupKey: string, overId: string): void => {
-    if (drag?.kind !== 'session' || drag.accountKey !== groupKey || drag.sessionId === overId) return
-    const group = groups?.find(g => g.key === groupKey)
-    if (group === undefined || !group.isWorkspace) return
-    const rect = event.currentTarget.getBoundingClientRect()
-    const half = event.clientY < rect.top + rect.height / 2 ? 'before' : 'after'
-    const index = group.entries.findIndex(e => e.sessionId === overId)
-    const anchor = half === 'before' ? overId : group.entries[index + 1]?.sessionId
-    setDropMarker(null)
-    setDrag(null)
-    runRowAction(() => workspaceActions.insertSessionBefore(groupKey as import('../../vendor/client-connection/client/api.ts').WorkspaceId, drag.sessionId, anchor), '拖拽重排失败')
-  }
-
-  /** 工作区组头放下:上半=插到该组前,下半=插到其后。 */
-  const commitWorkspaceDrop = (event: React.DragEvent, overKey: string): void => {
-    if (drag?.kind !== 'workspace' || drag.workspaceId === overKey) return
-    if (groups === null) return
-    const index = groups.findIndex(g => g.key === overKey)
+  const locateWorkspace = (workspaceId: string): void => {
+    const index = model.workspaces.findIndex(w => w.id === workspaceId)
     if (index === -1) return
-    const rect = event.currentTarget.getBoundingClientRect()
-    const half = event.clientY < rect.top + rect.height / 2 ? 'before' : 'after'
-    const anchor = half === 'before'
-      ? overKey
-      : (() => {
-        const next = groups[index + 1]
-        return next !== undefined && next.isWorkspace ? next.key : undefined
-      })()
-    setDropMarker(null)
-    setDrag(null)
-    runRowAction(() => workspaceActions.insertBefore(
-      drag.workspaceId as import('../../vendor/client-connection/client/api.ts').WorkspaceId,
-      anchor as import('../../vendor/client-connection/client/api.ts').WorkspaceId | undefined,
-    ), '工作区重排失败')
+    camera.navigateToWorkspace(index)
+    setMapOpen(false)
   }
 
-  const renderEntry = (entry: SessionListEntry, now: number, groupKey: string | undefined) => {
-    const id = entry.sessionId
-    const isSelected = selectedSessionId === id
-    const title = entry.title ?? basename(entry.cwd) ?? 'Untitled session'
-    // 拖拽仅限按工作区分组内的账目行(官方:workspace-group sessions outside search)。
-    const draggable = groupKey !== undefined && groupKey !== UNGROUPED_KEY && drag?.kind !== 'workspace'
-    const marker = dropMarker !== null && dropMarker.id === id ? dropMarker.half : undefined
-    return (
-      <div
-        key={id}
-        className="sidebar-item"
-        data-session-id={id}
-        data-selected={isSelected || undefined}
-        data-running={entry.running || undefined}
-        data-blank={entry.blank || undefined}
-        data-drop-before={marker === 'before' || undefined}
-        data-drop-after={marker === 'after' || undefined}
-        draggable={draggable}
-        onDragStart={(e) => {
-          if (groupKey === undefined) return
-          e.dataTransfer.effectAllowed = 'move'
-          e.dataTransfer.setData('text/plain', id)
-          setDrag({ kind: 'session', accountKey: groupKey, sessionId: id })
-        }}
-        onDragEnd={() => { setDrag(null); setDropMarker(null) }}
-        onDragOver={(e) => {
-          if (drag?.kind !== 'session' || drag.accountKey !== groupKey || drag.sessionId === id) return
-          e.preventDefault()
-          const rect = e.currentTarget.getBoundingClientRect()
-          const half = e.clientY < rect.top + rect.height / 2 ? 'before' : 'after'
-          setDropMarker({ id, half })
-        }}
-        onDragLeave={() => { setDropMarker(prev => (prev?.id === id ? null : prev)) }}
-        onDrop={(e) => { commitSessionDrop(e, groupKey ?? '', id) }}
-        style={{ paddingLeft: (entry.depth ?? 0) * 14 + 10 }}
-      >
-        <button
-          className="sidebar-row"
-          type="button"
-          onClick={() => selectSession(id)}
-        >
-          <span className="sidebar-row-title">{title}</span>
-          {entry.running && <span className="sidebar-row-running">进行中</span>}
-          {!entry.running && entry.completed && <span className="sidebar-row-done" title="Finished running">✓</span>}
-          <span className="sidebar-row-time">{relativeTime(entry.updatedAt, now)}</span>
-        </button>
-        <Menu
-          open={menuFor === id}
-          onClose={() => setMenuFor(null)}
-          items={[
-            { id: 'rename', label: '重命名', icon: <IconEditOutline16 /> },
-            { id: 'fork', label: '分叉会话', icon: <IconBranchOutline16 /> },
-            { id: 'archive', label: '归档会话', icon: <IconArchiveOutline20 size={16} /> },
-          ]}
-          onSelect={(itemId) => {
-            setMenuFor(null)
-            if (itemId === 'rename') setRenaming({ sessionId: id, title })
-            else if (itemId === 'fork') runRowAction(() => sessionRowActions.fork(id), '分叉失败(最后回合未完成或无权限)')
-            else if (itemId === 'archive') runRowAction(() => sessionRowActions.archive(id), '归档失败')
-          }}
-          align="end"
-          dense
-          portal
-          anchor={(
-            <button
-              type="button"
-              className="sidebar-row-menu"
-              aria-label="会话操作"
-              aria-haspopup="menu"
-              aria-expanded={menuFor === id}
-              onClick={(e) => { e.stopPropagation(); setMenuFor(v => (v === id ? null : id)) }}
-            >
-              <IconEllipsisOutline16 />
-            </button>
-          )}
-        />
-      </div>
-    )
-  }
+  // M 开关索引;Esc 关索引/视图菜单(行走键在 useCityCamera)。
+  useEffect(() => {
+    const onKeydown = (event: KeyboardEvent): void => {
+      if ((event.target as HTMLElement).matches('input, textarea, [contenteditable]')) return
+      if (event.key === 'Escape') {
+        if (viewMenuOpen) { setViewMenuOpen(false); return }
+        if (mapOpen) { event.preventDefault(); setMapOpen(false) }
+        return
+      }
+      if (event.key.toLowerCase() === 'm') {
+        event.preventDefault()
+        setMapOpen(v => !v)
+      }
+    }
+    document.addEventListener('keydown', onKeydown)
+    return () => document.removeEventListener('keydown', onKeydown)
+  }, [mapOpen, viewMenuOpen])
 
-  const now = Date.now()
+  // 右缘拖拽调宽 280–420px(用户裁决保留;--sidebar-width 驱动 app-grid 列)。
+  const widthHandleRef = useRef<HTMLDivElement | null>(null)
+  useEffect(() => {
+    const handle = widthHandleRef.current
+    if (handle === null) return
+    const onPointerDown = (event: PointerEvent): void => {
+      event.stopPropagation()
+      event.preventDefault()
+      const startX = event.clientX
+      const startW = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--sidebar-width')) || SIDEBAR_MIN_W
+      document.body.classList.add('resizing-width')
+      handle.setPointerCapture(event.pointerId)
+      const move = (e: PointerEvent): void => {
+        const w = Math.round(Math.min(SIDEBAR_MAX_W, Math.max(SIDEBAR_MIN_W, startW + e.clientX - startX)))
+        document.documentElement.style.setProperty('--sidebar-width', `${w}px`)
+      }
+      const up = (): void => {
+        document.body.classList.remove('resizing-width')
+        handle.removeEventListener('pointermove', move)
+        handle.removeEventListener('pointerup', up)
+      }
+      handle.addEventListener('pointermove', move)
+      handle.addEventListener('pointerup', up)
+    }
+    handle.addEventListener('pointerdown', onPointerDown)
+    return () => handle.removeEventListener('pointerdown', onPointerDown)
+  }, [])
 
   return (
-    <div className="sidebar">
-      <div className="sidebar-search">
+    <div className="sidebar" data-experience={camera.reduced ? 'reduced' : 'cinematic'}>
+      <header className="sidebar-head">
+        <div>
+          <span className="brand-kicker">ZION NAVIGATION PROTOCOL</span>
+          <h1 className="brand-name">ASCII <em>DISTRICT</em></h1>
+        </div>
+        <div className="head-status">LINKED</div>
+      </header>
+
+      <div className="sidebar-toolbar" role="toolbar" aria-label="会话浏览工具条">
         <input
           className="sidebar-search-input"
           type="search"
-          placeholder="Search sessions…"
+          placeholder="搜索会话…"
           value={query}
           onChange={(e) => onQueryChange(e.target.value)}
-          aria-label="Search sessions"
+          aria-label="搜索会话(标题或 id)"
         />
-        <button
-          type="button"
-          className="sidebar-view-options"
-          title="视图选项"
-          aria-label="视图选项"
-          aria-haspopup="menu"
-          aria-expanded={viewMenuOpen}
-          onClick={() => setViewMenuOpen(v => !v)}
-        >
-          <IconPersonalizationOutline16 />
-        </button>
         <Menu
           open={viewMenuOpen}
           onClose={() => setViewMenuOpen(false)}
@@ -303,73 +137,34 @@ export function Sidebar({ query, onQueryChange }: { query: string; onQueryChange
           align="end"
           dense
           portal
-          anchor={<span aria-hidden />}
+          anchor={(
+            <button
+              type="button"
+              className="toolbar-btn sidebar-view-options"
+              title="视图选项"
+              aria-label="视图选项"
+              aria-haspopup="menu"
+              aria-expanded={viewMenuOpen}
+              onClick={() => setViewMenuOpen(v => !v)}
+            >
+              <IconPersonalizationOutline16 />
+            </button>
+          )}
         />
-        <button className="sidebar-new" type="button" title="New session" onClick={() => void createSession()}>
+        <button className="toolbar-btn sidebar-new" type="button" title="新建会话" aria-label="新建会话" onClick={() => void createSession()}>
           +
         </button>
-      </div>
-      <nav className="sidebar-list" aria-label="Sessions">
-        {listState === 'loading' && <div className="sidebar-hint">Loading sessions…</div>}
-        {listState === 'error' && (
-          <div className="sidebar-hint sidebar-error">Failed to load sessions.</div>
-        )}
-        {groups === null ? (
-          rows.map(entry => renderEntry(entry, now, undefined))
-        ) : (
-          groups.map(group => {
-            const collapsed = !expandedGroups[group.key] && group.entries.length > COLLAPSED_SESSION_LIMIT
-            const visible = collapsed ? group.entries.slice(0, COLLAPSED_SESSION_LIMIT) : group.entries
-            const marker = dropMarker !== null && dropMarker.id === group.key ? dropMarker.half : undefined
-            return (
-              <div key={group.key} className="sidebar-group" data-group={group.key}>
-                <div
-                  className="sidebar-group-header"
-                  data-drop-before={marker === 'before' || undefined}
-                  data-drop-after={marker === 'after' || undefined}
-                  draggable={group.isWorkspace && drag?.kind !== 'session'}
-                  onDragStart={(e) => {
-                    if (!group.isWorkspace) return
-                    e.dataTransfer.effectAllowed = 'move'
-                    e.dataTransfer.setData('text/plain', group.key)
-                    setDrag({ kind: 'workspace', workspaceId: group.key })
-                  }}
-                  onDragEnd={() => { setDrag(null); setDropMarker(null) }}
-                  onDragOver={(e) => {
-                    if (drag?.kind !== 'workspace' || drag.workspaceId === group.key) return
-                    e.preventDefault()
-                    const rect = e.currentTarget.getBoundingClientRect()
-                    const half = e.clientY < rect.top + rect.height / 2 ? 'before' : 'after'
-                    setDropMarker({ id: group.key, half })
-                  }}
-                  onDragLeave={() => { setDropMarker(prev => (prev?.id === group.key ? null : prev)) }}
-                  onDrop={(e) => { commitWorkspaceDrop(e, group.key) }}
-                >
-                  {group.title}
-                </div>
-                {visible.map(entry => renderEntry(entry, now, group.key))}
-                {collapsed && (
-                  <button
-                    type="button"
-                    className="sidebar-group-more"
-                    onClick={() => setExpandedGroups(prev => ({ ...prev, [group.key]: true }))}
-                  >
-                    {group.entries.length - COLLAPSED_SESSION_LIMIT} 个更多…
-                  </button>
-                )}
-              </div>
-            )
-          })
-        )}
-        {rows.length === 0 && listState !== 'loading' && listState !== 'error' && (
-          <div className="sidebar-hint">No sessions.</div>
-        )}
-        {rowError !== null && <div className="sidebar-row-error" role="alert">{rowError}</div>}
-      </nav>
-      <div className="sidebar-footer">
-        <SlotAnchor slot="sidebar.footer.action" ownerProps={{}} />
         <button
-          className="sidebar-settings-trigger"
+          className="toolbar-btn sidebar-add-workspace"
+          type="button"
+          title="添加工作区"
+          aria-label="添加工作区"
+          onClick={() => setBrowseOpen(true)}
+        >
+          ⌂
+        </button>
+        <button
+          className="toolbar-btn sidebar-settings-trigger"
           type="button"
           data-open={settingsOpen || undefined}
           onClick={() => setSettingsOpen(o => !o)}
@@ -379,68 +174,52 @@ export function Sidebar({ query, onQueryChange }: { query: string; onQueryChange
           ⚙
         </button>
       </div>
-      <SettingsShell open={settingsOpen} onClose={() => setSettingsOpen(false)} />
 
-      {renaming !== null && (
-        <RenameSessionModal
-          sessionId={renaming.sessionId}
-          initial={renaming.title}
-          onCancel={() => setRenaming(null)}
-          onSaved={(ok) => {
-            setRenaming(null)
-            if (!ok) setRowError('重命名失败')
-          }}
-        />
-      )}
-    </div>
-  )
-}
+      {listState === 'error'
+        ? <div className="sidebar-hint sidebar-error">Failed to load sessions.</div>
+        : (
+          <CityFrame
+            model={model.workspaces}
+            camera={camera}
+            selectedSessionId={selectedSessionId ?? null}
+            total={model.total}
+            mapOpen={mapOpen}
+            onSelectSession={handleSelectSession}
+            onToggleMap={() => setMapOpen(v => !v)}
+          />
+        )}
 
-/** 会话重命名 Modal(官方 rename 装配的等位:Modal + 输入 + 保存)。 */
-function RenameSessionModal({ sessionId, initial, onCancel, onSaved }: {
-  sessionId: string
-  initial: string
-  onCancel: () => void
-  onSaved: (ok: boolean) => void
-}): JSX.Element {
-  const { sessionRowActions } = useRuntime()
-  const [text, setText] = useState(initial)
-  const [busy, setBusy] = useState(false)
-
-  const save = async (): Promise<void> => {
-    const title = text.trim()
-    if (title === '' || busy) return
-    setBusy(true)
-    const ok = await sessionRowActions.rename(sessionId, title)
-    setBusy(false)
-    onSaved(ok)
-  }
-
-  return (
-    <Modal
-      open
-      onClose={onCancel}
-      title="重命名会话"
-      footer={(
-        <>
-          <button type="button" className="sidebar-modal-btn" onClick={onCancel}>取消</button>
-          <button type="button" className="sidebar-modal-btn sidebar-modal-btn-primary" disabled={busy || text.trim() === ''} onClick={() => void save()}>
-            {busy ? '…' : '保存'}
-          </button>
-        </>
-      )}
-    >
-      <input
-        className="sidebar-modal-input"
-        value={text}
-        autoFocus
-        onChange={(e) => setText(e.target.value)}
-        onKeyDown={(e) => {
-          if (e.key === 'Enter') { e.preventDefault(); void save() }
-          if (e.key === 'Escape') onCancel()
-        }}
-        aria-label="会话名称"
+      <CityIndex
+        model={model.workspaces}
+        open={mapOpen}
+        flat={view.groupBy === 'flat'}
+        orderBy={view.orderBy}
+        selectedSessionId={selectedSessionId ?? null}
+        selectedWorkspaceId={selectedWorkspaceId}
+        reduced={camera.reduced}
+        onSelectSession={handleSelectSession}
+        onLocateWorkspace={locateWorkspace}
       />
-    </Modal>
+
+      <div className="sidebar-foot" aria-label="插件动作槽">
+        <SlotAnchor slot="sidebar.footer.action" ownerProps={{}} />
+      </div>
+
+      <div
+        className="width-handle"
+        ref={widthHandleRef}
+        role="separator"
+        aria-orientation="vertical"
+        aria-label="拖拽调整侧栏宽度"
+        title="拖拽调整宽度 (280-420px)"
+      />
+
+      <SettingsShell open={settingsOpen} onClose={() => setSettingsOpen(false)} />
+      <WorkspaceDirectoryBrowser
+        open={browseOpen}
+        onClose={() => setBrowseOpen(false)}
+        onCreated={() => setBrowseOpen(false)}
+      />
+    </div>
   )
 }

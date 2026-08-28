@@ -43,10 +43,12 @@ app.whenReady().then(async () => {
 
   out(`mode: ${tag}`)
 
-  // ---- A: 已归档 ids 与可见行互斥 ----
+  // ---- A: 已归档 ids 与可见行互斥(ASCII 城市:全量可见行在 City Index 内) ----
+  await js(win, `(() => { const b = document.querySelector('.map-toggle'); if (b) b.click(); return !!b })()`)
+  await waitFor(win, `document.querySelectorAll('.map-row').length >= 1`, 8000)
   const archived = await js(win, `window.__zionProbeGetArchivedSessionIds?.() ?? null`)
   out(`runtime archivedSessionIds (${tag}): ${JSON.stringify(archived)}`)
-  const rows = await js(win, `[...document.querySelectorAll('.sidebar-item')].map(r => ({ id: r.getAttribute('data-session-id'), title: r.querySelector('.sidebar-row-title')?.innerText?.trim() ?? '' }))`)
+  const rows = await js(win, `[...document.querySelectorAll('.map-row')].map(r => ({ id: r.getAttribute('data-session-id'), title: r.querySelector('.title')?.textContent?.trim() ?? '' }))`)
   out(`visible rows: ${rows.length}`)
   if (Array.isArray(rows) && rows.length > 0) out(`  e.g. ${JSON.stringify(rows.slice(0, 4))}`)
 
@@ -64,28 +66,37 @@ app.whenReady().then(async () => {
   mark('a1', aOK, 'A1 已归档会话不在侧边栏可见行', aNote)
 
   // ---- B: 反应路径(只驱动 UI 过滤状态,不碰后端) ----
-  const bRows = await js(win, `[...document.querySelectorAll('.sidebar-item')].map(r => r.getAttribute('data-session-id')).filter(Boolean)`)
-  if (Array.isArray(bRows) && bRows.length >= 2) {
-    const pick = bRows[1] // 避开几乎总在顶部的 selected 行?没问题,选中行被归档时官会清空选择
-    const before = await js(win, `document.querySelectorAll('.sidebar-item').length`)
+  // 全量可见行在 City Index(A1 已打开);活跃工作区可能只有 1 条非 blank 会话
+  // (blank 仅当前可见)——先点「+」新建一条(blank 但被选中 → 未分组 BAY 可见),
+  // 凑够 ≥2 行再取非当前行做归档对象。
+  let bRows = await js(win, `[...document.querySelectorAll('.map-row')].map(r => r.getAttribute('data-session-id')).filter(Boolean)`)
+  if (Array.isArray(bRows) && bRows.length < 2) {
+    await js(win, `(() => { const b = document.querySelector('.sidebar-new'); if (b) b.click(); return !!b })()`)
+    await waitFor(win, `document.querySelectorAll('.map-row').length >= 2`, 8000)
+    bRows = await js(win, `[...document.querySelectorAll('.map-row')].map(r => r.getAttribute('data-session-id')).filter(Boolean)`)
+  }
+  const idleId = await js(win, `[...document.querySelectorAll('.map-row')].filter(r => !r.querySelector('.map-session-button')?.classList.contains('is-current')).map(r => r.getAttribute('data-session-id'))[0] ?? null`)
+  if (Array.isArray(bRows) && bRows.length >= 2 && idleId !== null) {
+    const pick = idleId // 非当前行(当前行被归档时官方会清空选择)
+    const before = await js(win, `document.querySelectorAll('.map-row').length`)
     const setOK = await js(win, `(() => {
       const cur = window.__zionProbeGetArchivedSessionIds()
       window.__zionProbeSetArchivedSessionIds([...cur, ${JSON.stringify(pick)}])
       return true
     })()`)
-    const gone = await waitFor(win, `![...document.querySelectorAll('.sidebar-item')].some(r => r.getAttribute('data-session-id') === ${JSON.stringify(pick)})`, 8000)
-    const afterHide = await js(win, `document.querySelectorAll('.sidebar-item').length`)
+    const gone = await waitFor(win, `![...document.querySelectorAll('.map-row')].some(r => r.getAttribute('data-session-id') === ${JSON.stringify(pick)})`, 8000)
+    const afterHide = await js(win, `document.querySelectorAll('.map-row').length`)
     // 清空归档 → 行回归
     const clearOK = await js(win, `(() => { window.__zionProbeSetArchivedSessionIds([]); return true })()`)
-    const back = await waitFor(win, `[...document.querySelectorAll('.sidebar-item')].some(r => r.getAttribute('data-session-id') === ${JSON.stringify(pick)})`, 8000)
-    const afterBack = await js(win, `document.querySelectorAll('.sidebar-item').length`)
+    const back = await waitFor(win, `[...document.querySelectorAll('.map-row')].some(r => r.getAttribute('data-session-id') === ${JSON.stringify(pick)})`, 8000)
+    const afterBack = await js(win, `document.querySelectorAll('.map-row').length`)
     mark('b1', setOK && gone && clearOK && back, 'B1 归档某行 → 行消失;清空 → 行回归', `id=${pick}, rows ${before}→${afterHide}→${afterBack}`)
   } else {
-    mark('b1', false, 'B1 需要 ≥2 可见行', `got ${bRows?.length ?? 0}`)
+    mark('b1', false, 'B1 需要 ≥2 可见行且有非当前行', `rows=${bRows?.length ?? 0}, idle=${idleId}`)
   }
 
-  // ---- C: 「归档会话」入口仍存在(feature 入口不丢) ----
-  const menuOpened = await js(win, `(() => { const b = document.querySelector('.sidebar-row-menu'); if (!b) return false; b.click(); return true })()`)
+  // ---- C: 「归档会话」入口仍存在(City Index 行 ⋯ 菜单;feature 入口不丢) ----
+  const menuOpened = await js(win, `(() => { const b = document.querySelector('.map-row-menu'); if (!b) return false; b.click(); return true })()`)
   const menuItems = await waitFor(win, `document.querySelectorAll('[role="menuitem"]').length >= 1`, 6000)
   const menuTexts = await js(win, `[...document.querySelectorAll('[role="menuitem"]')].map(b => b.innerText.trim())`)
   mark('c1', menuOpened && menuItems && menuTexts.includes('归档会话'), 'C1 会话行 … 菜单含「归档会话」入口', JSON.stringify(menuTexts))
