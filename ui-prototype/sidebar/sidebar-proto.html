@@ -32,8 +32,13 @@
 
     【多余入口】(源原型有、清单没有;用户已裁决:全部保留)
       · 相机行走输入:W/S/A/D + 方向键 / 滚轮 / 空白拖拽
-      · City Index 家族:CITY INDEX 按钮、M/Esc、分组/平铺切换、BAY 章标题
+      · City Index 家族:CITY INDEX 按钮、M/Esc、BAY 章标题
       · 右缘拖拽调宽 280–420px
+
+    【2026-08-28 迭代(用户指示)】
+      · map-stylebar 整栏删除(分组/平铺切换入口随之移除;平铺仅余 ?mapstyle=flat 与视图选项「单列表」)
+      · 索引内点击会话只选中、不再自动跳城市相机(navigate:false),索引保持打开
+      · map-body 底部新增 LOCATE 按钮:点击把城市相机切到所选会话位置并关闭索引
 
     调试参数(沿用源原型):?map=1 初始开索引 / ?mapstyle=flat 平铺 / ?z= 相机纵深 / ?w=280..420 侧栏宽度
   -->
@@ -173,7 +178,6 @@
     .frame-label,
     .frame-coordinate,
     .key,
-    .map-stylebar-kicker,
     .host-field,
     .map-toggle {
       font-family: var(--display);
@@ -634,40 +638,60 @@
       visibility: visible;
     }
 
-    .map-stylebar {
+    /* map-stylebar 已按用户指示删除(2026-08-28 迭代):
+       分组/平铺切换入口随之移除,视觉样式仅余 ?mapstyle=flat 调试参数与视图选项「单列表」 */
+
+    /* 底部 LOCATE 行:点击把城市相机切到所选会话位置并关闭索引 */
+    .map-foot {
       position: relative;
       z-index: 1;
       flex: 0 0 auto;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 8px;
-      padding: 10px 12px 9px;
-      border-bottom: 1px solid rgba(77, 255, 131, 0.21);
+      padding: 8px 10px;
+      border-top: 1px solid rgba(77, 255, 131, 0.21);
       background: rgba(3, 12, 7, 0.92);
     }
 
-    .map-stylebar-kicker {
-      color: var(--matrix);
-      font-size: 8px;
-      line-height: 1;
-    }
-
-    .map-style-toggle {
-      padding: 5px 9px;
-      border: 1px solid rgba(77, 255, 131, 0.3);
-      color: var(--matrix);
-      background: rgba(5, 22, 11, 0.7);
+    .map-locate {
+      width: 100%;
+      padding: 7px 10px;
+      display: flex;
+      align-items: baseline;
+      gap: 8px;
+      border: 1px solid rgba(104, 233, 221, 0.3);
+      border-left: 2px solid var(--cyan);
+      color: var(--cyan);
+      background: rgba(2, 14, 12, 0.78);
       cursor: pointer;
-      font: 9px/1 var(--body);
-      letter-spacing: 0.1em;
+      font: 10px/1.2 var(--body);
+      letter-spacing: 0.08em;
+      text-align: left;
     }
 
-    .map-style-toggle:hover,
-    .map-style-toggle:focus-visible {
+    .map-locate .k {
+      flex: 0 0 auto;
+      font: 8px/1 var(--display);
+      letter-spacing: 0.14em;
+      opacity: 0.75;
+    }
+
+    .map-locate .t {
+      min-width: 0;
+      overflow: hidden;
+      white-space: nowrap;
+      text-overflow: ellipsis;
+      color: #c4e8cd;
+    }
+
+    .map-locate:hover,
+    .map-locate:focus-visible {
       outline: none;
-      border-color: var(--matrix);
-      color: #fff;
+      border-color: var(--cyan);
+      box-shadow: 0 0 10px rgba(104, 233, 221, 0.2);
+    }
+
+    .map-locate:hover .t,
+    .map-locate:focus-visible .t {
+      color: #e7fffc;
     }
 
     .map-body {
@@ -1292,11 +1316,14 @@
 
     <section class="city-map" id="city-map" aria-hidden="true" aria-label="全部工作区与会话索引">
       <canvas class="map-rain" id="map-rain" aria-hidden="true"></canvas>
-      <div class="map-stylebar">
-        <span class="map-stylebar-kicker" id="map-stylebar-kicker">SCENE SELECTIONS // 4 DISTRICTS</span>
-        <button class="map-style-toggle" type="button" id="map-style-toggle" aria-label="切换列表样式:按工作区分组或平铺">分组</button>
-      </div>
       <div class="map-body grouped" id="map-body" role="tree"></div>
+      <!-- 2026-08-28 迭代:map-stylebar 删除;索引内点会话只选中不跳相机,
+           由底部 LOCATE 按钮显式切到所选会话的城市位置 -->
+      <div class="map-foot">
+        <button class="map-locate" id="map-locate" type="button" aria-label="前往所选会话的城市位置">
+          <span class="k">LOCATE ▸</span><span class="t"></span>
+        </button>
+      </div>
     </section>
 
     <!-- 迁移补齐 ⑤:行 ⋯ 菜单弹层(fixed,全局单例) -->
@@ -1413,9 +1440,8 @@
     const mapPanel = document.querySelector("#city-map");
     const mapToggle = document.querySelector("#map-toggle");
     const mapKeyHint = document.querySelector("#map-key-hint");
-    const mapStyleToggle = document.querySelector("#map-style-toggle");
-    const mapStylebarKicker = document.querySelector("#map-stylebar-kicker");
     const mapBody = document.querySelector("#map-body");
+    const locateBtn = document.querySelector("#map-locate");
     const searchInput = document.querySelector("#tb-search");
     const viewBtn = document.querySelector("#tb-view");
     const viewPop = document.querySelector("#tb-view-pop");
@@ -2117,7 +2143,7 @@
       rebuildSessionPortals();
     }
 
-    function selectSession(wsId, sessionId) {
+    function selectSession(wsId, sessionId, { navigate = true } = {}) {
       const workspaceIndex = WORKSPACES.findIndex((w) => w.id === wsId);
       if (workspaceIndex < 0) return;
       const workspace = WORKSPACES[workspaceIndex];
@@ -2126,10 +2152,19 @@
       if (!found) return;
       state.selectedWsId = wsId;
       state.selectedSessionId = sessionId;
-      if (state.activeWorkspace !== workspaceIndex) navigateToWorkspace(workspaceIndex);
+      // 2026-08-28 迭代:索引内选会话不再自动跳相机(navigate:false),由 LOCATE 按钮显式跳转
+      if (navigate && state.activeWorkspace !== workspaceIndex) navigateToWorkspace(workspaceIndex);
       rebuildSessionPortals();
       updateMapSelection();
     }
+
+    // LOCATE:把城市相机切到所选会话位置并关闭索引
+    locateBtn.addEventListener("click", () => {
+      const index = WORKSPACES.findIndex((w) => w.id === state.selectedWsId);
+      if (index < 0) return;
+      navigateToWorkspace(index);
+      closeMap();
+    });
 
     // 数据变更(新建/归档/分叉/重命名/拖拽)后的统一重建:点云 + Portal + 索引 + 计数
     function regenCity() {
@@ -2219,9 +2254,8 @@
       age.textContent = session.time;
       button.append(cursor, title, age);
       button.addEventListener("click", () => {
-        selectSession(workspace.id, session.id);
-        navigateToWorkspace(WORKSPACES.indexOf(workspace));
-        closeMap();
+        // 2026-08-28 迭代:索引内点会话只选中(索引保持打开),不自动跳城市视图
+        selectSession(workspace.id, session.id, { navigate: false });
       });
       row.append(button);
 
@@ -2269,14 +2303,10 @@
 
     function buildMap() {
       mapBody.replaceChildren();
-      // 视图选项「单列表」强制平铺视觉;「按工作区」跟随 mapStyle 分组/平铺开关
+      // 视图选项「单列表」强制平铺视觉;「按工作区」跟随 mapStyle(?mapstyle=flat 调试参数)
       const flat = state.view.groupBy === "flat" || state.mapStyle === "flat";
       mapBody.classList.toggle("grouped", !flat);
       mapBody.classList.toggle("flat", flat);
-      mapStylebarKicker.textContent = flat
-        ? "SESSION PORTALS // ALL DISTRICTS"
-        : `SCENE SELECTIONS // ${WORKSPACES.length} DISTRICTS`;
-      mapStyleToggle.textContent = state.mapStyle === "grouped" ? "分组" : "平铺";
 
       let itemNo = 0;
       let anyRow = false;
@@ -2376,6 +2406,9 @@
         button.classList.toggle("is-current", isCurrent);
         button.setAttribute("aria-current", isCurrent ? "page" : "false");
       });
+      // LOCATE 按钮跟随所选会话
+      const { session } = findSession(state.selectedWsId, state.selectedSessionId);
+      locateBtn.querySelector(".t").textContent = session ? session.title : "";
     }
 
     // ── 行 ⋯ 菜单(全局单例 fixed 弹层)──
@@ -2552,7 +2585,7 @@
         current.scrollIntoView({ block: "center" });
         current.focus({ preventScroll: true });
       } else {
-        mapStyleToggle.focus();
+        locateBtn.focus();
       }
     }
 
@@ -2749,11 +2782,6 @@
     });
 
     mapToggle.addEventListener("click", toggleMap);
-    mapStyleToggle.addEventListener("click", () => {
-      state.mapStyle = state.mapStyle === "grouped" ? "flat" : "grouped";
-      if (state.mapStyle === "grouped") state.view.groupBy = "workspace"; // 样式切回分组时视图选项同步
-      buildMap();
-    });
     document.addEventListener("keydown", handleKeydown);
 
     const observer = new ResizeObserver(resizeCanvas);

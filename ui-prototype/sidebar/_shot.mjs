@@ -38,18 +38,12 @@ app.whenReady().then(async () => {
   await pump(1400); // 字体加载 + 首帧动画稳定
   await shot('city');
 
-  // 2. City Index 分组态(BAY 章节 + caret + ⋯ + 折叠 +N)
+  // 2. City Index 分组态(BAY 章节 + caret + ⋯ + 折叠 +N + LOCATE 按钮)
   await js(`document.getElementById('map-toggle').click(); 'ok'`);
   await pump(700); // 推过 240ms 滑入 transition
   await shot('map-grouped');
 
-  // 3. City Index 平铺态
-  await js(`document.getElementById('map-style-toggle').click(); 'ok'`);
-  await pump(400);
-  await shot('map-flat');
-  await js(`document.getElementById('map-style-toggle').click(); 'ok'`); // 切回分组
-
-  // 4. 行 ⋯ 菜单展开(hover 浮出 ⋯ → 点击 → 全局弹层)
+  // 3. 行 ⋯ 菜单展开(hover 浮出 ⋯ → 点击 → 全局弹层)
   await js(`(() => {
     const b = [...document.querySelectorAll('.map-row-menu')][0];
     b.dispatchEvent(new PointerEvent('pointerover', { bubbles: true }));
@@ -60,7 +54,7 @@ app.whenReady().then(async () => {
   await shot('row-menu');
   await js(`document.body.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true })); 'ok'`);
 
-  // 5. 搜索过滤态(索引内过滤)
+  // 4. 搜索过滤态(索引内过滤)
   await js(`(() => {
     const el = document.getElementById('tb-search');
     const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set;
@@ -78,13 +72,18 @@ app.whenReady().then(async () => {
     return 'ok';
   })()`);
 
-  // 6. 视图选项菜单(关索引 → 开工具条弹层)
+  // 5. 视图选项菜单(关索引 → 开工具条弹层)
   await js(`document.getElementById('map-toggle').click(); 'ok'`); // 关索引
   await pump(400);
   await js(`document.getElementById('tb-view').click(); 'ok'`);
   await pump(300);
   await shot('view-options');
   await js(`document.body.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true })); 'ok'`);
+
+  // 6. City Index 平铺态(map-stylebar 已删,平铺走 ?mapstyle=flat 调试参数)
+  await win.loadFile(file, { search: '?map=1&mapstyle=flat' });
+  await pump(1200);
+  await shot('map-flat');
 
   // 7. 调宽 420px(城市不变形,横向视野扩展)
   await win.loadFile(file, { search: '?w=420' });
