@@ -12,6 +12,7 @@
 **当前阶段(本会话主线)**:功能接线收尾(已完成)→ **真后端专属项核验(26/26)** → **UI 功能入口差距补齐(进行中)**。目标:`官方 UI 可点的入口在 replica 中全部存在且可用`,每项以官方 3080 为基准、探针验证、真后端可操作。
 
 **进行中的 goal(round 8/30,跨机交接后继续)**`:goal-284dc56d`(max 30 轮)。objective:①②③④⑤ 五类差距补齐(见 §3)。已完成的核验/补齐:
+- **右栏 SubagentPanel 删除(对齐官方右栏)** ✅ 2026-08-29,用户裁决:删除 zion 附加的右栏子代理面板(列表+刷新/投递/中断),对齐官方(官方右栏=工具详情,无子代理面板;官方子代理语义=会话头目录树+只读 composer+层级面包屑,全部保留);ui-change-log 已立账;删 `ui/SubagentPanel.tsx`(117 行)+ DetailsPanel 挂载 + `.subagent-panel*` 样式 + runtime `subagentActions` 封装(wire/api 零改动);probe-functional 16/17 改反向断言;probe-subagent 7/7×2、checklist 24/24 回归
 - ① TrajectoryView ✅ real 6/6 + fixture 10/10
 - ② 设置界面(壳+通用+Provider 编辑)✅ real 11/11 + 10/10
 - ③ dynamicCordisRunner 运行编排 UI ✅ real 7/7
@@ -48,6 +49,8 @@
 ## 1. 最近提交链(自本会话;`main` 最新行在前)
 
 | 提交 | 内容 |
+| `(本轮,见 git log)` | **右栏 SubagentPanel 删除(对齐官方右栏)**:用户裁决删除 zion 附加的右栏子代理面板(官方右栏=工具详情,无子代理面板;官方替代=目录树+只读 composer+层级面包屑,均保留);删 `ui/SubagentPanel.tsx` + DetailsPanel 挂载(留占位+`settings.plugin.item` 槽)+ `.subagent-panel*` 样式 + runtime `subagentActions` 封装(wire/api 契约零改动);probe-functional 16/17 改反向断言(右栏无面板+占位仍在);文档同步(ui-component-inventory A5/A9/树/密度表/RPC 表、ui-entry-gap、HANDOFF);ui-change-log 先行立账 |
+| `f9b4e50` | docs(ui-change-log): 记 SubagentPanel 删除(对齐官方右栏,先记账) |
 | `8b6e1de` | **ASCII 会话城侧栏落地(zion-ui-migration 全流程)**:新增 `ui/sidebar-city/`(city-engine/useWorkspaceCityModel/useCityCamera/CityFrame/CityIndex)+ `Sidebar.tsx` 整体重写 + `styles/sidebar.css` 全量重写(layout.css app-grid 列改 `var(--sidebar-width, 280px)`);19 文件 +2570/-566;8 个探针腐化断言按新结构重写(probe-conversation A9 改 turn-tail 口径等);ui-change-log 记「添加工作区」新增入口;验证:build ✓ + typecheck 基线零新增 + 双轨探针全绿(checklist 24/workspace-actions 8/sidebar-drag 7/archive-filter 4/composer-stats 6/permission-plan 12/conversation 19/msg-actions 14/ambient 14) |
 | `b995d2a` | demo(sidebar):删 map-stylebar、索引选会话不跳相机、map-body 底部新增 LOCATE 按钮(用户裁决) |
 | `5dd7c7f` | demo(sidebar):ASCII 会话城侧栏迁移合并 demo(zion-ui-migration 第 3 步;`ui-prototype/sidebar/`) |

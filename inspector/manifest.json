@@ -1,12 +1,12 @@
 {
-  "generatedAt": "2026-08-21T05:26:29.768Z",
+  "generatedAt": "2026-08-29T07:16:30.630Z",
   "source": "docs/ui-component-inventory.md",
   "entries": [
     {
       "id": "A1-appframe",
       "name": "AppFrame",
       "part": "A",
-      "desc": "UI 根壳",
+      "desc": "UI 根壳 ✅ 已迁移(ZION 块 1+2+16,2026-08-23;demo: `ui-prototype/ambient/`)",
       "mount": "",
       "entries": [],
       "data": "",
@@ -17,7 +17,7 @@
       "id": "A2-sidebar",
       "name": "Sidebar",
       "part": "A",
-      "desc": "会话列表(入口最密集之二)",
+      "desc": "会话列表(入口最密集之二) ✅ 已迁移(ZION 块 4 ASCII 会话城替代设计,2026-08-28;demo: `ui-prototype/sidebar/`)",
       "mount": "",
       "entries": [
         "1. `input.sidebar-search-input` 搜索 → 本地过滤(标题/sessionId)[official]",
@@ -52,7 +52,7 @@
       "id": "A4-chatview",
       "name": "ChatView",
       "part": "A",
-      "desc": "消息流",
+      "desc": "消息流 ✅ 已迁移(ZION 块 6+7+11+12,2026-08-27;demo: `ui-prototype/conversation/`)",
       "mount": "",
       "entries": [
         "1. 消息 `MessageIconActions`(vendor): 复制(正文 text)、分支(assistant,`forkNode`→`forkSession(node.anchorSeq)`)、hover 时间戳钟[official]",
@@ -104,7 +104,7 @@
       "id": "A7-inputbar",
       "name": "InputBar",
       "part": "A",
-      "desc": "输入栏(入口最密集)",
+      "desc": "输入栏(入口最密集) ✅ 已迁移(ZION 块 13,2026-08-21;demo: `ui-prototype/input-bar/`)",
       "mount": "",
       "entries": [
         "1. 触发管线 `trigger.render()`(→ MenuView + PopupSelectView):输入 `/` 弹命令/技能菜单;`/permission` → popupSelect(Full access 风险确认 → `session.command('/permission <id>')`);↑/↓/Enter/Escape 仲裁 [official]",
@@ -149,7 +149,7 @@
       "id": "A9-subagentpanel",
       "name": "SubagentPanel",
       "part": "A",
-      "desc": "子代理面板(zion 附加)",
+      "desc": "子代理面板(已移除 2026-08-29,对齐官方右栏;见 ui-change-log/2026-08-29--remove-subagent-panel.md)",
       "mount": "",
       "entries": [],
       "data": "",
@@ -160,7 +160,7 @@
       "id": "A10-toolcallcard",
       "name": "ToolCallCard",
       "part": "A",
-      "desc": "工具调用卡",
+      "desc": "工具调用卡 ✅ 已迁移(ZION 块 8+9,2026-08-27;demo: `ui-prototype/conversation/`)",
       "mount": "",
       "entries": [],
       "data": "",

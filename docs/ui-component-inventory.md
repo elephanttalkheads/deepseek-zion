@@ -46,7 +46,7 @@ main.tsx Root
          │    ├─ 视图: TrajectoryPane(轨迹) | ChatView(chat)
          │    ├─ QueueDock(队列) + streaming 提示
          │    └─ ComposerSeat → 选举 approval > question > 只读子代理 > InputBar
-         ├─ aside.app-details → DetailsPanel(右栏;SubagentPanel + SlotAnchor settings.plugin.item)
+         ├─ aside.app-details → DetailsPanel(右栏;占位 + SlotAnchor settings.plugin.item;官方右栏=工具详情,SubagentPanel 已删 2026-08-29)
          └─ PluginHost(底部插件控制台)
 ```
 
@@ -62,7 +62,6 @@ main.tsx Root
 | ChatView | `renderer\src\ui\ChatView.tsx` | 3 类 + 子座位 | official |
 | WorkspaceMenu | `renderer\src\ui\WorkspaceMenu.tsx` | 6+ | official |
 | QueueDock | `renderer\src\ui\QueueDock.tsx` | 6 | official |
-| SubagentPanel | `renderer\src\ui\SubagentPanel.tsx` | 4 | zion-add(subagent RPC) |
 | ConversationDock | `renderer\src\ui\ConversationDock.tsx` | 2(Chat/轨迹 tab) | official |
 | DetailsPanel | `renderer\src\ui\DetailsPanel.tsx` | 0(占位+槽) | official |
 | ToolCallCard | `renderer\src\ui\ToolCallCard.tsx` | 1(折叠) | official |
@@ -122,7 +121,7 @@ main.tsx Root
 
 #### A5. DetailsPanel — 右栏
 - **挂载**:AppFrame `aside.app-details`。
-- **交互入口**:无直接可点;选中会话渲染 `SubagentPanel`(zion-add,官方右栏无子代理面板——官方把子代理放会话头目录树 + 只读 composer + 会话层级面包屑);`SlotAnchor slot="settings.plugin.item"` (keyed,ownerProps={sessionId})[slot]。
+- **交互入口**:无直接可点;右栏为占位(官方右栏 = 工具详情面板,选中工具调用显示 args/result,L6 未实装;`SubagentPanel` zion 附加面板已于 2026-08-29 删除,官方子代理语义 = 会话头目录树 + 只读 composer + 会话层级面包屑);`SlotAnchor slot="settings.plugin.item"` (keyed,ownerProps={sessionId})[slot]。
 - **数据**:`selectedSessionId`(未选中显示 "No selection")。
 
 #### A6. GoalBar — 目标条
@@ -156,10 +155,8 @@ main.tsx Root
 - **交互入口**:「载入演示」/「禁区探针」(runtime.load, demo.ts)/「卸载」(runtime.unload);审批卡「拒绝/允许/批准并信任」(declineRun/approveRun false|true);运行控制台「刷新清单」(inventory);每行 版本 select + 运行(run|update)/停止(stopRow)/移除(removeRow)/重试下一版本/回滚 [zion-add, cordis 演示面]。
 - **数据**:`usePlugins()`(runtime.active/runActivity/load/unload/inventory/runRow/stopRow/removeRow/approveRun/declineRun/subscribe/subscribeRuns)。
 
-#### A9. SubagentPanel — 子代理面板(zion 附加)
-- **挂载**:DetailsPanel(选中会话时)。
-- **交互入口**:「刷新」(→ subagents.list);continuable 子代理 投递输入(Enter)+「发」(`subagents.prompt`)+「中断」(`subagents.interrupt`)[zion-add]。
-- **数据**:`useSessions`(subagentsByParent[selected])、`subagentActions`、`selectedSessionId`。
+#### A9. SubagentPanel — 子代理面板(已移除 2026-08-29,对齐官方右栏;见 ui-change-log/2026-08-29--remove-subagent-panel.md)
+- 原为 zion 附加:右栏子代理目录列表 + 刷新/投递/中断。官方右栏无此面板(工具详情),官方子代理入口 = 会话头目录树(SubagentCatalogAction,见 Part B)+ 只读 composer + 会话层级面包屑,均保留。
 
 #### A10. ToolCallCard — 工具调用卡 ✅ 已迁移(ZION 块 8+9,2026-08-27;demo: `ui-prototype/conversation/`)
 - **挂载**:ChatView(tool-call 节点)。
@@ -316,7 +313,6 @@ main.tsx Root
 | Composer | 停止/发送 | session.cancel / prompt queue | official |
 | Composer | ContextMeterSeat | vendor 内部(环+面板) | official |
 | Composer | ComposerSeat 选举(approval/question/只读) | respond / 问答 / 提示 | official |
-| 右栏 | SubagentPanel 刷新/投递/发/中断 | subagents.* | zion-add |
 | 右栏 | `SlotAnchor settings.plugin.item` | 插件设置卡 | slot |
 | 底部 | PluginHost 载入/卸载/审批三键/控制台六操作 | runtime.* | zion-add |
 | 设置 | 关闭(✕/backdrop/Esc) | onClose | official |

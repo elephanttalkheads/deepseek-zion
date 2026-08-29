@@ -77,7 +77,7 @@
 |---|---|---|---|
 | Agent 预设四表面(选择/copy/删除/查看/打开文档) | ui-agent-preset | 🟢(vendor 整包;见 §1) | — |
 | 680×500 Miller 目录浏览弹窗(含 hidden/新建目录) | ui-directory-picker-browse | 🟢(vendor 接线;见 §1) | — |
-| 子代理目录树下拉 + 展开/打开子级 + 只读 composer | ui-subagent | 🟢(vendor 接线;见 §1;右栏扁平列表保留为 zion 附加面) | — |
+| 子代理目录树下拉 + 展开/打开子级 + 只读 composer | ui-subagent | 🟢(vendor 接线;见 §1;右栏扁平列表已删除 2026-08-29 对齐官方——官方右栏=工具详情,无子代理面板;官方替代=目录树+只读+层级,均在) | — |
 | 会话层级面包屑(子代理会话返回主会话) | ui-conversation ConversationSession | 🟢(ConversationDock 会话头 `nav.conversation-header-crumbs` 手写;点祖先段 selectSession(父);数据 parentSessionId/origin/depth;probe-subagent 断言) | — |
 | skill `/` 源 + SkillRow | ui-skill | 🟡 SkillRow 已 vendor 接线(见 §1);`/` 触发源随 P2 MenuView 一并接入 | ⑥ 时 vendor |
 | cordis 插件面板 run/stop/remove/版本/approve-plugin/retry-rollback | extensions/ui-cordis CordisPanel | 🟢(手写接入既有 orchestrator + remote;见 §1) | — |

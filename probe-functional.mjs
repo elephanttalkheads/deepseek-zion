@@ -5,7 +5,9 @@
 //  3. slash dispatch (/echo …) -> session.command executes via the commands remote
 //  4. goal bar (无目标隐藏 + /goal 命令创建 + projection 相位编舞 pause/resume/blocked)
 //  5. workspace menu (workspace.list + create via Miller 目录浏览弹窗 + rename/delete)
-//  6. subagent panel (subagents.list via refreshSubagents) renders in the right column
+//  6. right column aligned with official: no subagent panel (official right
+//     column = tool details; subagent semantics = session-header tree + read-only
+//     composer + hierarchy breadcrumb — see probe-subagent)
 // Usage: npx electron probe-functional.mjs
 import { app, BrowserWindow } from 'electron'
 import path from 'node:path'
@@ -146,9 +148,10 @@ app.whenReady().then(async () => {
   await check('15', `document.querySelectorAll('.workspace-menu-item').length <= ${wsCount}`, '15 workspace.delete: 创建的工作区被删除')
   await js(win, `(() => { const b = document.querySelector('.shell-workspace'); if (b) b.click(); return !!b })()`)
 
-  // 6. subagent panel in the right column.
-  await check('16', `!!document.querySelector('.subagent-panel')`, '16 subagent panel 渲染')
-  await check('17', `document.querySelectorAll('.subagent-panel-refresh').length >= 1`, '17 subagent refresh 按钮存在')
+  // 6. right column aligned with official: subagent panel removed (official has
+  //    none); details placeholder remains.
+  await check('16', `!document.querySelector('.subagent-panel')`, '16 右栏无子代理面板(对齐官方)')
+  await check('17', `!!document.querySelector('.details')`, '17 右栏详情占位仍在')
 
   // overview
   const goalText = await text(win, '.goal-bar')

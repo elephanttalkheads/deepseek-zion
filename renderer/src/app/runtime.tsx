@@ -75,16 +75,6 @@ export interface GoalActions {
   clear(ref: { id: string; revision: number }): Promise<boolean>
 }
 
-/** Subagent verbs over the subagents.* contract (list via manager, prompt/interrupt). */
-export interface SubagentActions {
-  /** Refresh the selected session's direct-child catalog (subagents.list). */
-  refresh(): Promise<void>
-  /** Deliver human content to a continuable child. */
-  prompt(address: { parentSessionId: string; childSessionId: string }, text: string): Promise<boolean>
-  /** Interrupt a live continuable child's current turn. */
-  interrupt(address: { parentSessionId: string; childSessionId: string; mode: 'continuable' }): Promise<boolean>
-}
-
 export interface AppRuntime {
   wire: AssembledWire
   /** Official uSES bridge bound to sessions.list. Call as useSessions(s => s.items). */
@@ -150,9 +140,6 @@ export interface AppRuntime {
     /** Move an accounted session within its workspace's manual order. */
     insertSessionBefore(workspaceId: string, sessionId: string, beforeSessionId?: string): Promise<boolean>
   }
-  /** Selected session's direct-child subagent catalogs; read via
-   *  `useSessions(s => s.subagentsByParent)` on the full list snapshot. */
-  subagentActions: SubagentActions
   /** Session-row actions over the wire (sidebar … 菜单): rename / fork at last
    *  completed turn (selects the child) / archive. */
   sessionRowActions: {
@@ -558,25 +545,6 @@ export function RuntimeProvider({ children }: { children: ReactNode }): JSX.Elem
           })
           if (res.result.ok) await reloadWorkspaces()
           return res.result.ok
-        },
-      },
-      subagentActions: {
-        refresh: () => {
-          if (selectedId === undefined) return Promise.resolve()
-          return wire.sessions.refreshSubagents(selectedId)
-        },
-        prompt: (address, text) => {
-          if (selectedId === undefined) return Promise.resolve(false)
-          return wire.api.subagents.prompt({
-            parentSessionId: asSessionId(address.parentSessionId),
-            childSessionId: asSessionId(address.childSessionId),
-            mode: 'continuable',
-            content: [{ type: 'text', text }],
-          }, new AbortController().signal).then(res => res.result.ok)
-        },
-        interrupt: (address) => {
-          if (selectedId === undefined) return Promise.resolve(false)
-          return wire.api.subagents.interrupt({ ...address, parentSessionId: asSessionId(address.parentSessionId), childSessionId: asSessionId(address.childSessionId), mode: 'continuable' }).then(res => res.result.ok)
         },
       },
       sessionRowActions: {
