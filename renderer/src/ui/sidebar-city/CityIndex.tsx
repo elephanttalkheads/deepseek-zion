@@ -30,7 +30,7 @@ interface CityIndexProps {
   selectedSessionId: string | null
   reduced: boolean
   onSelectSession: (id: string) => void
-  /** LOCATE / BAY 头:跳相机到指定工作区并关闭索引。 */
+  /** LOCATE / 章标题:跳相机到指定工作区并关闭索引。 */
   onLocateWorkspace: (workspaceId: string) => void
   selectedWorkspaceId: string | null
 }
@@ -235,7 +235,7 @@ export function CityIndex({
             })}
           </ul>
         ) : (
-          model.map((ws, wsIndex) => {
+          model.map((ws) => {
             const collapsed = expandedGroups[ws.id] !== true && ws.sessions.length > COLLAPSED_SESSION_LIMIT
             const visible = collapsed ? ws.sessions.slice(0, COLLAPSED_SESSION_LIMIT) : ws.sessions
             const marker = dropMarker !== null && dropMarker.id === ws.id ? dropMarker.half : undefined
@@ -264,7 +264,7 @@ export function CityIndex({
                   onDrop={(e) => { commitWorkspaceDrop(e, ws.id) }}
                   onClick={() => onLocateWorkspace(ws.id)}
                 >
-                  {`BAY ${String(wsIndex + 1).padStart(2, '0')} · ${ws.name}`}
+                  {ws.name}
                 </button>
                 <ul className="map-session-list" role="group" aria-label={ws.name}>
                   {visible.map(session => renderRow(ws, session))}

@@ -405,7 +405,7 @@
 }
 .map-session-list { margin: 0; padding: 0; list-style: none; }
 
-/* 分组样式:BAY 章标题 + 缩进会话项;明度阶梯 标题100/章节55/时间与序号38 */
+/* 分组样式:章标题(只显工作区名,BAY 前缀 2026-08-28 按用户裁决删除)+ 缩进会话项;明度阶梯 标题100/章节55/时间与序号38 */
 .map-body.grouped .map-district-head {
   width: 100%;
   padding: 14px 12px 6px;
@@ -416,7 +416,7 @@
   background: none;
   cursor: pointer;
   color: rgba(70, 229, 114, 0.55);
-  font: 9px/1 var(--display);
+  font: 10.8px/1 var(--display); /* 工作区名较 demo 9px 增大 20%(用户裁决) */
   letter-spacing: 0.3em;
   text-transform: uppercase;
   text-align: left;
@@ -489,8 +489,11 @@
   text-shadow: none;
 }
 
-/* 终端选中框(两样式同款):中绿条 rgb(48,152,88) + 低对比绿横纹 + 亮边,文字深绿近黑 */
-.map-session-button.is-current {
+/* 终端选中框(两样式同款):中绿条 rgb(48,152,88) + 低对比绿横纹 + 亮边,文字深绿近黑;
+   必须挂在 .map-body.grouped/.flat 双作用域下(4 类)——简写成 .map-session-button.is-current(2 类)
+   会被基础规则的 color 压制(2026-08-28 实测选中行文字不变深的根因) */
+.map-body.grouped .map-session-button.is-current,
+.map-body.flat .map-session-button.is-current {
   background:
     repeating-linear-gradient(0deg, rgba(32, 144, 72, 0.9) 0 1px, transparent 1px 3px),
     rgb(48, 152, 88) !important;
@@ -498,10 +501,11 @@
   box-shadow: inset 0 0 0 1px rgba(140, 255, 175, 0.8);
   text-shadow: none;
 }
-.map-session-button.is-current .cur { display: inline; }
+.map-body.flat .map-session-button.is-current .cur { display: inline; }
 .map-body.grouped .map-session-button.is-current .cur { display: none; }
-.map-session-button.is-current .age,
-.map-session-button.is-current .idx { color: rgba(2, 24, 4, 0.7); text-shadow: none; }
+.map-body.grouped .map-session-button.is-current .age,
+.map-body.flat .map-session-button.is-current .age,
+.map-body.flat .map-session-button.is-current .idx { color: rgba(2, 24, 4, 0.7); text-shadow: none; }
 
 /* hover 分层:hover 只给 4% 浅底,选中行 hover 保持选中框 */
 .map-body.grouped .map-session-button:hover,
@@ -521,6 +525,10 @@
 
 /* 行容器:caret / ⋯ / 拖拽指示线 */
 .map-row { position: relative; }
+/* vendor Menu 的 anchor wrapper(span._root_*)是 .map-row 的 in-flow inline 子级,
+   会产生一个继承行高的 strut 把行撑高 21px(2026-08-28 实测行距 51.9 vs demo 30.9 的根因);
+   display:contents 让它不生成盒子,absolute 的 ⋯ 按钮包含块仍是 .map-row */
+.map-row > span { display: contents; }
 .map-caret {
   position: absolute;
   left: 6px;
