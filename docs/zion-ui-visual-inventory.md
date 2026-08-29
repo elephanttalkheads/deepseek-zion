@@ -97,7 +97,9 @@
 
 ---
 
-### 4. 侧栏与会话培育仓（Sidebar / SessionPod / 全息摘要层 / 名称牌）
+### 4. 侧栏与会话培育仓（Sidebar / SessionPod / 全息摘要层 / 名称牌） ✅ 已迁移(ASCII 会话城替代设计)
+
+> 2026-08-28 落地(替代设计):本块培育仓/全息层设计未直接搬入——按用户指定,侧栏改以 pi-martix-ui-dev 的 ASCII 会话城原型(`docs/ascii-cyberpunk-sidebar-design.md` + `ui-demo/ascii-cyberpunk-sidebar-prototype.html`)为源迁移:`renderer/src/ui/sidebar-city/`(city-engine/useWorkspaceCityModel/useCityCamera/CityFrame/CityIndex)+ `renderer/src/ui/Sidebar.tsx` 整体重写 + `renderer/src/styles/sidebar.css` 全量重写;demo 与截图:`ui-prototype/sidebar/`(决策过堂 `DECISIONS.md`);新增「添加工作区」入口记账 `ui-change-log/2026-08-28--sidebar-add-workspace-entry.md`。
 
 **精确定位**
 - 组件：`src/renderer/src/components/Sidebar.tsx`(:412 共享 `.session-hologram-layer`);`src/renderer/src/components/SessionPod.tsx`(:4-5 双帧 PNG import（closed / damaged 开仓帧）;:91-92 双帧 `<img>` ref 注册）

@@ -83,7 +83,7 @@ main.tsx Root
 - **数据**:`useRuntime()` — `connectionState`/`isFixture`/`workspaces[0]`(current)/`createSession`;本地 `query`、`workspaceMenuOpen`。
 - **挂载子组件**:`RainCanvas` + `.scanlines`(ZION 氛围层,零交互,pointer-events:none;fx 两档由选中会话 running 经 `app/ambient-fx.ts` 模块级对象驱动)/ Sidebar / ConversationDock / DetailsPanel / PluginHost / WorkspaceMenu / `SlotAnchor slot="shell.overlay"` [slot]。
 
-#### A2. Sidebar — 会话列表(入口最密集之二)
+#### A2. Sidebar — 会话列表(入口最密集之二) ✅ 已迁移(ZION 块 4 ASCII 会话城替代设计,2026-08-28;demo: `ui-prototype/sidebar/`)
 - **挂载**:AppFrame `aside.app-sidebar`;props `{ query, onQueryChange }`。
 - **交互入口**:
   1. `input.sidebar-search-input` 搜索 → 本地过滤(标题/sessionId)[official]
