@@ -8,8 +8,8 @@
 
 `deepseek-zion` 是 **DeepSeek Harness(DSH)的桌面 GUI**:一个 Electron 壳 + 自建 React 18 + Vite **复刻 renderer**,把官方 dsh web 的 UI 按 UI 清单 **1:1 重做**(不直接加载官方 dist)。数据层不自己造协议,而是直接 new 官方运行时的纯 TS 类(「B 直拼」),并内嵌一个 cordis 插件运行时底座承接社区插件的 client 半。
 
-- 当前阶段:**UI 风格化(Matrix 风)**——复刻官方 web UI(M1–M6)已交付,自 2026-08-20 起进入风格化阶段,§8 铁律正式生效;风格规范按 §8「风格路由」选择。
-- **ZION 视觉层进行中**:视觉语汇(数雨/培育仓/神经线缆/feed 等)来自 ZION 主工程(pi-martix-ui,已废弃),视觉宪章与极简子集规范已入库(`DESIGN.md` / `MatrixDesign-minimal.md`);词表禁令随风格化阶段开始解除,但复刻的功能语义与领域词表仍以 `CONTEXT.md` 为准。
+- 当前阶段:**UI 风格化(Matrix 风)**——复刻官方 web UI(M1–M6)已交付,自 2026-08-20 起进入风格化阶段,§8 铁律正式生效;风格规范以 `DESIGN.md` 为准(见 §8)。
+- **ZION 视觉层进行中**:视觉语汇(数雨/培育仓/神经线缆/feed 等)来自 ZION 主工程(pi-martix-ui,已废弃);词表禁令随风格化阶段开始解除,但复刻的功能语义与领域词表仍以 `CONTEXT.md` 为准。
 - 仓库形态:单仓单包,核心代码全在 `renderer/`。
 
 技术栈:Electron(壳)、React 18 + TypeScript + Vite 6(renderer)、zustand/immer(少量)、官方 `@deepseek-ai/*` ESM 包(file: 引用,数据层)与 vendored 官方 client 源码(UI/协议层)。
@@ -142,15 +142,11 @@ deepseek-zion 的定位是**复刻 dsh web 的 UI**(原 dsh web 界面)。任何
 - 任何强制删改均以 `ui-change-log` 记录为准,删除前先提交记录。
 - **生效说明**:本条铁律自 2026-08-20 起正式生效(复刻阶段结束,进入 UI 风格化阶段);此前的复刻期删改无需补记。
 
-### 风格路由(极简 Matrix ↔ 完整电影风)
+### 风格规范
 
-每次 UI 风格设计任务,先按用户措辞选择设计规范:
+每次 UI 风格设计任务,先读 [DESIGN.md](./DESIGN.md)(项目级视觉单一事实源:TUI + Matrix + 极简),按其规范执行;DESIGN.md 的每条内容都经 demo 实践与确认后沉淀,执行时同样逐条有据。
 
-- 用户说「极简风 / 极简主义 / 简约 / 克制」或类似 → 读 [MatrixDesign-minimal.md](./MatrixDesign-minimal.md),按其密度纪律与禁用清单设计
-- 用户说「电影化 / 电影风 / 强烈视觉效果 / 更 Matrix 风」或类似 → 读 [DESIGN.md](./DESIGN.md)(ZION 完整视觉宪章)
-- 用户未指明 → **默认极简**(MatrixDesign-minimal.md);拿不准先问用户
-
-两份规范都受本铁律约束:改样式,不删复刻的 dsh web 展示内容与交互入口。
+DESIGN.md 受本铁律约束:改样式,不删复刻的 dsh web 展示内容与交互入口。
 
 ### UI 迁移阶段规则(zion-ui-visual-inventory 驱动)
 
@@ -164,4 +160,4 @@ deepseek-zion 的定位是**复刻 dsh web 的 UI**(原 dsh web 界面)。任何
 4. **`SYNC.md`** — 官方 harness 更新后的同步机制(4 个耦合面:file: 面包 / vendored 源码 / cordis 版本 / wire 契约)。
 5. **`UPDATE-DSH.md`** — 本机 dsh 运行时升级/回滚流程。
 6. **`docs/`** — UI 清单(`ui-component-inventory.md`、`ui-entry-gap-inventory.md`)、RPC 接线清单、真后端核验归因等审计文档;`docs/zion-ui-visual-inventory.md` 与 `docs/ui-inventory/` 是 ZION 侧迁移过来的视觉块/界面清单。
-7. **`DESIGN.md` / `MatrixDesign-minimal.md`** — ZION 完整视觉宪章(电影风)与极简 Matrix 风子集规范;何时读哪份见 §8「风格路由」。
+7. **`DESIGN.md`** — 项目级视觉设计规范(TUI + Matrix + 极简);UI 风格任务必读(见 §8)。

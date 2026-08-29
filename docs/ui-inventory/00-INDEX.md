@@ -201,5 +201,5 @@
 ## 6. 给 AI 重建 demo 的三条硬约束（与方案 §3 红线一致）
 
 1. **只替换渲染层，wire 契约原样**——组件数据经标准 kit（`useSession`/`useProjection`/slot owner props）拿，不发明私有数据层，不动 Host 组合。
-2. **不伪造遥测与状态**——DESIGN.md §10：展示真实事件/结果，未知标未知；能量层可抽象表达但与真实状态**加断言一致**。
-3. **保留三档体验**——CINEMATIC / FOCUS / `prefers-reduced-motion` 的 REDUCED（动画终态直显、无中间帧闪现），动效不阻塞主线程。
+2. **不伪造遥测与状态**——展示真实事件/结果，未知标未知（与 AGENTS.md §5 R4 同源）。
+3. **保留降级路径**——`prefers-reduced-motion` 时动画终态直显、无中间帧闪现，动效不阻塞主线程（与 AGENTS.md §5 R7 同源）。

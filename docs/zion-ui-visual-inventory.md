@@ -4,7 +4,7 @@
 
 本清单是源仓 **ZION**(`D:\pi-martix-ui-dev`，黑客帝国风 Electron 桌面 agent，已停止开发）UI 视觉体系的**组件/视觉块级迁移参考**，供在 deepseek-zion 中开新会话做 UI 重构时按块查阅。读者无需源仓上下文：每块给出源仓精确定位（组件/样式段/素材，`path:line` 格式）、视觉设计内容原文摘录、实现纪律原文摘录。摘录全部逐字摘自源仓文档，未改写。
 
-用法建议：按块迁移（一块一次重构会话）；先读根目录 `DESIGN.md`（视觉宪章，已从源仓原样拷贝至本仓根目录）建立令牌/语义共识，再按本清单对应节查实现细节与纪律；块的术语（脑波褶/机械继电器/烧录显影/封存带/凝结雨轨/字形蛾/注入解码等）以源仓文档原文为准，勿自行改名。
+用法建议：按块迁移（一块一次重构会话）；按本清单对应节查实现细节与纪律；块的术语（脑波褶/机械继电器/烧录显影/封存带/凝结雨轨/字形蛾/注入解码等）以源仓文档原文为准，勿自行改名。
 
 ## 源仓快照
 
@@ -44,7 +44,7 @@
 > - `#rain` 负 z-index 的用途：即使 `#stage` 层叠上下文失效，雨幕也恒在 UI 之下；氛围层均 pointer-events:none，不拦截交互（层级数值见 AGENTS.md 硬约束 6)。（「不变量」L164)
 
 **实现纪律**（摘自 src/renderer/AGENTS.md)
-> 1. **FX 不进 React 渲染路径**：氛围组件与雨轨（RainCanvas / TurnRail）直接 `import { fx } from '../store'` 读取 speed/energy(`90/fx.speed` 帧节流）；不要复制进组件 state，也不要自行插值。`fx` 是模块级对象，仅 `setSessionState` 时改写（两档取值见 [DESIGN.md](DESIGN.md)「架构与主要流程」FX 派生）。（约束 1)
+> 1. **FX 不进 React 渲染路径**：氛围组件与雨轨（RainCanvas / TurnRail）直接 `import { fx } from '../store'` 读取 speed/energy(`90/fx.speed` 帧节流）；不要复制进组件 state，也不要自行插值。`fx` 是模块级对象，仅 `setSessionState` 时改写（两档取值见 `DESIGN.md`「架构与主要流程」FX 派生）。（约束 1)
 
 > 4. **动画/音效数值照规格原样提取**(FS=18、拖尾 0.035、`90/fx.speed` 节流、12% 亮头、L 路径 8px 采样、TAIL=18、扰码 620ms、闪烁 900ms、SND 7 音参数、雨轨 11px 双列）……禁止"优化"数值（ADR 0002)。（约束 4，摘录与本块相关子句）
 
@@ -89,7 +89,7 @@
 > - **蠕虫同步触发**（事件回调内而非 useEffect)：防快工具的 `tool_end` 先于 React 渲染到达的时序竞争（App.tsx 头注释明示）。（「设计决策与权衡」L119)
 
 **实现纪律**（摘自 src/renderer/AGENTS.md)
-> 2. **蠕虫触发留在事件回调同步路径**(App.tsx `triggerWorm`)：不得改为 useEffect 触发（时序原因见 [DESIGN.md](DESIGN.md)「设计决策与权衡」蠕虫同步触发）。（约束 2)
+> 2. **蠕虫触发留在事件回调同步路径**(App.tsx `triggerWorm`)：不得改为 useEffect 触发（时序原因见 `DESIGN.md`「设计决策与权衡」蠕虫同步触发）。（约束 2)
 
 > 4. **动画/音效数值照规格原样提取**(……L 路径 8px 采样、TAIL=18、扰码 620ms、闪烁 900ms……)：禁止"优化"数值（ADR 0002)。（约束 4，摘录与本块相关子句）
 
@@ -116,7 +116,7 @@
 > - **侧栏分区滚动**(styles.css 注释明示）:`.sidebar` 整栏 `overflow: hidden`,`.core-wrap`/`.side-foot` `flex: none` 固定，会话/项目两区 flex 分割、`.deck`/`#file-tree` 各自 `overflow-y: auto`——列表过长只滚列表区，项目标题行与底部 workspace 行始终可见。（「设计决策与权衡」L127)
 
 **实现纪律**（摘自 src/renderer/AGENTS.md)
-> 17. **侧栏宽度只经 `.main` 上的 CSS 变量 `--side-w` 控制**(`.sidebar { width: var(--side-w, 232px) }`)：拖拽/键盘/双击复位一律走 `applySideWidth(w)`（写变量 + 同步 resizer `aria-valuenow`）与 `persistSideWidth(w)`(localStorage `zion.sidebar-w`）成对调用；**不要引入 React state**（机制与原因见 [DESIGN.md](DESIGN.md)「设计决策与权衡」侧栏宽度直写 CSS 变量）。常量 `SIDE_MIN=160`/`SIDE_MAX=480`/`SIDE_DEFAULT=232`/`SIDE_STEP=8`/`SIDE_STEP_BIG=32`/`SIDE_KEY` 与 `clampSide`（上限 `min(SIDE_MAX, round(innerWidth/2))`，且不低于 `SIDE_MIN`）在 App.tsx 模块级，改数值/边界只动这一处。（约束 17)
+> 17. **侧栏宽度只经 `.main` 上的 CSS 变量 `--side-w` 控制**(`.sidebar { width: var(--side-w, 232px) }`)：拖拽/键盘/双击复位一律走 `applySideWidth(w)`（写变量 + 同步 resizer `aria-valuenow`）与 `persistSideWidth(w)`(localStorage `zion.sidebar-w`）成对调用；**不要引入 React state**（机制与原因见 `DESIGN.md`「设计决策与权衡」侧栏宽度直写 CSS 变量）。常量 `SIDE_MIN=160`/`SIDE_MAX=480`/`SIDE_DEFAULT=232`/`SIDE_STEP=8`/`SIDE_STEP_BIG=32`/`SIDE_KEY` 与 `clampSide`（上限 `min(SIDE_MAX, round(innerWidth/2))`，且不低于 `SIDE_MIN`）在 App.tsx 模块级，改数值/边界只动这一处。（约束 17)
 
 > 6. **z-index 分层不可破坏**:……`.side-resizer`=20（侧栏拖拽热区，负 margin 伸出两侧，须高于 sidebar/console 内容、低于 `.palette`=30 与 `.scanlines`=40)……（约束 6，摘录与本块相关子句）
 
@@ -137,7 +137,7 @@
 > - 会话脑机链路 DOM 数恒为 `0..3`；仅可见 active 链路启动字符脉冲，hover/dormant 不启动 rAF；路径终点必须来自当前 closed/open 图片 rect，禁止回退到固定屏幕像素。（「不变量」L175)
 
 **实现纪律**（摘自 src/renderer/AGENTS.md)
-> 19. **会话脑机链路只在 Sidebar 本地 SVG 内实现**：锚点必须从 Neo 接线口与当前 closed/open 图片的实际 `getBoundingClientRect()` 推导，侧栏 resize/仓体图片 load/列表 scroll 后经单个 rAF 重测；可见线路永不超过 3。状态优先级固定 `active > hover/focus > dormant > hidden`,dormant 禁止动画；不得把该系统并入全屏 `SignalCanvas` 或把线路当作唯一会话状态语义。数值与失败模式见 [DESIGN.md](DESIGN.md)「会话脑机链路」;**视觉实现细节与素材边界以 `docs/neural-cable-visual.md` 为准（程序化 SVG，不依赖连接态 PNG 素材）——修改脑机链路设计时必须同步更新该文档**。（约束 19)
+> 19. **会话脑机链路只在 Sidebar 本地 SVG 内实现**：锚点必须从 Neo 接线口与当前 closed/open 图片的实际 `getBoundingClientRect()` 推导，侧栏 resize/仓体图片 load/列表 scroll 后经单个 rAF 重测；可见线路永不超过 3。状态优先级固定 `active > hover/focus > dormant > hidden`,dormant 禁止动画；不得把该系统并入全屏 `SignalCanvas` 或把线路当作唯一会话状态语义。数值与失败模式见 `DESIGN.md`「会话脑机链路」;**视觉实现细节与素材边界以 `docs/neural-cable-visual.md` 为准（程序化 SVG，不依赖连接态 PNG 素材）——修改脑机链路设计时必须同步更新该文档**。（约束 19)
 
 ---
 
@@ -303,7 +303,7 @@
 > - **command 优先 + 字母序**：面板 max-height 320px 截断时命令恒在可见区（命令少、skills 多），字母序给稳定预期。（「设计决策与权衡」L137)
 
 **实现纪律**（摘自 src/renderer/AGENTS.md)
-> 11. **`/clear` 仅本地清视图**(store.reset，不触碰主进程会话）；其余 `/cmd` 输入一律走 `window.zion.runCommand`——渲染层只路由不实现命令（执行语义归主进程 dispatch;`/cmd` 匹配规则、结果处理与插入/回填规则见 [DESIGN.md](DESIGN.md)「架构与主要流程」命令面板）；快捷按钮与 skill 模板文本原样走 `window.zion.prompt`。（约束 11)
+> 11. **`/clear` 仅本地清视图**(store.reset，不触碰主进程会话）；其余 `/cmd` 输入一律走 `window.zion.runCommand`——渲染层只路由不实现命令（执行语义归主进程 dispatch;`/cmd` 匹配规则、结果处理与插入/回填规则见 `DESIGN.md`「架构与主要流程」命令面板）；快捷按钮与 skill 模板文本原样走 `window.zion.prompt`。（约束 11)
 
 ---
 
@@ -323,7 +323,7 @@
 > - **项目面板复用 `.ask-mask` 遮罩**：与 AskDialog 同一模态遮罩类（z-index 90，见 AGENTS.md 硬约束 6)；无互斥逻辑，同时打开时按 DOM 序叠加（ProjectPanel 挂载于 AskDialog 之后，遮罩在上）。（「设计决策与权衡」L151)
 
 **实现纪律**（摘自 src/renderer/AGENTS.md)
-> 13. **弹层应答必须成对**:AskDialog 的 `answer()` 同时执行 `window.zion.uiAnswer(ask.id, result)` 与 `setUiAsk(null)`——只清 state 不应答，主进程 Promise 表条目会挂到超时兜底才继续（机制见 [DESIGN.md](DESIGN.md)「设计决策与权衡」)。（约束 13)
+> 13. **弹层应答必须成对**:AskDialog 的 `answer()` 同时执行 `window.zion.uiAnswer(ask.id, result)` 与 `setUiAsk(null)`——只清 state 不应答，主进程 Promise 表条目会挂到超时兜底才继续（机制见 `DESIGN.md`「设计决策与权衡」)。（约束 13)
 
 > 21. **模态弹层与全局快捷键纪律**：弹层只经 store 单槽 `openModal(kind, data?)` 开关（同一时刻至多一个、新开自动关旧；ModelPicker 切换成功、Esc、遮罩、✕ 一律回 `openModal(null)`)；弹层类命令由 runCommand 结果 `data.open` 数据驱动打开、载荷随附，**不要在组件里按命令名自判弹层**；全局快捷键常量只放 `hotkeys.ts`(`ZION_HOTKEYS`)——注册（App.tsx `useGlobalHotkeys`）与速查（HotkeysPanel）必须同源，新增/修改快捷键两处联动；`modal` 非空时全局快捷键整体豁免。（约束 21)
 
@@ -442,4 +442,3 @@
 - `ui-demo/plan/ui-proto-variants.md` —— 七块 21 变体选型归档（采用/退役状态）
 - `ui-demo/plan/icon-set-plan.md` —— 细线 SVG 图标套件待实现清单（P0/P1/P2)
 - `research/matrix-style-references.md` —— 黑客帝国风格参考调研（数字雨/电影 UI/CRT 还原）
-- 根 `DESIGN.md` —— 视觉宪章/单一事实源（已原样拷贝至本仓根目录）

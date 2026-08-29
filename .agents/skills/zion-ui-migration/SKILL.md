@@ -7,7 +7,7 @@ description: 迁移 pi-martix-ui-dev 的 UI 块进 deepseek-zion 的强制流程
 
 本 skill 是 UI 迁移流程的**唯一权威**(自 AGENTS.md §8 迁出)。按 `docs/zion-ui-visual-inventory.md` 逐块把 pi-martix-ui-dev 的 UI 迁移进本仓时,**必须**按本流程执行。本流程优先级高于其它任务模板的默认流程(例如 prototype skill 的「多变体对照」不适用于迁移 demo——迁移 demo 只做一份合并形态)。
 
-通用规则仍在 AGENTS.md,用指针不复制:§8 铁律(改样式不删复刻内容;删入口先立 `ui-change-log/` 记录)与风格路由对迁移同样生效。
+通用规则仍在 AGENTS.md,用指针不复制:§8 铁律(改样式不删复刻内容;删入口先立 `ui-change-log/` 记录)与风格规范对迁移同样生效。
 
 **术语**:「功能入口」= 用户可达的任何交互点——按钮、菜单项、输入行为(如键入 `/` 触发菜单)、键盘快捷键、点击/hover 区、拖拽热区、弹层触发点、chip/badge/状态条上的可交互元素。
 
@@ -41,7 +41,7 @@ description: 迁移 pi-martix-ui-dev 的 UI 块进 deepseek-zion 的强制流程
 - 未做官方口径核查(第 1.5 步)直接落地 = 违规;
 - 落地后探针断言未同步、验证未收口 = 未完成。
 
-**风格默认 = 保持原样**:除非用户明确要求按 `MatrixDesign-minimal.md` 或 `DESIGN.md` 重新设计,迁移块**尽量保持 pi-martix-ui-dev 中原有的风格**逐样搬入,不做极简/电影化改写(此时 AGENTS.md §8 风格路由的「未指明默认极简」不适用——迁移任务的默认是原样迁移)。
+**风格默认 = 保持原样**:除非用户明确要求按 `DESIGN.md` 重新设计,迁移块**尽量保持 pi-martix-ui-dev 中原有的风格**逐样搬入,不做风格化改写(此时 AGENTS.md §8 不适用——迁移任务的默认是原样迁移)。
 
 **验证收口**:按改动面选探针,不跑无差别全量;非常规视口/全态截图矩阵(如 720px 矩阵)先问用户再跑;electron 探针一律**串行**(多实例争用 Electron profile 磁盘缓存会假挂起)。
 

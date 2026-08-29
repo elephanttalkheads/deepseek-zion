@@ -1,6 +1,6 @@
 /**
  * useCityCamera — 相机状态与行走输入(决策记录:拆分 #2)。
- * camera/target 分离:CINEMATIC 逐帧平滑逼近,REDUCED 直接到终态;
+ * camera/target 分离:常规逐帧平滑逼近,reduced-motion 直接到终态;
  * activeWorkspace(相机推导,决定 Portal 显示哪组)与 selectedSession(用户选择)不合并。
  * 行走输入:W/S/A/D + 方向键 / 滚轮 / 空白拖拽(用户裁决全部保留)。
  */
