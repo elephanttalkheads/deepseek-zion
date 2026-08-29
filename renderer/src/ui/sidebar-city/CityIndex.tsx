@@ -204,9 +204,15 @@ export function CityIndex({
             )}
           />
         </div>
-        {!flat && hasChildren && !caretCollapsed && session.children!.map(child => (
-          <NestedRow key={child.id} ws={ws} session={child} renderRow={renderRow} />
-        ))}
+        {!flat && hasChildren && !caretCollapsed && (
+          // 子行必须包在 <ul> 里:<li> 直接嵌 <li> 是非法 DOM
+          // (validateDOMNesting 警告,2026-08-29 用户控制台实测)
+          <ul className="map-session-list" role="group">
+            {session.children!.map(child => (
+              <NestedRow key={child.id} ws={ws} session={child} renderRow={renderRow} />
+            ))}
+          </ul>
+        )}
       </li>
     )
   }

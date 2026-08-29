@@ -195,14 +195,21 @@ app.whenReady().then(async () => {
     mark('m3', true, 'M3 real:只读,不点复制')
     const fbReal = await js(win, `(() => {
       const row = document.querySelector(${JSON.stringify(ASSISTANT_ROW)})
-      if (!row) return { present: false }
+      // 404 探测调用次数(能力停用设计的核心断言:最多一次,不得逐会话刷屏)
+      const calls = performance.getEntriesByType('resource').filter(e => e.name.includes('messageFeedback')).length
+      if (!row) return { present: false, calls }
       return {
         present: true,
+        calls,
         like: !!row.querySelector('button[aria-label="好的回答"]'),
         dislike: !!row.querySelector('button[aria-label="有问题的回答"]'),
       }
     })()`)
-    mark('mfb1', fbReal.present && fbReal.like && fbReal.dislike, 'M-fb1 real:turn-tail 动作行含反馈按钮(只读,不点击)', JSON.stringify(fbReal))
+    // 能力驱动(2026-08-29):后端装了反馈契约 → 按钮必在;未装(404)→ 一次探测后全局隐藏。
+    // 两种形态都合法;断言呼叫 ≤1 次防 404 刷屏回归。
+    const fbPresent = fbReal.present && fbReal.like && fbReal.dislike
+    const fbAbsent = fbReal.present && !fbReal.like && !fbReal.dislike
+    mark('mfb1', (fbPresent || fbAbsent) && fbReal.calls <= 1, 'M-fb1 real:反馈按钮能力驱动(契约在=按钮在;契约缺=一次探测后隐藏,调用≤1 不刷屏)', JSON.stringify(fbReal))
     mark('mfb2', true, 'M-fb2 real:只读,不标记')
     mark('mfb3', true, 'M-fb3 real:只读,不标记')
     mark('mfb4', true, 'M-fb4 real:只读,不开编辑器')

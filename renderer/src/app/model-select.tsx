@@ -3,7 +3,7 @@
  * 注入面:directory(共享 ModelDirectory store 每会话一个)、load、select(selectModel RPC)、
  * available(会话可用)、locked(运行中)、t(官方 zh 字典 + {param} 插值)。
  */
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import type { ModelSelection, SessionId } from '@deepseek-ai/dsh-api-remotes/client'
 import { ModelSelect } from '../../vendor/ui-model-selection/client/ModelSelect.tsx'
 import { ModelDirectory } from '../../vendor/ui-model-selection/client/directory.ts'
@@ -49,14 +49,23 @@ export function ModelSelectAdapter({ wire, sessionId, locked }: ModelSelectAdapt
     void directory.load().catch(() => { /* 目录加载失败由菜单内 Retry 兜底 */ })
   }, [directory])
 
-  const select = async (selection: ModelSelection): Promise<boolean> => {
+  const select = useCallback(async (selection: ModelSelection): Promise<boolean> => {
     try {
       await directory.select(selection)
       return true
     } catch {
       return false
     }
-  }
+  }, [directory])
+
+  // load/select 必须稳定(useCallback):vendor ModelSelect 的挂载 effect 以
+  // [available, load] 为 deps——此前 load 是内联箭头,mi-think 手动订阅在每次
+  // store 更新时重渲染本适配层 → 新 load 身份 → effect 重触发 → load() →
+  // store 更新 → 再重渲染……死循环,菜单里「正在刷新模型列表…」持续闪现
+  // (2026-08-29 webbridge 实测 _status 节点 2s 内增删 2392 次)。
+  const load = useCallback((): void => {
+    void directory.load().catch(() => { /* noop */ })
+  }, [directory])
 
   // 微簇的独立 mi-think 元素(2026-08-21 第二轮):推理等级从 vendor 触发器里
   // 拆出(触发器压缩为纯模型名按钮,effort 段由 CSS 隐藏),推导镜像 vendor
@@ -83,7 +92,7 @@ export function ModelSelectAdapter({ wire, sessionId, locked }: ModelSelectAdapt
         locked={locked}
         available={true}
         directory={directory.store}
-        load={() => { void directory.load().catch(() => { /* noop */ }) }}
+        load={load}
         select={select}
         t={t}
       />

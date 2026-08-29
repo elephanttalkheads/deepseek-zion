@@ -35,7 +35,9 @@ import type { AssembledWire } from '../protocol/assemble.ts'
 import { makeT } from '../app/locale-common.ts'
 import { zh as conversationZh } from '../../vendor/client-ui-conversation/client/locales.ts'
 import { MessageIconActions } from '../../vendor/client-ui-conversation/client/chat/MessageIconActions.tsx'
+import { ContextInjectionRow } from '../../vendor/client-ui-conversation/client/chat/ContextInjectionRow.tsx'
 import type { ChatConversationViewNode } from '../../vendor/client-runtime/client/contract/conversation.ts'
+import type { ContextMessageNode } from '@deepseek-ai/dsh-client-runtime/client'
 import type { SessionId } from '../../vendor/client-connection/client/api.ts'
 import type { ToolCallBlock } from '../../vendor/client-runtime/client/sessions/conversation.ts'
 import { ToolCallCard } from './ToolCallCard.tsx'
@@ -206,6 +208,22 @@ export function ChatView({ nodes, sessionId, wire, timeline, streaming }: {
 
   /** user 类节点:OPERATOR 头 + 右对齐 .msg.user 形态(块 6);动作行/图片/槽原样保留。 */
   const renderUserNode = (node: ChatConversationViewNode): JSX.Element => {
+    // context 注入节点走官方 ContextInjectionRow(默认折叠的「上下文注入」行):
+    // <system-reminder>/<available_skills> 等模型向文本不直接铺满会话流(2026-08-29
+    // 用户裁决对齐官方——官方从来不把注入上下文渲染成 user 全文消息)。
+    if (node.kind === 'context') {
+      const ctx = node.data as ContextMessageNode
+      return (
+        <ContextInjectionRow
+          key={node.key}
+          content={ctx.content}
+          source={ctx.source}
+          provenance={ctx.provenance}
+          form={ctx.form}
+          t={chatT}
+        />
+      )
+    }
     const data = node.data as { content?: unknown }
     const blocks: BlockLike[] = Array.isArray(data.content) ? (data.content as BlockLike[]) : []
     const images = nodeImages(node)

@@ -70,6 +70,16 @@ const ZH = {
 /** per-session controller 注册表(ChatView 每个 turn-tail 一个 seat,共享一次 list)。 */
 const registry = new Map<string, MessageFeedbackController>()
 
+/** real 后端无 messageFeedback 契约(插件未装 → HTTP 404)时,一次探测后全局停用:
+ *  ensure 短路、seat 不渲染——消除逐会话重复 404(2026-08-29 用户控制台实测三连 404)。 */
+let capability: 'unknown' | 'absent' = 'unknown'
+
+function markCapabilityAbsent(): void {
+  if (capability === 'absent') return
+  capability = 'absent'
+  for (const controller of registry.values()) controller.republish()
+}
+
 function controllerFor(remote: MessageFeedbackRemote, sessionId: string): MessageFeedbackController {
   let controller = registry.get(sessionId)
   if (controller === undefined) {
@@ -106,8 +116,9 @@ class MessageFeedbackController {
     for (const listener of this.listeners) listener()
   }
 
-  /** Load once(失败可重试)。 */
+  /** Load once(失败可重试;契约缺失的全局停用后短路)。 */
   async ensure(): Promise<void> {
+    if (capability === 'absent') return
     if (this.status === 'ready') return
     if (this.loadPromise === null) {
       this.loadPromise = this.load().finally(() => { this.loadPromise = null })
@@ -137,11 +148,24 @@ class MessageFeedbackController {
       this.status = 'ready'
       this.error = null
       this.publish()
-    } catch {
+    } catch (error) {
+      // 契约缺失(transport HTTP 404)= 后端未装反馈插件:全局停用,不再逐会话 404。
+      if (String(error).includes('HTTP 404')) {
+        this.status = 'cold'
+        this.error = null
+        this.publish()
+        markCapabilityAbsent()
+        return
+      }
       this.status = 'error'
       this.error = ZH.errorLoad
       this.publish()
     }
+  }
+
+  /** 能力翻转时让所有 seat 重渲染(读模块级 capability 后自行隐藏)。 */
+  republish(): void {
+    this.publish()
   }
 
   /** 同 rating 再点 = 撤回(toggle);不同 rating / 无记录 = 写入/替换。 */
@@ -234,7 +258,7 @@ export function MessageFeedbackSeat({ remote, sessionId, messageId }: {
   remote: MessageFeedbackRemote
   sessionId: string
   messageId: string
-}): JSX.Element {
+}): JSX.Element | null {
   const controller = useMemo(() => controllerFor(remote, sessionId), [remote, sessionId])
   const view = useSyncExternalStore(controller.subscribe, controller.getSnapshot)
   const item = view.items.get(messageId)
@@ -246,6 +270,10 @@ export function MessageFeedbackSeat({ remote, sessionId, messageId }: {
 
   // 官方延迟到首次 hover/focus 才 list;zion 简化为挂载即读(一次 list 填充整段)。
   useEffect(() => { void controller.ensure() }, [controller])
+
+  // 后端无 messageFeedback 契约(404 一次探测后全局停用):整个入口不渲染。
+  // 读模块级 capability——翻转转 absent 时 markCapabilityAbsent 会 republish 触发重渲染。
+  if (capability === 'absent') return null
 
   const settle = (ok: boolean): void => {
     setPending(false)
