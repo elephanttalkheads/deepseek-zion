@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<!-- PROTOTYPE — throwaway: C12 状态图标 SVG 化微 demo(✓/●/✗ 及配套 ◐○)
+     裁决问题:SET D(MATRIX 原生,运行=Matrix Code 字形扰码)vs A 刻面八角 / B 像素格 / C 细线机械。
+     本轮迭代:等待→沙漏(备选:双竖停驻),完成→锁定舱+发丝勾(备选:独立长臂勾)。
+     纪律:图标一律 currentColor 继承 C11 亮度档;✗ 用唯一语义红;无 Nerd Font、无多色;
+     运动源纪律:扰码字形与数字雨同族(Matrix Code 字形 + 磷光绿),属「与其同源」豁免,其余四枚全部静态。 -->
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<title>C12-SVG · 状态图标候选(D=MATRIX 原生)</title>
+<style>
+  @font-face { font-family: "Matrix Code"; src: url("../../renderer/src/assets/fonts/Matrix-Code.ttf"); font-display: swap; }
+  :root {
+    --bg: #010a04;
+    --surface: rgba(2, 18, 9, 0.92);
+    --p100: rgba(61, 255, 143, 1);
+    --p70: rgba(61, 255, 143, 0.7);
+    --p40: rgba(61, 255, 143, 0.4);
+    --p20: rgba(61, 255, 143, 0.2);
+    --danger: #ff5555;
+    --font: "Share Tech Mono", ui-monospace, "Cascadia Mono", "Courier New", "Sarasa Term SC", "Microsoft YaHei", monospace;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: var(--bg); color: var(--p100); font: 15px/1.5 var(--font); padding: 28px 32px; }
+  *::-webkit-scrollbar { width: 6px; height: 6px; }
+  *::-webkit-scrollbar-thumb { background: #00ff66; border-radius: 3px; }
+  *::-webkit-scrollbar-track, *::-webkit-scrollbar-corner { background: transparent; }
+
+  h1 { font-size: 13px; letter-spacing: 0.12em; margin-bottom: 4px; }
+  h1 .tag { color: var(--p40); }
+  .rule { color: var(--p70); font-size: 12px; margin-bottom: 24px; }
+  h2 { font-size: 11px; letter-spacing: 0.14em; color: var(--p70); margin: 24px 0 10px; text-transform: uppercase; }
+  h2::before { content: "─ "; color: var(--p40); }
+  h2.new { color: var(--p100); }
+
+  .set { border: 1px solid var(--p20); margin-bottom: 18px; }
+  .set.hot { border-color: var(--p40); }
+  .set .head { padding: 10px 16px; border-bottom: 1px solid var(--p20); font-size: 12px; letter-spacing: 0.1em; display: flex; }
+  .set .head .d { color: var(--p40); margin-left: 12px; font-size: 11px; letter-spacing: 0; }
+  .spec { display: flex; gap: 0; border-bottom: 1px solid var(--p20); }
+  .spec .cell { flex: 1; padding: 14px 0 10px; text-align: center; border-left: 1px solid var(--p20); }
+  .spec .cell:first-child { border-left: none; }
+  .spec svg { width: 30px; height: 30px; }
+  .spec .nm { font-size: 10.5px; margin-top: 6px; color: var(--p40); letter-spacing: 0.08em; }
+  .ctx { padding: 10px 16px 12px; background: var(--surface); }
+  .li { display: flex; gap: 9px; align-items: center; font-size: 13.5px; line-height: 2.05; white-space: pre; }
+  .li svg { width: 13px; height: 13px; flex: none; position: relative; top: 0.5px; }
+  .li.alt { opacity: 1; border-top: 1px dashed var(--p20); padding-top: 2px; margin-top: 2px; }
+  .li .t100 { color: var(--p100); } .li .t70 { color: var(--p70); } .li .t40 { color: var(--p40); }
+  .li .err { color: var(--danger); }
+  .c-run { color: var(--p100); } .c-wait { color: var(--p70); } .c-idle { color: var(--p40); }
+  .c-done { color: var(--p70); } .c-err { color: var(--danger); }
+  .note { color: var(--p40); font-size: 11px; line-height: 1.8; margin-top: 6px; }
+</style>
+</head>
+<body>
+
+<h1>C12-SVG · 状态图标候选 <span class="tag">— SET D = MATRIX 原生(扰码运行态)</span></h1>
+<div class="rule">SET D 概念:五枚图标都是「字形舱位」——状态 = 舱位里发生的事。运行 = Matrix Code 字形扰码循环(与数字雨同族的唯一动效);等待/空闲/完成/错误全静态。</div>
+
+<h2 class="new">D · MATRIX 原生(GLYPH CELL)——运行=扰码,等待=沙漏,完成=锁定打勾,错误=故障切片</h2>
+<div class="set hot" data-set="d">
+  <div class="head">SET D <span class="d">扰码循环=运行 / 沙漏(上半舱剩余)=等待 / 空舱=空闲 / 锁定舱+勾=完成 / 红色故障切片=错误</span></div>
+  <div class="spec"></div>
+  <div class="ctx">
+    <div class="li"><span class="ic c-run" data-k="run"></span><span class="t100">Bash · npm test</span>        <span class="t40">运行中 2.1s</span></div>
+    <div class="li"><span class="ic c-done" data-k="done"></span><span class="t70">Edit · AGENTS.md</span>       <span class="t40">3 处替换 · 0.2s</span></div>
+    <div class="li"><span class="ic c-err" data-k="err"></span><span class="err">Read · 缺失文件.ts</span>      <span class="err">ENOENT</span></div>
+    <div class="li"><span class="ic c-wait" data-k="wait"></span><span class="t70">[1] 排队:补充第二条指令</span>  <span class="t40">esc 取消</span></div>
+    <div class="li"><span class="ic c-idle" data-k="idle"></span><span class="t40">单消息测试(非当前会话)</span></div>
+    <div class="li alt"><span class="ic c-wait" data-k="wait2"></span><span class="t40">备选 w2:双竖停驻 = 等待(pause 语义,媒体键同形)</span></div>
+    <div class="li alt"><span class="ic c-done" data-k="done2"></span><span class="t40">备选 d2:独立长臂勾 = 完成(去框,最简)</span></div>
+  </div>
+</div>
+
+<h2>A · 刻面八角(FACETED)——机械舱件感,外框统一、内核辨态</h2>
+<div class="set" data-set="a">
+  <div class="head">SET A <span class="d">八角外框 1px,内核:满菱=运行 / 半菱=等待 / 空=空闲 / 角钩=完成 / 交叉=错误</span></div>
+  <div class="spec"></div>
+  <div class="ctx">
+    <div class="li"><span class="ic c-run" data-k="run"></span><span class="t100">Bash · npm test</span>        <span class="t40">运行中 2.1s</span></div>
+    <div class="li"><span class="ic c-done" data-k="done"></span><span class="t70">Edit · AGENTS.md</span>       <span class="t40">3 处替换 · 0.2s</span></div>
+    <div class="li"><span class="ic c-err" data-k="err"></span><span class="err">Read · 缺失文件.ts</span>      <span class="err">ENOENT</span></div>
+    <div class="li"><span class="ic c-wait" data-k="wait"></span><span class="t70">[1] 排队:补充第二条指令</span>  <span class="t40">esc 取消</span></div>
+    <div class="li"><span class="ic c-idle" data-k="idle"></span><span class="t40">单消息测试(非当前会话)</span></div>
+  </div>
+</div>
+
+<h2>B · 像素格(PXEL)——与 Matrix 字形同肌理,字符网格原生</h2>
+<div class="set" data-set="b">
+  <div class="head">SET B <span class="d">6×6 逻辑格 × 2px 块,crispEdges;像素菱=运行 / 半格=等待 / 像素环=空闲 / 像素钩=完成 / 像素叉=错误</span></div>
+  <div class="spec"></div>
+  <div class="ctx">
+    <div class="li"><span class="ic c-run" data-k="run"></span><span class="t100">Bash · npm test</span>        <span class="t40">运行中 2.1s</span></div>
+    <div class="li"><span class="ic c-done" data-k="done"></span><span class="t70">Edit · AGENTS.md</span>       <span class="t40">3 处替换 · 0.2s</span></div>
+    <div class="li"><span class="ic c-err" data-k="err"></span><span class="err">Read · 缺失文件.ts</span>      <span class="err">ENOENT</span></div>
+    <div class="li"><span class="ic c-wait" data-k="wait"></span><span class="t70">[1] 排队:补充第二条指令</span>  <span class="t40">esc 取消</span></div>
+    <div class="li"><span class="ic c-idle" data-k="idle"></span><span class="t40">单消息测试(非当前会话)</span></div>
+  </div>
+</div>
+
+<h2>C · 细线机械(HAIRLINE)——最克制,正形即传统终端符号的精修版</h2>
+<div class="set" data-set="c">
+  <div class="head">SET C <span class="d">1px 细线,无填充外框:环+芯=运行 / 环+半盘=等待 / 环=空闲 / 超长臂钩=完成 / 细叉=错误</span></div>
+  <div class="spec"></div>
+  <div class="ctx">
+    <div class="li"><span class="ic c-run" data-k="run"></span><span class="t100">Bash · npm test</span>        <span class="t40">运行中 2.1s</span></div>
+    <div class="li"><span class="ic c-done" data-k="done"></span><span class="t70">Edit · AGENTS.md</span>       <span class="t40">3 处替换 · 0.2s</span></div>
+    <div class="li"><span class="ic c-err" data-k="err"></span><span class="err">Read · 缺失文件.ts</span>      <span class="err">ENOENT</span></div>
+    <div class="li"><span class="ic c-wait" data-k="wait"></span><span class="t70">[1] 排队:补充第二条指令</span>  <span class="t40">esc 取消</span></div>
+    <div class="li"><span class="ic c-idle" data-k="idle"></span><span class="t40">单消息测试(非当前会话)</span></div>
+  </div>
+</div>
+
+<div class="note">裁决范围:整套选,或混搭(如 D 的扰码运行态 + A 的其余四枚)。落地形态 = 内联 SVG 原子组件(currentColor),Matrix Code 字体已随仓打包,扰码循环由 JS 驱动 textContent(同屏扰码实例 = 运行态数量,与雨同族,不另计运动源)。</div>
+
+<script>
+const MXCHARS = 'アウエオカキケコサシスセソタツテナニヌネハヒホマミムメモヤヨラリワー012345789*+<>:|';
+const MXFONT = '"Matrix Code","Share Tech Mono",monospace';
+// ── SET D:字形舱位(viewBox 12)──
+let clipSeq = 0;
+const D = {
+  run:  `<text class="mx-run" x="6" y="9.2" text-anchor="middle" font-family='${MXFONT}' font-size="9" fill="currentColor">ア</text>`,
+  // 沙漏:上下横梁 + X 交叉臂,上半舱填充=剩余时间
+  wait: `<path d="M2.8 1.8 H9.2 M2.8 10.2 H9.2 M3.7 1.8 L8.3 10.2 M8.3 1.8 L3.7 10.2" fill="none" stroke="currentColor"/><path d="M4.7 3.1 L7.3 3.1 L6 5.3 Z" fill="currentColor"/>`,
+  idle: `<rect x="2.5" y="2.5" width="7" height="7" fill="none" stroke="currentColor" stroke-width="0.9"/>`,
+  // 锁定舱 + 发丝勾:落定且校验通过
+  done: `<rect x="2" y="2" width="8" height="8" fill="none" stroke="currentColor"/><path d="M3.7 6.3 L5.4 8 L8.5 4.1" fill="none" stroke="currentColor" stroke-width="1.1"/>`,
+  err:  null, // glitchSvg() 生成(clipPath id 需逐实例唯一)
+  // 备选
+  wait2: `<path d="M4.1 2.5 V9.5 M7.9 2.5 V9.5" stroke="currentColor" stroke-width="1.7"/>`,
+  done2: `<path d="M2.4 6.5 L5.1 9 L9.8 3.2" fill="none" stroke="currentColor" stroke-width="1.2"/>`,
+};
+function glitchSvg() {
+  const n = ++clipSeq;
+  return `<clipPath id="mct${n}"><rect x="0" y="0" width="12" height="5.5"/></clipPath>` +
+    `<clipPath id="mcb${n}"><rect x="0" y="5.5" width="12" height="6.5"/></clipPath>` +
+    `<text x="6.9" y="9.2" text-anchor="middle" font-family='${MXFONT}' font-size="9" fill="currentColor" clip-path="url(#mct${n})">メ</text>` +
+    `<text x="5.1" y="9.2" text-anchor="middle" font-family='${MXFONT}' font-size="9" fill="currentColor" clip-path="url(#mcb${n})">メ</text>`;
+}
+// ── SET A:刻面八角 ──
+const OCT = 'M3.5 1 L8.5 1 L11 3.5 L11 8.5 L8.5 11 L3.5 11 L1 8.5 L1 3.5 Z';
+const A = {
+  run:  `<path d="${OCT}" fill="none" stroke="currentColor"/><path d="M6 3.8 L8.2 6 L6 8.2 L3.8 6 Z" fill="currentColor"/>`,
+  wait: `<path d="${OCT}" fill="none" stroke="currentColor"/><path d="M6 3.8 L8.2 6 L6 8.2 L3.8 6 Z" fill="none" stroke="currentColor" stroke-width="0.8"/><path d="M6 3.8 L3.8 6 L6 8.2 Z" fill="currentColor"/>`,
+  idle: `<path d="${OCT}" fill="none" stroke="currentColor"/>`,
+  done: `<path d="${OCT}" fill="none" stroke="currentColor"/><path d="M3.7 6.3 L5.4 8 L8.5 4.1" fill="none" stroke="currentColor" stroke-width="1.1"/>`,
+  err:  `<path d="${OCT}" fill="none" stroke="currentColor"/><path d="M4.2 4.2 L7.8 7.8 M7.8 4.2 L4.2 7.8" stroke="currentColor" stroke-width="1.1"/>`,
+};
+// ── SET B:像素格 ──
+const PX = {
+  run:  ['..XX..', '.XXXX.', 'XXXXXX', 'XXXXXX', '.XXXX.', '..XX..'],
+  wait: ['..XX..', '.XX...', 'XXX...', 'XXX...', '.XX...', '..XX..'],
+  idle: ['.XXXX.', 'X....X', 'X....X', 'X....X', 'X....X', '.XXXX.'],
+  done: ['......', '.....X', 'X...XX', 'XX.XX.', '.XXX..', '..X...'],
+  err:  ['X....X', '.X..X.', '..XX..', '..XX..', '.X..X.', 'X....X'],
+};
+function pxSvg(rows) {
+  let r = '';
+  rows.forEach((row, y) => { for (let x = 0; x < 6; x++) if (row[x] === 'X') r += `<rect x="${x * 2}" y="${y * 2}" width="2" height="2"/>`; });
+  return `<g fill="currentColor" shape-rendering="crispEdges">${r}</g>`;
+}
+// ── SET C:细线机械 ──
+const C = {
+  run:  `<circle cx="6" cy="6" r="4.6" fill="none" stroke="currentColor"/><circle cx="6" cy="6" r="1.7" fill="currentColor"/>`,
+  wait: `<circle cx="6" cy="6" r="4.6" fill="none" stroke="currentColor"/><path d="M6 1.4 A4.6 4.6 0 0 1 6 10.6 Z" fill="currentColor"/>`,
+  idle: `<circle cx="6" cy="6" r="4.6" fill="none" stroke="currentColor"/>`,
+  done: `<path d="M2.4 6.5 L5.1 9 L9.8 3.2" fill="none" stroke="currentColor" stroke-width="1.2"/>`,
+  err:  `<path d="M3.4 3.4 L8.6 8.6 M8.6 3.4 L3.4 8.6" stroke="currentColor" stroke-width="1.2"/>`,
+};
+const NAMES = { run: '运行', wait: '等待', idle: '空闲', done: '完成', err: '错误' };
+const TIERS = { run: 'c-run', wait: 'c-wait', idle: 'c-idle', done: 'c-done', err: 'c-err' };
+function svgFor(set, k) {
+  let inner;
+  if (set === 'd') inner = (k === 'err') ? glitchSvg() : D[k];
+  else if (set === 'b') inner = pxSvg(PX[k]);
+  else if (set === 'a') inner = A[k];
+  else inner = C[k];
+  return `<svg viewBox="0 0 12 12" aria-hidden="true">${inner}</svg>`;
+}
+document.querySelectorAll('.set').forEach((el) => {
+  const set = el.dataset.set;
+  const spec = el.querySelector('.spec');
+  for (const k of ['run', 'wait', 'idle', 'done', 'err']) {
+    const cell = document.createElement('div');
+    cell.className = 'cell ' + TIERS[k];
+    cell.innerHTML = svgFor(set, k) + `<div class="nm">${NAMES[k]}</div>`;
+    spec.appendChild(cell);
+  }
+  el.querySelectorAll('.ic').forEach((ic) => { ic.innerHTML = svgFor(set, ic.dataset.k); });
+});
+// SET D 扰码循环:运行态字形每 120ms 随机切换(与雨同族的唯一动效)
+setInterval(() => {
+  document.querySelectorAll('.mx-run').forEach((t) => {
+    t.textContent = MXCHARS[(Math.random() * MXCHARS.length) | 0];
+  });
+}, 120);
+</script>
+</body>
+</html>

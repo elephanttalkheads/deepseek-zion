@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<!-- PROTOTYPE — throwaway: C11 亮度四阶分层微 demo(docs/design-research/02-inspiration-candidates.md)
+     裁决问题:层次是否收敛为「单一 #3dff8f 的四档不透明度」(100/70/40/20),替代现行异色阶梯(#3dff8f/#23c468/#1da754)? -->
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<title>C11 · 亮度四阶分层</title>
+<style>
+  :root {
+    --bg: #010a04;
+    --surface: rgba(2, 18, 9, 0.92);
+    --p100: rgba(61, 255, 143, 1);
+    --p70: rgba(61, 255, 143, 0.7);
+    --p40: rgba(61, 255, 143, 0.4);
+    --p20: rgba(61, 255, 143, 0.2);
+    --font: "Share Tech Mono", ui-monospace, "Cascadia Mono", "Courier New", "Sarasa Term SC", "Microsoft YaHei", monospace;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: var(--bg); color: var(--p100); font: 15px/1.5 var(--font); padding: 28px 32px; }
+  *::-webkit-scrollbar { width: 6px; height: 6px; }
+  *::-webkit-scrollbar-thumb { background: #00ff66; border-radius: 3px; }
+  *::-webkit-scrollbar-track, *::-webkit-scrollbar-corner { background: transparent; }
+
+  h1 { font-size: 13px; letter-spacing: 0.12em; color: var(--p100); margin-bottom: 4px; }
+  h1 .tag { color: var(--p40); }
+  .rule { color: var(--p70); font-size: 12px; margin-bottom: 24px; }
+  h2 { font-size: 11px; letter-spacing: 0.14em; color: var(--p70); margin: 22px 0 10px; text-transform: uppercase; }
+  h2::before { content: "─ "; color: var(--p40); }
+
+  /* 阶梯标尺 */
+  .tiers { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0; border-top: 1px solid var(--p20); border-bottom: 1px solid var(--p20); }
+  .tier { padding: 14px 16px; border-left: 1px solid var(--p20); }
+  .tier:first-child { border-left: none; }
+  .tier .sample { font-size: 18px; margin-bottom: 8px; }
+  .tier .meta { font-size: 11px; line-height: 1.7; }
+  .t100 .sample, .t100 .meta .v { color: var(--p100); } .t100 .meta { color: var(--p40); }
+  .t70  .sample, .t70  .meta .v { color: var(--p70);  } .t70  .meta { color: var(--p40); }
+  .t40  .sample, .t40  .meta .v { color: var(--p40);  } .t40  .meta { color: var(--p40); }
+  .t20  .sample, .t20  .meta .v { color: var(--p20);  } .t20  .meta { color: var(--p40); }
+
+  /* 对照:现行异色阶梯 vs 提案单色档 */
+  .compare { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+  .panel { border: 1px solid var(--p20); padding: 14px 16px; }
+  .panel .ptitle { font-size: 11px; letter-spacing: 0.1em; margin-bottom: 10px; color: var(--p40); }
+  .panel.current .l1 { color: #3dff8f; } .panel.current .l2 { color: #23c468; } .panel.current .l3 { color: #1da754; }
+  .panel.proposed .l1 { color: var(--p100); } .panel.proposed .l2 { color: var(--p70); } .panel.proposed .l3 { color: var(--p40); }
+  .panel .row { font-size: 13px; line-height: 1.9; white-space: pre; }
+
+  /* 应用样张 */
+  .stage { border: 1px solid var(--p20); padding: 16px 18px; background: var(--surface); }
+  .stage .u { color: var(--p100); }
+  .stage .body { color: var(--p100); margin: 6px 0 6px; }
+  .stage .tool { color: var(--p70); font-size: 13px; }
+  .stage .meta { color: var(--p40); font-size: 11px; }
+  .stage .wm { color: var(--p20); font-size: 11px; }
+  .stage .hr { border: none; border-top: 1px solid var(--p20); margin: 14px 0; }
+  .micro { display: flex; gap: 14px; font-size: 12px; align-items: baseline; }
+  .micro .m-state { color: var(--p100); }
+  .micro .m-model { color: var(--p70); }
+  .micro .m-ctx { color: var(--p40); }
+  .micro .m-hint { color: var(--p20); margin-left: auto; }
+</style>
+</head>
+<body>
+
+<h1>C11 · 亮度四阶分层 <span class="tag">— LUMINANCE TIERS / 单色磷光的层次方案</span></h1>
+<div class="rule">规则:全局限四档 = 正文 100 / 次要 70 / 边框辅助 40 / 水印 20。层次问题不出单色,永不引入第二色相(语义红除外,见 C12)。</div>
+
+<h2>A · 四档标尺(标尺文本自身即用对应档)</h2>
+<div class="tiers">
+  <div class="tier t100"><div class="sample">Aa 磷光 100</div><div class="meta"><span class="v">rgba(61,255,143,1)</span><br>合成 ≈ #3dff8f<br>用途:正文 / 主状态</div></div>
+  <div class="tier t70"><div class="sample">Aa 磷光 70</div><div class="meta"><span class="v">rgba(61,255,143,.7)</span><br>合成 ≈ #2bb565<br>用途:次要文本 / 工具行</div></div>
+  <div class="tier t40"><div class="sample">Aa 磷光 40</div><div class="meta"><span class="v">rgba(61,255,143,.4)</span><br>合成 ≈ #196c3c<br>用途:边框 / 辅助信息</div></div>
+  <div class="tier t20"><div class="sample">Aa 磷光 20</div><div class="meta"><span class="v">rgba(61,255,143,.2)</span><br>合成 ≈ #0d3b20<br>用途:发丝线 / 水印 / 禁用</div></div>
+</div>
+
+<h2>B · 对照:现行异色阶梯 vs 提案单色档</h2>
+<div class="compare">
+  <div class="panel current">
+    <div class="ptitle">CURRENT · 异色阶梯(三个 hex)</div>
+    <div class="row l1">#3dff8f  会话标题 / 正文</div>
+    <div class="row l2">#23c468  次要文本</div>
+    <div class="row l3">#1da754  弱提示</div>
+    <div class="row l3">(色相同族但非同源,档数无上限)</div>
+  </div>
+  <div class="panel proposed">
+    <div class="ptitle">PROPOSED · 单色四档(一个 hue 四个 opacity)</div>
+    <div class="row l1">100%  会话标题 / 正文</div>
+    <div class="row l2">70%   次要文本</div>
+    <div class="row l3">40%   边框 / 辅助</div>
+    <div class="row l3">(档数封四,超出即重新设计)</div>
+  </div>
+</div>
+
+<h2>C · 应用样张(只用四档)</h2>
+<div class="stage">
+  <div class="micro">
+    <span class="m-state">● RUNNING</span>
+    <span class="m-model">DeepSeek V4 Flash · Default</span>
+    <span class="m-ctx">ctx ▮▮▮░░ 51%</span>
+    <span class="m-hint">enter 发送 · shift+enter 换行</span>
+  </div>
+  <hr class="hr">
+  <div class="u">❯ 把迁移流程封装成 skill,并回勾两份清单</div>
+  <div class="body">已按 playbook 完成:SKILL.md 迁出 §8 规则,两份清单已打勾。落点如下——</div>
+  <div class="tool">● Edit · docs/zion-ui-visual-inventory.md</div>
+  <div class="tool">&nbsp;&nbsp;⎿ 12 处标题追加 ✅ 已迁移 + 落点行</div>
+  <div class="meta">2 轮 · 4 步 │ LLM 2.5s │ 89 tok/s │ 缓存命中 51%</div>
+  <hr class="hr">
+  <div class="wm">ZION :: SESSION 01a8 :: 2026-08-29</div>
+</div>
+
+</body>
+</html>

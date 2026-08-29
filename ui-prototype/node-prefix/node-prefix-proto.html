@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<!-- PROTOTYPE — throwaway: C01 节点前缀符号体系微 demo(docs/design-research/02-inspiration-candidates.md)
+     裁决问题:对话流层级是否用「前缀符号」承担(❯ 用户 / 无前缀 100% 正文 / ⎿ 工具结果续行),替代气泡与卡片? -->
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<title>C01 · 节点前缀符号体系</title>
+<style>
+  :root {
+    --bg: #010a04;
+    --surface: rgba(2, 18, 9, 0.92);
+    --p100: rgba(61, 255, 143, 1);
+    --p70: rgba(61, 255, 143, 0.7);
+    --p40: rgba(61, 255, 143, 0.4);
+    --p20: rgba(61, 255, 143, 0.2);
+    --font: "Share Tech Mono", ui-monospace, "Cascadia Mono", "Courier New", "Sarasa Term SC", "Microsoft YaHei", monospace;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: var(--bg); color: var(--p100); font: 15px/1.55 var(--font); padding: 28px 32px; }
+  *::-webkit-scrollbar { width: 6px; height: 6px; }
+  *::-webkit-scrollbar-thumb { background: #00ff66; border-radius: 3px; }
+  *::-webkit-scrollbar-track, *::-webkit-scrollbar-corner { background: transparent; }
+
+  h1 { font-size: 13px; letter-spacing: 0.12em; margin-bottom: 4px; }
+  h1 .tag { color: var(--p40); }
+  .rule { color: var(--p70); font-size: 12px; margin-bottom: 24px; }
+  h2 { font-size: 11px; letter-spacing: 0.14em; color: var(--p70); margin: 22px 0 10px; text-transform: uppercase; }
+  h2::before { content: "─ "; color: var(--p40); }
+
+  /* 对话流样张 */
+  .flow { border: 1px solid var(--p20); background: var(--surface); padding: 18px 20px; }
+  .u { display: flex; gap: 10px; margin: 14px 0 4px; }
+  .u:first-child { margin-top: 0; }
+  .u .psign { color: var(--p100); flex: none; }
+  .u .utext { color: var(--p100); background: rgba(61,255,143,0.06); padding: 0 8px; }
+  .body { color: var(--p100); margin: 4px 0 4px 20px; } /* 缩进对齐 u 文本起点 */
+  .tool { color: var(--p70); font-size: 13.5px; margin: 2px 0 2px 20px; }
+  .tool .g { color: var(--p100); }
+  .cont { color: var(--p70); font-size: 13px; margin: 0 0 2px 34px; } /* ⎿ 续行再缩进一级 */
+  .cont .x { color: var(--p40); }
+  .meta { color: var(--p40); font-size: 11px; margin: 8px 0 0 20px; }
+  .sep { border: none; border-top: 1px solid var(--p20); margin: 16px 0 4px; } /* C06 发丝分隔,仅示意共存 */
+
+  /* 规则注解 */
+  .legend { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0; border: 1px solid var(--p20); }
+  .cell { padding: 12px 16px; border-left: 1px solid var(--p20); }
+  .cell:first-child { border-left: none; }
+  .cell .k { font-size: 15px; margin-bottom: 6px; }
+  .cell .d { font-size: 11.5px; color: var(--p70); line-height: 1.7; }
+  .cell .d em { color: var(--p40); font-style: normal; }
+
+  .note { color: var(--p40); font-size: 11px; margin-top: 14px; line-height: 1.8; }
+</style>
+</head>
+<body>
+
+<h1>C01 · 节点前缀符号体系 <span class="tag">— NODE PREFIXES / 符号承担层级,不用卡片</span></h1>
+<div class="rule">规则:用户消息 = `❯` 前缀;AI 正文 = 无前缀、100% 档(可读性优先,不上色不框);工具结果 = 缩进 `⎿` 续行挂在父行下。层级靠符号与缩进,不靠气泡/卡片/底色块。</div>
+
+<h2>A · 对话流样张</h2>
+<div class="flow">
+  <div class="u"><span class="psign">❯</span><span class="utext">把迁移流程封装成 skill,回勾两份清单</span></div>
+  <div class="body">已按 playbook 完成。流程迁出为独立 skill,两份清单同步打勾,要点:</div>
+  <div class="tool"><span class="g">●</span> Write · .agents/skills/zion-ui-migration/SKILL.md</div>
+  <div class="cont">⎿ 59 行:强制流程 0–5 + 硬性判定 + 陷阱 <span class="x">(自 AGENTS.md §8 迁出)</span></div>
+  <div class="tool"><span class="g">●</span> Edit · docs/zion-ui-visual-inventory.md</div>
+  <div class="cont">⎿ 12 处标题追加 ✅ 已迁移 + 落点行</div>
+  <div class="tool"><span class="g">✓</span> Bash · npm run typecheck</div>
+  <div class="cont">⎿ src 零新增错误(基线 31 文件对照)</div>
+  <div class="meta">2 轮 · 4 步 │ LLM 2.5s │ 首 token 1s · 89 tok/s │ 缓存 51%</div>
+  <hr class="sep">
+  <div class="u"><span class="psign">❯</span><span class="utext">提交推送</span></div>
+  <div class="body">已推送 <span style="color:var(--p70)">31d5f8b</span> 至 origin/main。</div>
+</div>
+
+<h2>B · 三条符号规则</h2>
+<div class="legend">
+  <div class="cell"><div class="k">❯ 用户</div><div class="d">前缀 + 6% 磷光薄底,与输入栏提示符同形——「这是人说的话」;多行消息续行对齐文本起点,不重复前缀。</div></div>
+  <div class="cell"><div class="k">正文无前缀</div><div class="d">AI 正文 100% 档纯白感磷光,无任何框/底/图标——<em>可读性是正文的唯一装饰</em>(Claude Code「白=信任」的等价物)。</div></div>
+  <div class="cell"><div class="k">⎿ 续行</div><div class="d">工具结果/补充说明缩进挂父行,字号降半档、70% 档——层级 = 缩进深度,不是嵌套卡片。</div></div>
+</div>
+
+<div class="note">组合边界:与 C12(●✓ 状态字形)共存于工具行;与 C06(发丝分隔)共存于回合间。若 C04 单行框线工具卡通过,工具行整体进框,⎿ 续行仍在框内保持缩进语义。被替代物:消息气泡、工具卡底色块、kind 侧色条。</div>
+
+</body>
+</html>

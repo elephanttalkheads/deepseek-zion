@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<!-- PROTOTYPE — throwaway: C12 字形状态集微 demo(docs/design-research/02-inspiration-candidates.md)
+     裁决问题:状态是否收敛为「字形 + 亮度档」而非颜色?唯一语义色 = 错误/拒绝 的红。 -->
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<title>C12 · 字形状态集</title>
+<style>
+  :root {
+    --bg: #010a04;
+    --surface: rgba(2, 18, 9, 0.92);
+    --p100: rgba(61, 255, 143, 1);
+    --p70: rgba(61, 255, 143, 0.7);
+    --p40: rgba(61, 255, 143, 0.4);
+    --p20: rgba(61, 255, 143, 0.2);
+    --danger: #ff5555;
+    --font: "Share Tech Mono", ui-monospace, "Cascadia Mono", "Courier New", "Sarasa Term SC", "Microsoft YaHei", monospace;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: var(--bg); color: var(--p100); font: 15px/1.5 var(--font); padding: 28px 32px; }
+  *::-webkit-scrollbar { width: 6px; height: 6px; }
+  *::-webkit-scrollbar-thumb { background: #00ff66; border-radius: 3px; }
+  *::-webkit-scrollbar-track, *::-webkit-scrollbar-corner { background: transparent; }
+
+  h1 { font-size: 13px; letter-spacing: 0.12em; margin-bottom: 4px; }
+  h1 .tag { color: var(--p40); }
+  .rule { color: var(--p70); font-size: 12px; margin-bottom: 24px; }
+  h2 { font-size: 11px; letter-spacing: 0.14em; color: var(--p70); margin: 22px 0 10px; text-transform: uppercase; }
+  h2::before { content: "─ "; color: var(--p40); }
+
+  /* 字形集表 */
+  .glyphs { border-top: 1px solid var(--p20); border-bottom: 1px solid var(--p20); }
+  .g { display: grid; grid-template-columns: 56px 90px 110px 1fr; align-items: baseline; padding: 10px 16px; border-left: 1px solid var(--p20); border-right: 1px solid var(--p20); }
+  .g + .g { border-top: 1px solid var(--p20); }
+  .g .ch { font-size: 22px; }
+  .g .name { font-size: 12px; letter-spacing: 0.08em; }
+  .g .tier { font-size: 11px; color: var(--p40); }
+  .g .use { font-size: 12px; color: var(--p70); }
+  .g.run  .ch, .g.run  .name { color: var(--p100); }
+  .g.wait .ch, .g.wait .name { color: var(--p70); }
+  .g.idle .ch, .g.idle .name { color: var(--p40); }
+  .g.done .ch, .g.done .name { color: var(--p70); }
+  .g.err  .ch, .g.err  .name { color: var(--danger); }
+  .g.err .use { color: var(--danger); opacity: 0.7; }
+
+  /* 应用样张 */
+  .stage { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+  .panel { border: 1px solid var(--p20); background: var(--surface); padding: 12px 16px; }
+  .panel .ptitle { font-size: 11px; letter-spacing: 0.1em; color: var(--p40); margin-bottom: 8px; }
+  .li { font-size: 13px; line-height: 2.1; white-space: pre; }
+  .li .g-run  { color: var(--p100); }
+  .li .g-wait { color: var(--p70); }
+  .li .g-idle { color: var(--p40); }
+  .li .g-done { color: var(--p70); }
+  .li .g-err  { color: var(--danger); }
+  .li .t100 { color: var(--p100); }
+  .li .t70 { color: var(--p70); }
+  .li .t40 { color: var(--p40); }
+  .li.sel { background: var(--p100); color: var(--bg); } /* C08 反色选中,仅示意共存 */
+  .li.sel * { color: var(--bg) !important; }
+  .note { color: var(--p40); font-size: 11px; margin-top: 14px; line-height: 1.8; }
+  .note b { color: var(--danger); font-weight: normal; }
+</style>
+</head>
+<body>
+
+<h1>C12 · 字形状态集 <span class="tag">— STATUS GLYPHS / 字形 + 亮度,不用颜色</span></h1>
+<div class="rule">规则:状态 = 字形 + 亮度档(100/70/40),成功/警告/运行均不占用色相。唯一语义色 = 红,仅用于错误与拒绝。</div>
+
+<h2>A · 字形集(五枚,闭集)</h2>
+<div class="glyphs">
+  <div class="g run"><span class="ch">●</span><span class="name">运行中</span><span class="tier">100% 档</span><span class="use">会话 running / 工具执行中(运行态可换 C02 spinner)</span></div>
+  <div class="g wait"><span class="ch">◐</span><span class="name">等待</span><span class="tier">70% 档</span><span class="use">排队中 / 审批悬停 / 等待输入</span></div>
+  <div class="g idle"><span class="ch">○</span><span class="name">空闲</span><span class="tier">40% 档</span><span class="use">非当前会话 / 待命</span></div>
+  <div class="g done"><span class="ch">✓</span><span class="name">完成</span><span class="tier">70% 档</span><span class="use">工具成功 / 任务完成(不用绿对勾,绿是底色不是语义)</span></div>
+  <div class="g err"><span class="ch">✗</span><span class="name">错误</span><span class="tier">语义红 #ff5555</span><span class="use">工具失败 / 审批拒绝 / 连接断开——全屏唯一红色语义位</span></div>
+</div>
+
+<h2>B · 应用样张</h2>
+<div class="stage">
+  <div class="panel">
+    <div class="ptitle">SIDEBAR · 会话列表</div>
+    <div class="li sel"><span>●</span> 重构视觉规范(当前)</div>
+    <div class="li"><span class="g-wait">◐</span> <span class="t70">队列验收准备完成</span></div>
+    <div class="li"><span class="g-idle">○</span> <span class="t40">单消息测试</span></div>
+    <div class="li"><span class="g-done">✓</span> <span class="t70">M6 验收收尾</span></div>
+    <div class="li"><span class="g-err">✗</span> <span class="g-err">模型拉取失败</span></div>
+  </div>
+  <div class="panel">
+    <div class="ptitle">QUEUE · 队列坞</div>
+    <div class="li"><span class="g-wait">◐</span> <span class="t70">[1] 补充第二条指令</span>      <span class="t40">esc 取消</span></div>
+    <div class="li"><span class="g-wait">◐</span> <span class="t70">[2] 回勾 HANDOFF</span>          <span class="t40">esc 取消</span></div>
+  </div>
+  <div class="panel">
+    <div class="ptitle">TOOLS · 工具行</div>
+    <div class="li"><span class="g-run">●</span> <span class="t100">Bash · npm test</span>        <span class="t40">运行中 2.1s</span></div>
+    <div class="li"><span class="g-done">✓</span> <span class="t70">Edit · AGENTS.md</span>       <span class="t40">3 处替换 · 0.2s</span></div>
+    <div class="li"><span class="g-err">✗</span> <span class="g-err">Read · 缺失文件.ts</span>      <span class="g-err">ENOENT</span></div>
+  </div>
+  <div class="panel">
+    <div class="ptitle">MICRO · 微簇状态条</div>
+    <div class="li"><span class="g-run">●</span> <span class="t100">RUNNING</span>  <span class="t70">DeepSeek V4 Flash</span>  <span class="t40">ctx ▮▮▮░░ 51%</span></div>
+    <div class="li"><span class="g-idle">○</span> <span class="t40">READY</span>     <span class="t70">DeepSeek V4 Flash</span>  <span class="t40">ctx ▮░░░░ 12%</span></div>
+  </div>
+</div>
+
+<div class="note">共存关系:●◐○ 三枚是「会话/任务相位」,✓✗ 是「结果判定」;✗ 的红是<b>全屏唯一红色</b>,审批拒绝、断开横幅、工具失败共用这一语义位,不再另设橙/黄/紫。反色选中行(C08)与字形叠加时,字形一并反色,不破坏规则。</div>
+
+</body>
+</html>
