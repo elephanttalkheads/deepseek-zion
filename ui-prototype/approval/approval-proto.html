@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<!-- PROTOTYPE — throwaway: C07 编号审批选项 + C15 角括号聚焦 微 demo
+     裁决问题:审批选项 A 横排单行 vs B 竖排三行。
+     语言组合:面板 = 角括号注视(C15/§2.8 V2 同族,系统正在等一个决定);
+     焦点 = 反显行(C08 光标);键名 [1][2][3] 100% 档直选;[3] 拒绝 = 唯一语义红;Esc = 拒绝。 -->
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<title>C07+C15 · 审批弹层</title>
+<style>
+  @font-face { font-family: "Matrix Code"; src: url("../../renderer/src/assets/fonts/Matrix-Code.ttf"); font-display: swap; }
+  :root {
+    --bg: #010a04;
+    --surface: rgba(2, 18, 9, 0.92);
+    --p100: rgba(61, 255, 143, 1);
+    --p70: rgba(61, 255, 143, 0.7);
+    --p40: rgba(61, 255, 143, 0.4);
+    --p20: rgba(61, 255, 143, 0.2);
+    --danger: #ff5555;
+    --font: "Share Tech Mono", ui-monospace, "Cascadia Mono", "Courier New", "Sarasa Term SC", "Microsoft YaHei", monospace;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: var(--bg); color: var(--p100); font: 15px/1.55 var(--font); padding: 28px 32px; }
+  *::-webkit-scrollbar { width: 6px; height: 6px; }
+  *::-webkit-scrollbar-thumb { background: #00ff66; border-radius: 3px; }
+  *::-webkit-scrollbar-track, *::-webkit-scrollbar-corner { background: transparent; }
+
+  h1 { font-size: 13px; letter-spacing: 0.12em; margin-bottom: 4px; }
+  h1 .tag { color: var(--p40); }
+  .rule { color: var(--p70); font-size: 12px; margin-bottom: 22px; }
+  h2 { font-size: 11px; letter-spacing: 0.14em; color: var(--p70); margin: 24px 0 10px; text-transform: uppercase; }
+  h2::before { content: "─ "; color: var(--p40); }
+
+  .lane { border: 1px solid var(--p20); background: var(--surface); padding: 16px 20px 18px; margin-bottom: 18px; }
+  /* 语境:上方一条已完成的工具行 */
+  .tl { display: flex; gap: 8px; align-items: center; font-size: 13.5px; color: var(--p70); margin: 0 0 4px 20px; }
+  .cont2 { color: var(--p70); font-size: 13px; margin: 0 0 0 46px; }
+  .cont2 .x { color: var(--p40); }
+  .ic { display: inline-flex; flex: none; }
+  .ic svg { width: 12px; height: 12px; display: block; }
+  .c-done { color: var(--p70); } .c-wait { color: var(--p70); }
+
+  /* ── 审批面板(接管 composer 位):角括号注视 ── */
+  .ap { position: relative; margin: 14px 0 0; padding: 12px 16px 12px; }
+  .ap .cnr { position: absolute; font: 14px/1 var(--font); color: var(--p70); }
+  .ap .cnr.ct { top: -2px; } .ap .cnr.cb { bottom: -2px; }
+  .ap .cnr.cl { left: -2px; } .ap .cnr.cr { right: -2px; }
+  .ap .req { font-size: 13.5px; color: var(--p100); display: flex; gap: 8px; align-items: center; }
+  .ap .req .cmd { color: var(--p100); }
+  .ap .req .why { color: var(--p40); font-size: 12px; margin-left: auto; }
+  .ap .sub { font-size: 12.5px; color: var(--p70); margin: 4px 0 10px 22px; }
+
+  /* 选项 */
+  .opt .key { color: var(--p100); font-weight: bold; }
+  .opt .lbl { color: var(--p70); }
+  .opt.deny .key, .opt.deny .lbl { color: var(--danger); }
+  .opts-h { display: flex; gap: 26px; margin: 2px 0 0 22px; }
+  .opts-h .opt { font-size: 13.5px; padding: 0 6px; }
+  .opts-v { display: flex; flex-direction: column; margin: 2px 0 0 22px; }
+  .opts-v .opt { font-size: 13.5px; line-height: 2; padding: 0 8px; margin: 0 -8px; display: flex; gap: 8px; }
+  .opts-v .opt .hint { margin-left: auto; font-size: 11px; color: var(--p40); align-self: center; }
+  .opt.focus { background: var(--p100); }
+  .opt.focus * { color: var(--bg) !important; }
+  .ap .foot { margin: 10px 0 0 22px; font-size: 11px; color: var(--p40); }
+  .ap .foot .k { color: var(--p70); }
+
+  .note { color: var(--p40); font-size: 11px; line-height: 1.8; margin-top: 6px; }
+</style>
+</head>
+<body>
+
+<h1>C07+C15 · 审批弹层 <span class="tag">— A 横排 vs B 竖排</span></h1>
+<div class="rule">审批 = 系统停下等一个决定:面板四角角括号(注视),选项编号直选,焦点反显,[3] 拒绝走唯一语义红,Esc 同拒绝。</div>
+
+<h2>A · 横排选项([1] [2] [3] 一行)</h2>
+<div class="lane">
+  <div class="tl"><span class="ic c-done" data-k="done"></span>Edit · package.json</div>
+  <div class="cont2">⎿ 1 处替换 <span class="x">(0.1s)</span></div>
+  <div class="ap">
+    <span class="cnr ct cl">⌜</span><span class="cnr ct cr">⌝</span><span class="cnr cb cl">⌞</span><span class="cnr cb cr">⌟</span>
+    <div class="req"><span class="ic c-wait" data-k="wait"></span><span>Bash 请求执行</span><span class="cmd">rm -rf build/</span><span class="why">高危:递归删除</span></div>
+    <div class="sub">⎿ 该命令将删除 build/ 下全部内容,不可恢复</div>
+    <div class="opts-h">
+      <span class="opt focus"><span class="key">[1]</span> <span class="lbl">允许</span></span>
+      <span class="opt"><span class="key">[2]</span> <span class="lbl">本次会话不再询问</span></span>
+      <span class="opt deny"><span class="key">[3]</span> <span class="lbl">拒绝</span></span>
+    </div>
+    <div class="foot"><span class="k">1/2/3</span> 直选 · <span class="k">←→</span> 移焦点 · <span class="k">enter</span> 确认 · <span class="k">esc</span> 拒绝</div>
+  </div>
+</div>
+
+<h2>B · 竖排选项(三行,焦点行反显)</h2>
+<div class="lane">
+  <div class="tl"><span class="ic c-done" data-k="done"></span>Edit · package.json</div>
+  <div class="cont2">⎿ 1 处替换 <span class="x">(0.1s)</span></div>
+  <div class="ap">
+    <span class="cnr ct cl">⌜</span><span class="cnr ct cr">⌝</span><span class="cnr cb cl">⌞</span><span class="cnr cb cr">⌟</span>
+    <div class="req"><span class="ic c-wait" data-k="wait"></span><span>Bash 请求执行</span><span class="cmd">rm -rf build/</span><span class="why">高危:递归删除</span></div>
+    <div class="sub">⎿ 该命令将删除 build/ 下全部内容,不可恢复</div>
+    <div class="opts-v">
+      <span class="opt focus"><span class="key">[1]</span><span class="lbl">允许</span><span class="hint">enter</span></span>
+      <span class="opt"><span class="key">[2]</span><span class="lbl">本次会话不再询问</span><span class="hint">不再询问同类命令</span></span>
+      <span class="opt deny"><span class="key">[3]</span><span class="lbl">拒绝</span><span class="hint">esc</span></span>
+    </div>
+    <div class="foot"><span class="k">1/2/3</span> 直选 · <span class="k">↑↓</span> 移焦点 · <span class="k">enter</span> 确认 · <span class="k">esc</span> 拒绝</div>
+  </div>
+</div>
+
+<div class="note">判断点:① 横排省一行高度、更像「快捷应答」,竖排每行可挂 hint、键盘焦点语义更清楚;② 角括号面板与运行工具的角括号同族但语义分层:工具=正在发生,审批=正在等你;③ 拒绝的红只在 [3] 一行,不污染面板。</div>
+
+<script>
+const MXFONT = '"Matrix Code","Share Tech Mono",monospace';
+const ICON = {
+  wait: `<path d="M2.8 1.8 H9.2 M2.8 10.2 H9.2 M3.7 1.8 L8.3 10.2 M8.3 1.8 L3.7 10.2" fill="none" stroke="currentColor"/><path d="M4.7 3.1 L7.3 3.1 L6 5.3 Z" fill="currentColor"/>`,
+  done: `<rect x="2" y="2" width="8" height="8" fill="none" stroke="currentColor"/><path d="M3.7 6.3 L5.4 8 L8.5 4.1" fill="none" stroke="currentColor" stroke-width="1.1"/>`,
+};
+document.querySelectorAll('.ic').forEach((el) => {
+  el.innerHTML = `<svg viewBox="0 0 12 12" aria-hidden="true">${ICON[el.dataset.k]}</svg>`;
+});
+</script>
+</body>
+</html>

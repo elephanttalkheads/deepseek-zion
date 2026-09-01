@@ -18,5 +18,17 @@ app.whenReady().then(async () => {
   await sleep(120);
   const img = await win.webContents.capturePage();
   fs.writeFileSync(path.join(outDir, 'composite-tui-proto--full.png'), img.toPNG());
+  // 审批接管态(§2.11):隐藏输入行,显示审批面板
+  await win.webContents.executeJavaScript(`(() => {
+    document.querySelector('.input-box').style.display = 'none';
+    document.querySelector('.subline').style.display = 'none';
+    document.getElementById('apPanel').style.display = 'block';
+    return 'ok';
+  })()`);
+  await sleep(400);
+  await win.webContents.capturePage();
+  await sleep(120);
+  const img2 = await win.webContents.capturePage();
+  fs.writeFileSync(path.join(outDir, 'composite-tui-proto--approval.png'), img2.toPNG());
   app.quit();
 });

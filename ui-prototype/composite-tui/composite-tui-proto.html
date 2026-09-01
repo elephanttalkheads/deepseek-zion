@@ -129,6 +129,23 @@
   textarea::placeholder { color: var(--p40); }
   .subline { display: flex; font-size: 11px; color: var(--p40); padding: 6px 4px 0; font-variant-numeric: tabular-nums; }
   .subline .hint { margin-left: auto; color: var(--p20); }
+  /* 审批接管态(DESIGN.md §2.11):角括号注视 + 横排编号选项 */
+  .ap { position: relative; margin: 6px 4px 4px; padding: 10px 14px 9px; display: none; }
+  .ap .cnr { position: absolute; font: 14px/1 var(--font); color: var(--p70); }
+  .ap .cnr.ct { top: -2px; } .ap .cnr.cb3 { bottom: -2px; }
+  .ap .cnr.cl { left: -2px; } .ap .cnr.cr { right: -2px; }
+  .ap .req { font-size: 13.5px; color: var(--p100); display: flex; gap: 8px; align-items: center; }
+  .ap .req .why { color: var(--p40); font-size: 12px; margin-left: auto; }
+  .ap .sub { font-size: 12.5px; color: var(--p70); margin: 4px 0 8px 22px; }
+  .ap .opts { display: flex; gap: 26px; margin-left: 22px; font-size: 13.5px; }
+  .ap .opt { padding: 0 6px; }
+  .ap .opt .key { color: var(--p100); font-weight: bold; }
+  .ap .opt .lbl { color: var(--p70); }
+  .ap .opt.deny .key, .ap .opt.deny .lbl { color: var(--danger); }
+  .ap .opt.focus { background: var(--p100); }
+  .ap .opt.focus * { color: var(--bg) !important; }
+  .ap .foot { margin: 8px 0 0 22px; font-size: 11px; color: var(--p40); }
+  .ap .foot .k { color: var(--p70); }
 </style>
 </head>
 <body>
@@ -199,6 +216,17 @@
           <textarea rows="1" placeholder="输入消息…"></textarea>
           <button class="go-btn">↑</button>
         </div>
+      </div>
+      <div class="ap" id="apPanel">
+        <span class="cnr ct cl">⌜</span><span class="cnr ct cr">⌝</span><span class="cnr cb3 cl">⌞</span><span class="cnr cb3 cr">⌟</span>
+        <div class="req"><span class="ic c-wait" data-k="wait"></span><span>Bash 请求执行</span><span>rm -rf build/</span><span class="why">高危:递归删除</span></div>
+        <div class="sub">⎿ 该命令将删除 build/ 下全部内容,不可恢复</div>
+        <div class="opts">
+          <span class="opt focus"><span class="key">[1]</span> <span class="lbl">允许</span></span>
+          <span class="opt"><span class="key">[2]</span> <span class="lbl">本次会话不再询问</span></span>
+          <span class="opt deny"><span class="key">[3]</span> <span class="lbl">拒绝</span></span>
+        </div>
+        <div class="foot"><span class="k">1/2/3</span> 直选 · <span class="k">←→</span> 移焦点 · <span class="k">enter</span> 确认 · <span class="k">esc</span> 拒绝</div>
       </div>
       <div class="subline">
         <span>2 轮 · 4 步 │ LLM 2.5s │ 首 token 平均 1s · 89 tok/s │ 缓存命中 51% │ 输入 47.9K tok · 输出 47 tok</span>
