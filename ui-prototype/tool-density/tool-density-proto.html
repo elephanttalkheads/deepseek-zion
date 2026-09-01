@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<!-- PROTOTYPE — throwaway: 工具卡密度优化 D2 vs D3 微 demo(C04/C05 迭代轮)
+     背景:一工具一框被裁决为臃肿(框线密度爆炸/空心框/结构税/红框过吵)。
+     D2 行式+聚光框:完成/错误 = 纯行,只有运行中工具得 notch 框(全场唯一),错误红字不画红框。
+     D3 半框:每工具只画顶边(嵌标题)+ 左竖轨,右/底开放。 -->
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<title>工具卡密度 · D2 vs D3</title>
+<style>
+  @font-face { font-family: "Matrix Code"; src: url("../../renderer/src/assets/fonts/Matrix-Code.ttf"); font-display: swap; }
+  :root {
+    --bg: #010a04;
+    --surface: rgba(2, 18, 9, 0.92);
+    --p100: rgba(61, 255, 143, 1);
+    --p70: rgba(61, 255, 143, 0.7);
+    --p40: rgba(61, 255, 143, 0.4);
+    --p20: rgba(61, 255, 143, 0.2);
+    --danger: #ff5555;
+    --font: "Share Tech Mono", ui-monospace, "Cascadia Mono", "Courier New", "Sarasa Term SC", "Microsoft YaHei", monospace;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: var(--bg); color: var(--p100); font: 15px/1.55 var(--font); padding: 28px 32px; }
+  *::-webkit-scrollbar { width: 6px; height: 6px; }
+  *::-webkit-scrollbar-thumb { background: #00ff66; border-radius: 3px; }
+  *::-webkit-scrollbar-track, *::-webkit-scrollbar-corner { background: transparent; }
+
+  h1 { font-size: 13px; letter-spacing: 0.12em; margin-bottom: 4px; }
+  h1 .tag { color: var(--p40); }
+  .rule { color: var(--p70); font-size: 12px; margin-bottom: 22px; }
+  h2 { font-size: 11px; letter-spacing: 0.14em; color: var(--p70); margin: 24px 0 6px; text-transform: uppercase; }
+  h2::before { content: "─ "; color: var(--p40); }
+  h2 .cnt { color: var(--p40); letter-spacing: 0; text-transform: none; }
+
+  .lane { border: 1px solid var(--p20); background: var(--surface); padding: 16px 20px; margin-bottom: 18px; }
+  .u { display: flex; gap: 10px; margin: 0 0 4px; }
+  .u .psign { color: var(--p100); flex: none; }
+  .u .utext { color: var(--p100); background: rgba(61,255,143,0.06); padding: 0 8px; }
+  .body { color: var(--p100); margin: 4px 0 8px 20px; }
+  .meta { color: var(--p40); font-size: 11px; margin: 10px 0 0 20px; }
+
+  .ic { display: inline-flex; flex: none; }
+  .ic svg { width: 12px; height: 12px; display: block; }
+  .c-run { color: var(--p100); } .c-done { color: var(--p70); } .c-err { color: var(--danger); }
+
+  /* ── D2 行式:完成/错误 = 纯行 ── */
+  .tl { display: flex; gap: 8px; align-items: center; font-size: 13.5px; color: var(--p70); margin: 6px 0 0 20px; }
+  .tl .dur { color: var(--p40); font-size: 12px; }
+  .tl.err, .tl.err .dur { color: var(--danger); }
+  .cont2 { color: var(--p70); font-size: 13px; margin: 0 0 0 46px; }
+  .cont2 .x { color: var(--p40); }
+  .cont2.err { color: var(--danger); opacity: 0.85; }
+  /* D2 聚光框:只有运行中工具 */
+  .tc { position: relative; border: 1px solid var(--p70); margin: 8px 0 0 20px; padding: 8px 12px 7px; }
+  .tc .cap { position: absolute; top: -0.72em; left: 10px; padding: 0 6px; background: var(--surface);
+    font-size: 12.5px; color: var(--p100); display: inline-flex; gap: 7px; align-items: center; white-space: nowrap; }
+  .tc .cap::before { content: "┐"; color: var(--p70); margin-right: 2px; }
+  .tc .cap::after { content: "┌"; color: var(--p70); margin-left: 2px; }
+  .tc .lines { font-size: 13px; color: var(--p70); }
+  .tc .lines .out { padding-left: 14px; }
+  .tc .lines .out .x { color: var(--p40); }
+
+  /* ── D3 半框:顶边(嵌标题)+ 左竖轨,右/底开放 ── */
+  .hf { position: relative; border-top: 1px solid var(--p40); border-left: 1px solid var(--p40);
+    margin: 12px 0 0 20px; padding: 6px 10px 4px 12px; }
+  .hf .cap { position: absolute; top: -0.72em; left: 8px; padding: 0 6px; background: var(--surface);
+    font-size: 12.5px; color: var(--p70); display: inline-flex; gap: 7px; align-items: center; white-space: nowrap; }
+  .hf .cap::before { content: "┐"; color: var(--p40); margin-right: 2px; }
+  .hf .cap::after { content: "┌"; color: var(--p40); margin-left: 2px; }
+  .hf .lines { font-size: 13px; color: var(--p70); }
+  .hf .lines .out { padding-left: 14px; }
+  .hf .lines .out .x { color: var(--p40); }
+  .hf.run { border-color: var(--p70); }
+  .hf.run .cap { color: var(--p100); }
+  .hf.run .cap::before, .hf.run .cap::after { color: var(--p70); }
+  .hf.err { border-color: var(--danger); }
+  .hf.err .cap, .hf.err .cap::before, .hf.err .cap::after { color: var(--danger); }
+  .hf.err .lines, .hf.err .lines .out { color: var(--danger); opacity: 0.85; }
+
+  .note { color: var(--p40); font-size: 11px; line-height: 1.8; margin-top: 6px; }
+</style>
+</head>
+<body>
+
+<h1>工具卡密度 · D2 vs D3 <span class="tag">— C04/C05 迭代轮</span></h1>
+<div class="rule">同一对话片段两连:d2 = 纯行 + 运行独享聚光框;d3 = 每工具半框(顶边+左轨)。比较「框线总量」与「分组感」的性价比。</div>
+
+<h2>D2 · 行式 + 聚光框 <span class="cnt">(静态工具 0 框线;全场唯一框 = 运行中)</span></h2>
+<div class="lane">
+  <div class="u"><span class="psign">❯</span><span class="utext">重构视觉规范</span></div>
+  <div class="body">骨架已上屏,四处改动如下——</div>
+  <div class="tl"><span class="ic c-done" data-k="done"></span>Edit · AGENTS.md <span class="dur">0.2s</span></div>
+  <div class="cont2">⎿ 3 处替换 · +12 −4</div>
+  <div class="tc">
+    <span class="cap"><span class="ic c-run" data-k="run"></span>Bash · npm test</span>
+    <div class="lines">
+      <div>$ npm test</div>
+      <div class="out">⎿ 17/34 passed … <span class="x">(2.1s,流式)</span></div>
+    </div>
+  </div>
+  <div class="tl err"><span class="ic c-err" data-k="err"></span>Read · 缺失文件.ts <span class="dur">ENOENT</span></div>
+  <div class="cont2 err">⎿ no such file or directory,已跳过</div>
+  <div class="tl"><span class="ic c-done" data-k="done"></span>Grep · "风格路由" <span class="dur">2 命中</span></div>
+  <div class="cont2">⎿ AGENTS.md:145 · SKILL.md:10</div>
+  <div class="meta">2 轮 · 4 步 │ LLM 2.5s │ 89 tok/s</div>
+</div>
+
+<h2>D3 · 半框(顶边嵌标题 + 左竖轨) <span class="cnt">(每工具 2 条边,右/底开放)</span></h2>
+<div class="lane">
+  <div class="u"><span class="psign">❯</span><span class="utext">重构视觉规范</span></div>
+  <div class="body">骨架已上屏,四处改动如下——</div>
+  <div class="hf">
+    <span class="cap"><span class="ic c-done" data-k="done"></span>Edit · AGENTS.md</span>
+    <div class="lines"><div class="out">⎿ 3 处替换 · +12 −4 <span class="x">(0.2s)</span></div></div>
+  </div>
+  <div class="hf run">
+    <span class="cap"><span class="ic c-run" data-k="run"></span>Bash · npm test</span>
+    <div class="lines">
+      <div>$ npm test</div>
+      <div class="out">⎿ 17/34 passed … <span class="x">(2.1s,流式)</span></div>
+    </div>
+  </div>
+  <div class="hf err">
+    <span class="cap"><span class="ic c-err" data-k="err"></span>Read · 缺失文件.ts</span>
+    <div class="lines"><div class="out">⎿ ENOENT: no such file or directory</div></div>
+  </div>
+  <div class="hf">
+    <span class="cap"><span class="ic c-done" data-k="done"></span>Grep · "风格路由"</span>
+    <div class="lines"><div class="out">⎿ AGENTS.md:145 · SKILL.md:10 <span class="x">(2 文件 2 命中)</span></div></div>
+  </div>
+  <div class="meta">2 轮 · 4 步 │ LLM 2.5s │ 89 tok/s</div>
+</div>
+
+<div class="note">对比点:① 框线总量——D2 静态 0 条 vs D3 每工具 2 条;② 分组感——D2 靠缩进, D3 靠顶边标题;③ 错误——D2 红字行(小而准) vs D3 红半框(面积减半但仍是一大片);④ 展开态(未画):D2 展开内容继续 ⎿ 缩进, D3 展开仍在半框内。</div>
+
+<script>
+const MXCHARS = 'アウエオカキケコサシスセソタツテナニヌネハヒホマミムメモヤヨラリワー012345789*+<>:|';
+const MXFONT = '"Matrix Code","Share Tech Mono",monospace';
+let clipSeq = 0;
+const ICON = {
+  run:  `<text class="mx-run" x="6" y="9.2" text-anchor="middle" font-family='${MXFONT}' font-size="9" fill="currentColor">ア</text>`,
+  done: `<rect x="2" y="2" width="8" height="8" fill="none" stroke="currentColor"/><path d="M3.7 6.3 L5.4 8 L8.5 4.1" fill="none" stroke="currentColor" stroke-width="1.1"/>`,
+};
+function glitchSvg() {
+  const n = ++clipSeq;
+  return `<clipPath id="mct${n}"><rect x="0" y="0" width="12" height="5.5"/></clipPath>` +
+    `<clipPath id="mcb${n}"><rect x="0" y="5.5" width="12" height="6.5"/></clipPath>` +
+    `<text x="6.9" y="9.2" text-anchor="middle" font-family='${MXFONT}' font-size="9" fill="currentColor" clip-path="url(#mct${n})">メ</text>` +
+    `<text x="5.1" y="9.2" text-anchor="middle" font-family='${MXFONT}' font-size="9" fill="currentColor" clip-path="url(#mcb${n})">メ</text>`;
+}
+document.querySelectorAll('.ic').forEach((el) => {
+  const k = el.dataset.k;
+  el.innerHTML = `<svg viewBox="0 0 12 12" aria-hidden="true">${k === 'err' ? glitchSvg() : ICON[k]}</svg>`;
+});
+setInterval(() => {
+  document.querySelectorAll('.mx-run').forEach((t) => {
+    t.textContent = MXCHARS[(Math.random() * MXCHARS.length) | 0];
+  });
+}, 120);
+</script>
+</body>
+</html>
