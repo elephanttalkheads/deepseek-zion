@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<!-- PROTOTYPE — throwaway: 药丸样式变体 · 第二轮(按全局滚动条肌理重设计)
+     滚动条 DNA(§2.2):6px 全圆角胶囊 / 纯色平涂 / 无渐变无描边 / 透明轨道——安静的小色块。
+     V1 直译平涂(纯色胶囊,零辉光) / V2 平涂微光(V1 + 单色 55% 外晕) / V3 轨道滑囊(薄色轨道 + 实色滑囊,滑囊位置编码语义)
+     裁决:哪款丸形取代 §2.11 的双色半囊(V2 定稿)。 -->
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<title>药丸变体 · 滚动条肌理</title>
+<style>
+  :root {
+    --bg: #010a04;
+    --surface: rgba(2, 18, 9, 0.92);
+    --p100: rgba(61, 255, 143, 1);
+    --p70: rgba(61, 255, 143, 0.7);
+    --p40: rgba(61, 255, 143, 0.4);
+    --p20: rgba(61, 255, 143, 0.2);
+    --blue: #3f9dff;
+    --green: #3dff8f;
+    --red: #ff4d4d;
+    --font: "Share Tech Mono", ui-monospace, "Cascadia Mono", "Courier New", "Sarasa Term SC", "Microsoft YaHei", monospace;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: var(--bg); color: var(--p100); font: 15px/1.55 var(--font); padding: 28px 32px; }
+  *::-webkit-scrollbar { width: 6px; height: 6px; }
+  *::-webkit-scrollbar-thumb { background: #00ff66; border-radius: 3px; }
+  *::-webkit-scrollbar-track, *::-webkit-scrollbar-corner { background: transparent; }
+
+  h1 { font-size: 13px; letter-spacing: 0.12em; margin-bottom: 4px; }
+  h1 .tag { color: var(--p40); }
+  .rule { color: var(--p70); font-size: 12px; margin-bottom: 20px; }
+  h2 { font-size: 11px; letter-spacing: 0.14em; color: var(--p70); margin: 22px 0 8px; text-transform: uppercase; }
+  h2::before { content: "─ "; color: var(--p40); }
+  h2 .d { color: var(--p40); letter-spacing: 0; text-transform: none; }
+
+  .lane { border: 1px solid var(--p20); background: var(--surface); padding: 12px 16px 14px; margin-bottom: 14px; }
+  .opts-pill { display: flex; gap: 26px; margin-left: 22px; font-size: 13.5px; }
+  .popt { display: inline-flex; gap: 8px; align-items: center; padding: 0 6px; }
+  .popt.allow .lbl { color: #6db3ff; }
+  .popt.trust .lbl { color: var(--p100); }
+  .popt.deny  .lbl { color: #ff6b6b; }
+  .popt.focus { background: var(--p100); }
+  .popt.focus .lbl { color: var(--bg) !important; }
+  .cp { flex: none; }
+  .spec { display: flex; gap: 60px; margin: 10px 0 0 22px; }
+  .spec .cell { text-align: center; }
+  .spec .zoom { transform: scale(4); transform-origin: center; margin: 16px 0 6px; display: inline-block; }
+  .spec .nm { font-size: 10.5px; color: var(--p40); letter-spacing: 0.08em; margin-top: 2px; }
+
+  /* V1 直译平涂:与滚动条完全同肌理——纯色胶囊,零辉光零渐变 */
+  .v1 .cp { width: 14px; height: 6px; border-radius: 3px; }
+  .v1 .allow .cp { background: var(--blue); }
+  .v1 .trust .cp { background: var(--green); }
+  .v1 .deny  .cp { background: var(--red); }
+
+  /* V2 平涂微光:V1 + 单色 55% 外晕(暗底可读性) */
+  .v2 .cp { width: 14px; height: 6px; border-radius: 3px; }
+  .v2 .allow .cp { background: var(--blue);  box-shadow: 0 0 6px rgba(63,157,255,0.55); }
+  .v2 .trust .cp { background: var(--green); box-shadow: 0 0 6px rgba(61,255,143,0.55); }
+  .v2 .deny  .cp { background: var(--red);   box-shadow: 0 0 6px rgba(255,77,77,0.55); }
+
+  /* V3 轨道滑囊:22×6 薄色轨道(20%)+ 内嵌 10×4 实色滑囊;位置编码:允许=居右(放行)/ 信任=居中(锁定)/ 拒绝=居左(退回) */
+  .v3 .cp { width: 22px; height: 6px; border-radius: 3px; position: relative; }
+  .v3 .allow .cp { background: rgba(63,157,255,0.2); }
+  .v3 .trust .cp { background: rgba(61,255,143,0.2); }
+  .v3 .deny  .cp { background: rgba(255,77,77,0.2); }
+  .v3 .cp::after { content: ""; position: absolute; top: 1px; width: 10px; height: 4px; border-radius: 2px; }
+  .v3 .allow .cp::after { right: 1px; background: var(--blue); }
+  .v3 .trust .cp::after { left: 6px; background: var(--green); }
+  .v3 .deny  .cp::after { left: 1px; background: var(--red); }
+
+  .note { color: var(--p40); font-size: 11px; line-height: 1.8; margin-top: 6px; }
+</style>
+</head>
+<body>
+
+<h1>药丸变体 · 滚动条肌理 <span class="tag">— 蓝=允许 / 绿=信任 / 红=拒绝</span></h1>
+<div class="rule">全局滚动条 = 6px 平涂胶囊(§2.2 锚点)。三款都从这里出发:同一条「安静小色块」的血统,差别只在光与轨道。对照物:现行 §2.11 定稿 = 双色半囊渐变。</div>
+
+<h2>V1 · 直译平涂 <span class="d">纯色胶囊 14×6,零辉光——与滚动条完全同肌理,最静</span></h2>
+<div class="lane v1">
+  <div class="opts-pill">
+    <span class="popt allow focus"><span class="cp"></span><span class="lbl">允许</span></span>
+    <span class="popt trust"><span class="cp"></span><span class="lbl">本次会话不再询问</span></span>
+    <span class="popt deny"><span class="cp"></span><span class="lbl">拒绝</span></span>
+  </div>
+  <div class="spec">
+    <div class="cell"><span class="zoom"><span class="popt allow"><span class="cp"></span></span></span><div class="nm">允许</div></div>
+    <div class="cell"><span class="zoom"><span class="popt trust"><span class="cp"></span></span></span><div class="nm">信任</div></div>
+    <div class="cell"><span class="zoom"><span class="popt deny"><span class="cp"></span></span></span><div class="nm">拒绝</div></div>
+  </div>
+</div>
+
+<h2>V2 · 平涂微光 <span class="d">V1 + 单色 55% 外晕——同肌理但暗底更跳,接近旧 V1 实心辉光</span></h2>
+<div class="lane v2">
+  <div class="opts-pill">
+    <span class="popt allow focus"><span class="cp"></span><span class="lbl">允许</span></span>
+    <span class="popt trust"><span class="cp"></span><span class="lbl">本次会话不再询问</span></span>
+    <span class="popt deny"><span class="cp"></span><span class="lbl">拒绝</span></span>
+  </div>
+  <div class="spec">
+    <div class="cell"><span class="zoom"><span class="popt allow"><span class="cp"></span></span></span><div class="nm">允许</div></div>
+    <div class="cell"><span class="zoom"><span class="popt trust"><span class="cp"></span></span></span><div class="nm">信任</div></div>
+    <div class="cell"><span class="zoom"><span class="popt deny"><span class="cp"></span></span></span><div class="nm">拒绝</div></div>
+  </div>
+</div>
+
+<h2>V3 · 轨道滑囊 <span class="d">薄色轨道 + 实色滑囊——滚动条全景;滑囊位置编码:允许=右 / 信任=中 / 拒绝=左</span></h2>
+<div class="lane v3">
+  <div class="opts-pill">
+    <span class="popt allow focus"><span class="cp"></span><span class="lbl">允许</span></span>
+    <span class="popt trust"><span class="cp"></span><span class="lbl">本次会话不再询问</span></span>
+    <span class="popt deny"><span class="cp"></span><span class="lbl">拒绝</span></span>
+  </div>
+  <div class="spec">
+    <div class="cell"><span class="zoom"><span class="popt allow"><span class="cp"></span></span></span><div class="nm">允许·滑囊居右</div></div>
+    <div class="cell"><span class="zoom"><span class="popt trust"><span class="cp"></span></span></span><div class="nm">信任·居中锁定</div></div>
+    <div class="cell"><span class="zoom"><span class="popt deny"><span class="cp"></span></span></span><div class="nm">拒绝·居左退回</div></div>
+  </div>
+</div>
+
+<div class="note">判断点:V1 最克制(与滚动条、发丝线系统零冲突,但三色在 1× 下靠色不靠形);V2 是 V1 的可读性补强;V3 唯一带「形」的语义(滑囊方向=决定方向),但读作 toggle,药丸联想最弱。焦点反显行(C08)下,V1/V2 的平涂丸在绿底上仍可辨,V3 的轨道会融进绿底。</div>
+
+</body>
+</html>
