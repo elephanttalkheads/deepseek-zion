@@ -65,6 +65,20 @@
   .ap .foot .k { color: var(--p70); }
 
   .note { color: var(--p40); font-size: 11px; line-height: 1.8; margin-top: 6px; }
+
+  /* ── C 红蓝药丸(选项 = 药丸标记,无手;V2 双色半囊定稿) ── */
+  .opts-pill { display: flex; justify-content: center; gap: 34px; margin: 14px 0 2px; font-size: 13.5px; }
+  .popt { display: inline-flex; gap: 8px; align-items: center; padding: 0 6px; }
+  .popt .cap-pill { width: 14px; height: 7px; border-radius: 4px; flex: none; }
+  .popt.allow .cap-pill { background: linear-gradient(90deg, #6db3ff 0 48%, #1c5fb0 52% 100%); box-shadow: 0 0 6px rgba(63,157,255,0.55); }
+  .popt.trust .cap-pill { background: linear-gradient(90deg, #8fffc0 0 48%, #14b850 52% 100%); box-shadow: 0 0 6px rgba(61,255,143,0.55); }
+  .popt.deny .cap-pill { background: linear-gradient(90deg, #ff8a8a 0 48%, #b01c1c 52% 100%); box-shadow: 0 0 6px rgba(255,77,77,0.55); }
+  .popt.allow .lbl { color: #6db3ff; }
+  .popt.trust .lbl { color: var(--p100); }
+  .popt.deny .lbl { color: #ff6b6b; }
+  .popt.focus { background: var(--p100); }
+  .popt.focus .lbl { color: var(--bg) !important; }
+  .vtag { text-align: center; font-size: 11px; color: var(--p40); letter-spacing: 0.1em; margin-top: 14px; }
 </style>
 </head>
 <body>
@@ -106,7 +120,22 @@
   </div>
 </div>
 
-<div class="note">判断点:① 横排省一行高度、更像「快捷应答」,竖排每行可挂 hint、键盘焦点语义更清楚;② 角括号面板与运行工具的角括号同族但语义分层:工具=正在发生,审批=正在等你;③ 拒绝的红只在 [3] 一行,不污染面板。</div>
+<h2>C · 红蓝药丸(场景化 · 药丸即选项)</h2>
+<div class="lane">
+  <div class="ap">
+    <span class="cnr ct cl">⌜</span><span class="cnr ct cr">⌝</span><span class="cnr cb cl">⌞</span><span class="cnr cb cr">⌟</span>
+    <div class="req"><span class="ic c-wait" data-k="wait"></span><span>Bash 请求执行</span><span class="cmd">rm -rf build/</span><span class="why">高危:递归删除</span></div>
+    <div class="sub">⎿ 该命令将删除 build/ 下全部内容,不可恢复——选你的药丸</div>
+    <div class="opts-pill">
+      <span class="popt allow focus"><span class="cap-pill"></span><span class="lbl">允许</span></span>
+      <span class="popt trust"><span class="cap-pill"></span><span class="lbl">本次会话不再询问</span></span>
+      <span class="popt deny"><span class="cap-pill"></span><span class="lbl">拒绝</span></span>
+    </div>
+    <div class="foot"><span class="k">1</span> 蓝丸=允许 · <span class="k">2</span> 绿丸=不再询问 · <span class="k">3</span> 红丸=拒绝 · <span class="k">←→</span> 移焦点 · <span class="k">enter</span> 吞下 · <span class="k">esc</span> 拒绝</div>
+  </div>
+</div>
+
+<div class="note">语义定案:蓝丸=允许(第二色相,锁死审批场景)/ 绿丸=本次会话不再询问(磷光绿=系统本色,「成为系统记住的选择」= 信任)/ 红丸=拒绝(回归语义红)。药丸取代数字作选项标记,数字键位保留在 foot 提示;esc = 拒绝(红丸)。</div>
 
 <script>
 const MXFONT = '"Matrix Code","Share Tech Mono",monospace';
