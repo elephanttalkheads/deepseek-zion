@@ -1,6 +1,6 @@
 <!DOCTYPE html>
-<!-- PROTOTYPE — throwaway: 综合场景 demo(C11 亮度四阶 + C12 字形状态集 + C01 节点前缀 × 锚点:数字雨/滚动条/InputBar)
-     裁决问题:三条已过微 demo 的设计语言与既有锚点组合成一整屏后是否仍然成立(单屏运动源 ≤1 = 只有数字雨在动)。
+<!-- PROTOTYPE — throwaway: 综合场景 demo(C11 亮度四阶 + C12 字形舱位状态图标 SET D + C01 节点前缀 × 锚点:数字雨/滚动条/InputBar)
+     裁决问题:三条已定规范与既有锚点组合成一整屏后是否仍然成立(单屏运动源 = 数字雨 + 运行态扰码,二者同族)。
      注意:未过微 demo 的候选(C02/C04/C06/C08…)一律不出现在本骨架。 -->
 <html lang="zh">
 <head>
@@ -33,6 +33,12 @@
 
   #stage { position: relative; z-index: 5; display: flex; height: 100vh; }
 
+  /* 状态图标(SET D 字形舱位,currentColor 继承亮度档) */
+  .ic { display: inline-flex; flex: none; }
+  .ic svg { width: 12px; height: 12px; }
+  .c-run { color: var(--p100); } .c-wait { color: var(--p70); } .c-idle { color: var(--p40); }
+  .c-done { color: var(--p70); } .c-err { color: var(--danger); }
+
   /* ── 侧栏 ── */
   .sidebar { width: 264px; flex: none; display: flex; flex-direction: column; background: var(--surface);
     border-right: 1px solid var(--p20); }
@@ -45,15 +51,15 @@
     background: none; border: 1px solid var(--p20); outline: none; width: calc(100% - 24px); }
   .search::placeholder { color: var(--p40); }
   .sessions { flex: 1; overflow-y: auto; padding: 4px 0; }
-  .s { display: flex; gap: 8px; align-items: baseline; padding: 4px 16px; font-size: 13px; white-space: nowrap; cursor: default; }
-  .s .g { flex: none; width: 14px; }
+  .s { display: flex; gap: 8px; align-items: center; padding: 4px 16px; font-size: 13px; white-space: nowrap; cursor: default; }
+  .s .g { width: 14px; }
   .s .t { overflow: hidden; text-overflow: ellipsis; }
   .s .age { margin-left: auto; font-size: 11px; color: var(--p40); }
-  .s.run  .g, .s.run  .t { color: var(--p100); }
-  .s.wait .g, .s.wait .t { color: var(--p70); }
-  .s.idle .g, .s.idle .t { color: var(--p40); }
-  .s.done .g, .s.done .t { color: var(--p70); }
-  .s.err  .g, .s.err  .t, .s.err .age { color: var(--danger); }
+  .s.run  .t { color: var(--p100); }
+  .s.wait .t { color: var(--p70); }
+  .s.idle .t { color: var(--p40); }
+  .s.done .t { color: var(--p70); }
+  .s.err  .t, .s.err .age { color: var(--danger); }
   .side-foot { padding: 8px 16px; border-top: 1px solid var(--p20); font-size: 11px; color: var(--p40); }
 
   /* ── 主列 ── */
@@ -64,14 +70,20 @@
   .u .psign { color: var(--p100); flex: none; }
   .u .utext { color: var(--p100); background: rgba(61,255,143,0.06); padding: 0 8px; }
   .body { color: var(--p100); margin: 4px 0 4px 20px; }
-  .tool { color: var(--p70); font-size: 13.5px; margin: 2px 0 2px 20px; }
-  .tool .g-run { color: var(--p100); }
-  .tool .g-done { color: var(--p70); }
-  .tool .g-err { color: var(--danger); }
+  .tool { display: flex; gap: 8px; align-items: center; color: var(--p70); font-size: 13.5px; margin: 2px 0 2px 20px; }
+  .tool .tt { color: var(--p70); }
+  .tool .dur { color: var(--p40); font-size: 12px; }
   .cont { color: var(--p70); font-size: 13px; margin: 0 0 2px 34px; }
   .cont .x { color: var(--p40); }
   .cont .e { color: var(--danger); opacity: 0.8; }
   .meta { color: var(--p40); font-size: 11px; margin: 8px 0 0 20px; }
+  /* 思考块磁带纹(DESIGN.md §2.7) */
+  .thinkline { display: flex; gap: 10px; align-items: center; font-size: 13px; color: var(--p70); margin: 6px 0 2px 20px; }
+  .thinkline.closed { color: var(--p40); }
+  .thinkline .st-tag { letter-spacing: 0.1em; }
+  .thinkline.closed .st-tag { color: var(--p40); }
+  .tape-track { flex: 0 1 260px; height: 14px; overflow: hidden; border-bottom: 1px solid var(--p20); }
+  .tape-track canvas { display: block; width: 100%; height: 100%; }
 
   /* ── 输入栏(锚点形态) ── */
   .inputbar { padding: 6px 20px 8px; }
@@ -79,14 +91,14 @@
   .chip { font: 11px var(--font); letter-spacing: 0.06em; color: var(--p70); background: none;
     border: 1px solid var(--p20); padding: 2px 8px; cursor: pointer; }
   .chip:hover { border-color: var(--p70); }
-  .mi-cluster { margin-left: auto; display: flex; gap: 8px; align-items: baseline; }
+  .mi-cluster { margin-left: auto; display: flex; gap: 8px; align-items: center; }
   .mi-model { font: 12px var(--font); color: var(--p70); background: none; border: none; cursor: pointer; }
   .mi-model:hover { color: var(--p100); }
-  .ctxbar { width: 56px; height: 6px; border-radius: 3px; background: var(--p20); position: relative; top: -1px; display: inline-block; }
+  .ctxbar { width: 56px; height: 6px; border-radius: 3px; background: var(--p20); display: inline-block; }
   .ctxbar i { display: block; height: 100%; width: 51%; background: #00ff66; border-radius: 3px; }
   .mi-ctx { color: var(--p40); font-size: 11px; font-variant-numeric: tabular-nums; }
   .mi-think { color: var(--p100); font-size: 11px; }
-  .mi-state { color: var(--p100); font-size: 11px; letter-spacing: 0.08em; }
+  .mi-state { color: var(--p100); font-size: 11px; letter-spacing: 0.08em; display: inline-flex; gap: 5px; align-items: center; }
   .input-box { border-top: 1px solid var(--p20); border-bottom: 1px solid var(--p20); }
   .input-box:focus-within { border-bottom-color: var(--accent); }
   .input-row { display: flex; gap: 10px; align-items: center; padding: 8px 4px; }
@@ -113,14 +125,14 @@
     <button class="newbtn">+ 新会话</button>
     <input class="search" placeholder="Search sessions…">
     <div class="sessions">
-      <div class="s run"><span class="g">●</span><span class="t">重构视觉规范</span><span class="age">当前</span></div>
-      <div class="s wait"><span class="g">◐</span><span class="t">队列验收准备完成</span><span class="age">1天</span></div>
-      <div class="s done"><span class="g">✓</span><span class="t">M6 验收收尾</span><span class="age">2天</span></div>
-      <div class="s idle"><span class="g">○</span><span class="t">单消息测试</span><span class="age">3天</span></div>
-      <div class="s idle"><span class="g">○</span><span class="t">秋天的夜晚短文写作</span><span class="age">3天</span></div>
-      <div class="s err"><span class="g">✗</span><span class="t">模型拉取失败</span><span class="age">4天</span></div>
-      <div class="s idle"><span class="g">○</span><span class="t">pi-martix-ui 考古</span><span class="age">5天</span></div>
-      <div class="s idle"><span class="g">○</span><span class="t">戴尔G3 音频升级推荐</span><span class="age">6天</span></div>
+      <div class="s run"><span class="g ic c-run" data-k="run"></span><span class="t">重构视觉规范</span><span class="age">当前</span></div>
+      <div class="s wait"><span class="g ic c-wait" data-k="wait"></span><span class="t">队列验收准备完成</span><span class="age">1天</span></div>
+      <div class="s done"><span class="g ic c-done" data-k="done"></span><span class="t">M6 验收收尾</span><span class="age">2天</span></div>
+      <div class="s idle"><span class="g ic c-idle" data-k="idle"></span><span class="t">单消息测试</span><span class="age">3天</span></div>
+      <div class="s idle"><span class="g ic c-idle" data-k="idle"></span><span class="t">秋天的夜晚短文写作</span><span class="age">3天</span></div>
+      <div class="s err"><span class="g ic c-err" data-k="err"></span><span class="t">模型拉取失败</span><span class="age">4天</span></div>
+      <div class="s idle"><span class="g ic c-idle" data-k="idle"></span><span class="t">pi-martix-ui 考古</span><span class="age">5天</span></div>
+      <div class="s idle"><span class="g ic c-idle" data-k="idle"></span><span class="t">戴尔G3 音频升级推荐</span><span class="age">6天</span></div>
     </div>
     <div class="side-foot">⚙ 设置 · 插件 未加载</div>
   </aside>
@@ -128,19 +140,21 @@
   <main class="console">
     <div class="feed">
       <div class="u"><span class="psign">❯</span><span class="utext">把迁移流程封装成 skill,回勾两份清单</span></div>
+      <div class="thinkline closed"><span>▸</span><span class="st-tag">THINKING</span><span class="tape-track"><canvas data-tape="closed"></canvas></span><span>· 12.4s</span></div>
       <div class="body">已按 playbook 完成。流程迁出为独立 skill,两份清单同步打勾,要点:</div>
-      <div class="tool"><span class="g-done">✓</span> Write · .agents/skills/zion-ui-migration/SKILL.md</div>
+      <div class="tool"><span class="ic c-done" data-k="done"></span><span class="tt">Write · .agents/skills/zion-ui-migration/SKILL.md</span></div>
       <div class="cont">⎿ 59 行:强制流程 0–5 + 硬性判定 + 陷阱 <span class="x">(自 AGENTS.md §8 迁出)</span></div>
-      <div class="tool"><span class="g-done">✓</span> Edit · docs/zion-ui-visual-inventory.md</div>
+      <div class="tool"><span class="ic c-done" data-k="done"></span><span class="tt">Edit · docs/zion-ui-visual-inventory.md</span></div>
       <div class="cont">⎿ 12 处标题追加 ✅ 已迁移 + 落点行</div>
-      <div class="tool"><span class="g-err">✗</span> Read · 废弃设计文档/DESIGN.md.bak</div>
+      <div class="tool"><span class="ic c-err" data-k="err"></span><span class="tt" style="color:var(--danger)">Read · 废弃设计文档/DESIGN.md.bak</span></div>
       <div class="cont e">⎿ ENOENT: 文件不存在,已跳过</div>
       <div class="meta">2 轮 · 4 步 │ LLM 2.5s │ 首 token 1s · 89 tok/s │ 缓存 51%</div>
 
-      <div class="u"><span class="psign">❯</span><span class="utext">开始 C11 + C12 + C01</span></div>
-      <div class="body">三条微 demo 已出,截图在各自 replica/ 下。综合骨架验证中——</div>
-      <div class="tool"><span class="g-run">●</span> Write · ui-prototype/composite-tui/composite-tui-proto.html</div>
-      <div class="cont">⎿ 综合场景:三候选 × 三锚点 <span class="x">(单屏运动源 = 仅数字雨)</span></div>
+      <div class="u"><span class="psign">❯</span><span class="utext">SET D 定了</span></div>
+      <div class="thinkline"><span>▾</span><span class="st-tag">THINKING</span><span class="tape-track"><canvas data-tape="live"></canvas></span><span>· 思考中…</span></div>
+      <div class="body">字形舱位五枚进规范,综合骨架换装上屏——</div>
+      <div class="tool"><span class="ic c-run" data-k="run"></span><span class="tt">Write · ui-prototype/composite-tui/composite-tui-proto.html</span><span class="dur">运行中</span></div>
+      <div class="cont">⎿ 综合场景:三规范 × 三锚点 <span class="x">(运动源 = 雨 + 扰码,同族)</span></div>
     </div>
 
     <div class="inputbar">
@@ -152,7 +166,7 @@
           <span class="ctxbar"><i></i></span>
           <span class="mi-ctx">51%</span>
           <span class="mi-think">max</span>
-          <span class="mi-state">● RUNNING</span>
+          <span class="mi-state"><span class="ic c-run" data-k="run"></span>RUNNING</span>
         </span>
       </div>
       <div class="input-box">
@@ -173,10 +187,97 @@
 </div>
 
 <script>
-// 数字雨:参数照锚点(renderer/src/ui/RainCanvas.tsx)原样——FS=18 / GLYPH_SX=0.55 / 拖尾 0.035 / 12% 亮头 / 90ms 节流
+// ── SET D 字形舱位图标(DESIGN.md §2.5,与 status-icons demo 同源)──
+const MXCHARS = 'アウエオカキケコサシスセソタツテナニヌネハヒホマミムメモヤヨラリワー012345789*+<>:|';
+const MXFONT = '"Matrix Code","Share Tech Mono",monospace';
+let clipSeq = 0;
+const ICON = {
+  run:  `<text class="mx-run" x="6" y="9.2" text-anchor="middle" font-family='${MXFONT}' font-size="9" fill="currentColor">ア</text>`,
+  wait: `<path d="M2.8 1.8 H9.2 M2.8 10.2 H9.2 M3.7 1.8 L8.3 10.2 M8.3 1.8 L3.7 10.2" fill="none" stroke="currentColor"/><path d="M4.7 3.1 L7.3 3.1 L6 5.3 Z" fill="currentColor"/>`,
+  idle: `<rect x="2.5" y="2.5" width="7" height="7" fill="none" stroke="currentColor" stroke-width="0.9"/>`,
+  done: `<rect x="2" y="2" width="8" height="8" fill="none" stroke="currentColor"/><path d="M3.7 6.3 L5.4 8 L8.5 4.1" fill="none" stroke="currentColor" stroke-width="1.1"/>`,
+};
+function glitchSvg() {
+  const n = ++clipSeq;
+  return `<clipPath id="mct${n}"><rect x="0" y="0" width="12" height="5.5"/></clipPath>` +
+    `<clipPath id="mcb${n}"><rect x="0" y="5.5" width="12" height="6.5"/></clipPath>` +
+    `<text x="6.9" y="9.2" text-anchor="middle" font-family='${MXFONT}' font-size="9" fill="currentColor" clip-path="url(#mct${n})">メ</text>` +
+    `<text x="5.1" y="9.2" text-anchor="middle" font-family='${MXFONT}' font-size="9" fill="currentColor" clip-path="url(#mcb${n})">メ</text>`;
+}
+document.querySelectorAll('.ic').forEach((el) => {
+  const k = el.dataset.k;
+  el.innerHTML = `<svg viewBox="0 0 12 12" aria-hidden="true">${k === 'err' ? glitchSvg() : ICON[k]}</svg>`;
+});
+// 运行态扰码循环(120ms,与雨同族)
+setInterval(() => {
+  document.querySelectorAll('.mx-run').forEach((t) => {
+    t.textContent = MXCHARS[(Math.random() * MXCHARS.length) | 0];
+  });
+}, 120);
+
+// ── 思考块磁带纹(DESIGN.md §2.7:V3 流式突发 + V1 闭环慢波)──
+(function () {
+  const mkTrack = (cv) => {
+    const W = cv.width = cv.clientWidth || 260;
+    const H = cv.height = cv.clientHeight || 14;
+    const ctx = cv.getContext('2d');
+    const rows = [];
+    for (let x = 0; x < W; x += 5) rows.push({ x, len: 3 + Math.random() * 5, y: 2 + Math.random() * 4 });
+    const fade = () => {
+      ctx.globalCompositeOperation = 'destination-out';
+      ctx.fillStyle = 'rgba(0,0,0,0.10)';
+      ctx.fillRect(0, 0, W, H);
+      ctx.globalCompositeOperation = 'source-over';
+    };
+    return { W, H, ctx, rows, fade };
+  };
+  const paintLive = (cv) => { // V3 段落突发
+    const t = mkTrack(cv);
+    let mode = 'drift', timer = 60 + Math.random() * 40;
+    return () => {
+      t.fade();
+      if (--timer <= 0) {
+        if (mode === 'drift') { mode = 'burst'; timer = 9; }
+        else { mode = 'drift'; timer = 20 + Math.random() * 22; }
+      }
+      const speed = mode === 'burst' ? 6.6 : 1.3;
+      for (const r of t.rows) {
+        r.x += speed;
+        if (r.x > t.W + 4) { r.x = -4; r.len = 3 + Math.random() * 5; r.y = 2 + Math.random() * 4; }
+        t.ctx.fillStyle = 'rgba(0,255,65,0.4)';
+        t.ctx.fillRect(r.x, r.y, 1.4, r.len);
+      }
+      if (mode === 'burst') {
+        const edge = t.rows.reduce((m, r) => Math.max(m, r.x), -4);
+        t.ctx.fillStyle = 'rgba(194,255,217,0.8)';
+        t.ctx.fillRect(edge - 2, 1, 1.4, t.H - 2);
+      }
+    };
+  };
+  const paintClosed = (cv) => { // V1 闭环慢波
+    const t = mkTrack(cv);
+    let w = -24;
+    return () => {
+      t.fade();
+      w += 1.3;
+      if (w > t.W + 24) w = -24;
+      for (const r of t.rows) {
+        const d = (r.x - w) / 22;
+        const amp = Math.exp(-d * d);
+        t.ctx.fillStyle = `rgba(0,255,65,${0.16 + 0.39 * amp})`;
+        t.ctx.fillRect(r.x, r.y, 1.4, r.len);
+      }
+    };
+  };
+  document.querySelectorAll('.tape-track canvas').forEach((cv) => {
+    const step = cv.dataset.tape === 'live' ? paintLive(cv) : paintClosed(cv);
+    setInterval(step, 60);
+  });
+})();
+
+// ── 数字雨:参数照锚点(renderer/src/ui/RainCanvas.tsx)原样 ──
 const cv = document.getElementById('rain');
 const ctx = cv.getContext('2d');
-const CHARS = 'アウエオカキケコサシスセソタツテナニヌネハヒホマミムメモヤヨラリワー012345789*+<>:|';
 const FS = 18, GLYPH_SX = 0.55;
 let cols = [];
 function resize() {
@@ -196,7 +297,7 @@ function frame(ts) {
   ctx.font = FS + 'px "Matrix Code", "Share Tech Mono", monospace';
   ctx.save(); ctx.scale(GLYPH_SX, 1);
   for (const c of cols) {
-    const ch = CHARS[(Math.random() * CHARS.length) | 0];
+    const ch = MXCHARS[(Math.random() * MXCHARS.length) | 0];
     if (Math.random() < 0.12) {
       ctx.fillStyle = 'rgba(220,255,232,1)';
       ctx.shadowColor = 'rgba(120,255,175,0.9)'; ctx.shadowBlur = 8;

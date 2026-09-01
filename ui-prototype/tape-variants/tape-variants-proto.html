@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<!-- PROTOTYPE — throwaway: 磁带纹思考块动效变体微 demo(基于 ui-prototype/conversation 块 7 磁带纹)
+     裁决问题:V1 亮度波 / V2 幅度包络 / V3 段落突发,哪个(或哪几个)替代/补充现有走带(V0)?
+     磁带 DNA 不变:14px 横轨 / 5px 间距 / 1.4px 竖划 / 高 3–8px / 60ms 帧 / destination-out 0.10 拖尾 /
+     绿 rgba(0,255,65,0.4) / 热头 rgba(194,255,217,0.8)。
+     运动源纪律:思考块流式时本特效即全屏唯一状态动效(与雨同族:Matrix 绿 + 拖尾)。 -->
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<title>磁带纹 · 动效变体</title>
+<style>
+  :root {
+    --bg: #010a04;
+    --surface: rgba(2, 18, 9, 0.92);
+    --p100: rgba(61, 255, 143, 1);
+    --p70: rgba(61, 255, 143, 0.7);
+    --p40: rgba(61, 255, 143, 0.4);
+    --p20: rgba(61, 255, 143, 0.2);
+    --font: "Share Tech Mono", ui-monospace, "Cascadia Mono", "Courier New", "Sarasa Term SC", "Microsoft YaHei", monospace;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: var(--bg); color: var(--p100); font: 15px/1.5 var(--font); padding: 28px 32px; }
+  *::-webkit-scrollbar { width: 6px; height: 6px; }
+  *::-webkit-scrollbar-thumb { background: #00ff66; border-radius: 3px; }
+  *::-webkit-scrollbar-track, *::-webkit-scrollbar-corner { background: transparent; }
+
+  h1 { font-size: 13px; letter-spacing: 0.12em; margin-bottom: 4px; }
+  h1 .tag { color: var(--p40); }
+  .rule { color: var(--p70); font-size: 12px; margin-bottom: 22px; }
+
+  .v { border: 1px solid var(--p20); margin-bottom: 16px; background: var(--surface); }
+  .v .head { padding: 9px 16px; border-bottom: 1px solid var(--p20); font-size: 12px; letter-spacing: 0.08em; display: flex; gap: 12px; align-items: baseline; }
+  .v .head .id { color: var(--p100); }
+  .v .head .d { color: var(--p40); font-size: 11px; letter-spacing: 0; }
+  .v .body { padding: 14px 16px 16px; }
+  /* 思考行语境:与 conversation proto 的 summary 同形 */
+  .thinkline { display: flex; gap: 10px; align-items: center; font-size: 13px; color: var(--p70); }
+  .thinkline .mk { color: var(--p70); }
+  .thinkline .st-tag { color: rgba(20,184,80,1); letter-spacing: 0.1em; }
+  .tape-track { flex: 0 1 260px; height: 14px; overflow: hidden; border-bottom: 1px solid var(--p20); }
+  .tape-track canvas { display: block; width: 100%; height: 100%; }
+  .desc { color: var(--p40); font-size: 11.5px; line-height: 1.8; margin-top: 10px; }
+  .desc b { color: var(--p70); font-weight: normal; }
+  .thinkbody { margin: 8px 0 0 24px; font-size: 12.5px; color: var(--p70); }
+  .thinkbody .tl { display: block; }
+  .thinkbody .tl.dim { opacity: 0.55; }
+</style>
+</head>
+<body>
+
+<h1>磁带纹思考块 · 动效三变体 <span class="tag">— TAPE VARIANTS / V0 现状对照</span></h1>
+<div class="rule">磁带身份不变(竖划横轨 + 拖尾 + Matrix 绿),变的是「什么在动」。全部数值从现有实现出发,只改运动模型。</div>
+
+<div class="v" data-v="v0">
+  <div class="head"><span class="id">V0 · 现状走带(对照)</span><span class="d">竖划以 2.2px/帧 整体右移,6% 热头,出屏即回卷</span></div>
+  <div class="body">
+    <div class="thinkline"><span class="mk">▾</span><span class="st-tag">THINKING</span><span class="tape-track"><canvas></canvas></span><span>· 思考中…</span></div>
+    <div class="desc"><b>问题</b>:每根划都在动 → 全轨均匀「输送带」感,与雨(固定网格 + 移动亮度)不同源;热头是随机散布,不读「进度/节奏」。</div>
+  </div>
+</div>
+
+<div class="v" data-v="v1">
+  <div class="head"><span class="id">V1 · 亮度波(LUMINANCE WAVE)</span><span class="d">划固定不动,一道亮度波扫过栅格;波头近白,波尾衰减回 40% 档</span></div>
+  <div class="body">
+    <div class="thinkline"><span class="mk">▾</span><span class="st-tag">THINKING</span><span class="tape-track"><canvas></canvas></span><span>· 思考中…</span></div>
+    <div class="thinkbody"><span class="tl dim">…检索候选规范的组织方式</span><span class="tl">对位 Primer 的 foundations 分层</span></div>
+    <div class="desc"><b>概念</b>:与数字雨同一原理(Rezmason:字形固定、移动的是亮度)——磁带变成「栅格」,思考是扫过栅格的能量。<b>收益</b>:与雨同族、运动最克制;波的一次往返 ≈ 一次「想完一段」的节拍。</div>
+  </div>
+</div>
+
+<div class="v" data-v="v2">
+  <div class="head"><span class="id">V2 · 幅度包络(VU ENVELOPE)</span><span class="d">走带保留,但划高随行进的正弦包络起伏——像磁带电平表,峰值处出热头</span></div>
+  <div class="body">
+    <div class="thinkline"><span class="mk">▾</span><span class="st-tag">THINKING</span><span class="tape-track"><canvas></canvas></span><span>· 思考中…</span></div>
+    <div class="thinkbody"><span class="tl dim">…比较三种运动模型的辨识度</span><span class="tl">包络相位与走带速度解耦</span></div>
+    <div class="desc"><b>概念</b>:走带是「带在转」,包络是「带上有信号」——VU 表式的呼吸感,最「活」。<b>收益</b>:不增任何元素就有节奏层次;峰值热头给出视觉锚点。</div>
+  </div>
+</div>
+
+<div class="v" data-v="v3">
+  <div class="head"><span class="id">V3 · 段落突发(BURST WRITE)</span><span class="d">常时慢速漂移;每隔 1.2–2.5s 一次写脉冲:整段加速 3 倍 + 前沿一道白热头,随后归于漂移</span></div>
+  <div class="body">
+    <div class="thinkline"><span class="mk">▾</span><span class="st-tag">THINKING</span><span class="tape-track"><canvas></canvas></span><span>· 思考中…</span></div>
+    <div class="thinkbody"><span class="tl dim">…突发间隔随机化避免节拍器感</span><span class="tl">亮头只在脉冲前沿,一次一个</span></div>
+    <div class="desc"><b>概念</b>:思考是「分段写出来」的——漂移=酝酿,脉冲=落笔。<b>收益</b>:叙事性最强(有开始/峰值/余波);脉冲之间的静场让动效更珍贵。</div>
+  </div>
+</div>
+
+<div class="v" data-v="combo">
+  <div class="head"><span class="id">组合 · V3 主态 + V1 闭环慢波</span><span class="d">流式 = 突发写脉冲;闭环 = 低亮度慢波呼吸(替代冻结帧)</span></div>
+  <div class="body">
+    <div class="thinkline" style="color:var(--p40)"><span class="mk">▸</span><span class="st-tag" style="color:var(--p40)">THINKING</span><span class="tape-track"><canvas data-tape="closed"></canvas></span><span>· 12.4s</span></div>
+    <div class="desc"><b>闭环态 · V1 慢波</b>:速度约为流式 1/2(一波 ~12s,可察但不抢戏),峰值封顶 55%、无白热——呼吸即「已沉降」,比冻结帧多一点余温。</div>
+    <div class="thinkline" style="margin-top:14px"><span class="mk">▾</span><span class="st-tag">THINKING</span><span class="tape-track"><canvas data-tape="live"></canvas></span><span>· 思考中…</span></div>
+    <div class="thinkbody"><span class="tl dim">…漂移段:酝酿下一段</span><span class="tl">脉冲段:整段落笔,前沿一道白热头</span></div>
+    <div class="desc"><b>主态 · V3 突发</b>:漂移 = 酝酿,脉冲 = 落笔。两态同框时,闭环慢波明显「让位」于流式突发,层级自然成立。</div>
+  </div>
+</div>
+
+<div class="desc" style="margin-top:4px">备选组合:V1 也可作静态帧以外的「闭环态低亮度慢波」。所有变体的闭环/非流式静态帧沿用现口径(rgba(20,184,80,0.28) 冻结帧),reduced-motion 一律静态帧。</div>
+
+<script>
+const REDUCED = typeof matchMedia !== 'undefined' && matchMedia('(prefers-reduced-motion: reduce)').matches;
+const GREEN = 'rgba(0,255,65,0.4)', HOT = 'rgba(194,255,217,0.8)';
+
+function mkTrack(cv) {
+  const W = cv.width = cv.clientWidth || 260;
+  const H = cv.height = cv.clientHeight || 14;
+  const ctx = cv.getContext('2d');
+  const rows = [];
+  for (let x = 0; x < W; x += 5) rows.push({ x, len: 3 + Math.random() * 5, y: 2 + Math.random() * 4, hot: Math.random() < 0.06 });
+  const fade = () => {
+    ctx.globalCompositeOperation = 'destination-out';
+    ctx.fillStyle = 'rgba(0,0,0,0.10)';
+    ctx.fillRect(0, 0, W, H);
+    ctx.globalCompositeOperation = 'source-over';
+  };
+  return { W, H, ctx, rows, fade };
+}
+
+/* V0 现状走带 */
+function paintV0(cv) {
+  const t = mkTrack(cv);
+  const step = () => {
+    t.fade();
+    for (const r of t.rows) {
+      r.x += 2.2;
+      if (r.x > t.W + 4) { r.x = -4; r.len = 3 + Math.random() * 5; r.y = 2 + Math.random() * 4; r.hot = Math.random() < 0.06; }
+      t.ctx.fillStyle = r.hot ? HOT : GREEN;
+      t.ctx.fillRect(r.x, r.y, 1.4, r.len);
+    }
+  };
+  return step;
+}
+
+/* V1 亮度波:栅格固定,波峰右行(速度 2.2px/帧 同走带),亮度 = 基态 + 高斯包络 */
+function paintV1(cv) {
+  const t = mkTrack(cv);
+  let w = -24;
+  const step = () => {
+    t.fade();
+    w += 2.2;
+    if (w > t.W + 24) w = -24;
+    for (const r of t.rows) {
+      const d = (r.x - w) / 18;                      // 波宽 σ≈18px
+      const amp = Math.exp(-d * d);                   // 0..1
+      const head = amp > 0.92;                        // 波头近白
+      t.ctx.fillStyle = head ? HOT : `rgba(0,255,65,${0.22 + 0.72 * amp})`;
+      t.ctx.fillRect(r.x, r.y, 1.4, r.len);
+    }
+  };
+  return step;
+}
+
+/* V2 幅度包络:走带 + 划高/亮度随正弦包络(相位与走带解耦),峰值附近热头 */
+function paintV2(cv) {
+  const t = mkTrack(cv);
+  let tt = 0;
+  const step = () => {
+    t.fade();
+    tt += 1;
+    for (const r of t.rows) {
+      r.x += 2.2;
+      if (r.x > t.W + 4) { r.x = -4; r.y = 2 + Math.random() * 4; }
+      const env = 0.5 + 0.5 * Math.sin(tt * 0.055 + r.x * 0.045); // 0..1 行波包络
+      const h = Math.max(1.6, r.len * (0.45 + 0.55 * env));
+      const hot = env > 0.965;
+      t.ctx.fillStyle = hot ? HOT : `rgba(0,255,65,${0.22 + 0.35 * env})`;
+      t.ctx.fillRect(r.x, r.y + (r.len - h) / 2, 1.4, h);
+    }
+  };
+  return step;
+}
+
+/* V3 段落突发:漂移(0.6×)与写脉冲(3×)交替,脉冲前沿一道白热头 */
+function paintV3(cv) {
+  const t = mkTrack(cv);
+  let mode = 'drift', timer = 60 + Math.random() * 40, tt = 0;
+  const step = () => {
+    t.fade();
+    tt++;
+    if (--timer <= 0) {
+      if (mode === 'drift') { mode = 'burst'; timer = 9; }        // 脉冲 ~0.54s
+      else { mode = 'drift'; timer = 20 + Math.random() * 22; }   // 漂移 1.2–2.5s
+    }
+    const speed = mode === 'burst' ? 6.6 : 1.3;
+    for (const r of t.rows) {
+      r.x += speed;
+      if (r.x > t.W + 4) { r.x = -4; r.len = 3 + Math.random() * 5; r.y = 2 + Math.random() * 4; }
+      t.ctx.fillStyle = GREEN;
+      t.ctx.fillRect(r.x, r.y, 1.4, r.len);
+    }
+    if (mode === 'burst') {                                        // 前沿亮头(一次一道)
+      const edge = t.rows.reduce((m, r) => Math.max(m, r.x), -4);
+      t.ctx.fillStyle = HOT;
+      t.ctx.fillRect(edge - 2, 1, 1.4, t.H - 2);
+    }
+  };
+  return step;
+}
+
+/* V1 慢波(闭环态):~1/2 速(一波约 12s,肉眼可察但不抢戏),峰值封顶 ~0.55 无白热——沉降呼吸 */
+function paintV1slow(cv) {
+  const t = mkTrack(cv);
+  let w = -24;
+  const step = () => {
+    t.fade();
+    w += 1.3;
+    if (w > t.W + 24) w = -24;
+    for (const r of t.rows) {
+      const d = (r.x - w) / 22;
+      const amp = Math.exp(-d * d);
+      t.ctx.fillStyle = `rgba(0,255,65,${0.16 + 0.39 * amp})`;
+      t.ctx.fillRect(r.x, r.y, 1.4, r.len);
+    }
+  };
+  return step;
+}
+
+const PAINTERS = { v0: paintV0, v1: paintV1, v2: paintV2, v3: paintV3 };
+document.querySelectorAll('.v').forEach((el) => {
+  const v = el.dataset.v;
+  const run = (step) => {
+    if (REDUCED) { for (let i = 0; i < 30; i++) step(); return; }
+    setInterval(step, 60);
+  };
+  if (v === 'combo') {
+    el.querySelectorAll('canvas').forEach((cv) =>
+      run(cv.dataset.tape === 'closed' ? paintV1slow(cv) : paintV3(cv)));
+  } else {
+    run(PAINTERS[v](el.querySelector('canvas')));
+  }
+});
+</script>
+</body>
+</html>
