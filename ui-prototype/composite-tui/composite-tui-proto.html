@@ -77,6 +77,8 @@
   .cont .x { color: var(--p40); }
   .cont .e { color: var(--danger); opacity: 0.8; }
   .meta { color: var(--p40); font-size: 11px; margin: 8px 0 0 20px; }
+  /* 回合发丝分隔(DESIGN.md §2.9):全宽 1px、20% 档、上下等距 */
+  .sep { border: none; border-top: 1px solid var(--p20); margin: 12px 0; }
   /* 单行框线工具卡(DESIGN.md §2.8,C04+C05 notch) */
   .tc { position: relative; border: 1px solid var(--p40); margin: 10px 0 0 20px; padding: 8px 12px 7px; }
   .tc .cap { position: absolute; top: -0.72em; left: 10px; padding: 0 6px; background: var(--surface);
@@ -171,6 +173,8 @@
         <div class="lines"><div class="out">⎿ ENOENT: 文件不存在,已跳过</div></div>
       </div>
       <div class="meta">2 轮 · 4 步 │ LLM 2.5s │ 首 token 1s · 89 tok/s │ 缓存 51%</div>
+
+      <hr class="sep">
 
       <div class="u"><span class="psign">❯</span><span class="utext">SET D 定了</span></div>
       <div class="thinkline"><span>▾</span><span class="st-tag">THINKING</span><span class="tape-track"><canvas data-tape="live"></canvas></span><span>· 思考中…</span></div>

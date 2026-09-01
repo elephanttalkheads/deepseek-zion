@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<!-- PROTOTYPE — throwaway: C06 发丝消息分隔微 demo
+     裁决问题:回合分隔 = A 全宽 1px 发丝线(20% 档)还是 B 居中 ASCII 虚线(- - -)?
+     纪律:分隔只是「缝」,不得抬升为新视觉元素;无间距突变(分隔前后间距一致);颜色只用 20% 档。 -->
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<title>C06 · 发丝消息分隔</title>
+<style>
+  :root {
+    --bg: #010a04;
+    --surface: rgba(2, 18, 9, 0.92);
+    --p100: rgba(61, 255, 143, 1);
+    --p70: rgba(61, 255, 143, 0.7);
+    --p40: rgba(61, 255, 143, 0.4);
+    --p20: rgba(61, 255, 143, 0.2);
+    --font: "Share Tech Mono", ui-monospace, "Cascadia Mono", "Courier New", "Sarasa Term SC", "Microsoft YaHei", monospace;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: var(--bg); color: var(--p100); font: 15px/1.55 var(--font); padding: 28px 32px; }
+  *::-webkit-scrollbar { width: 6px; height: 6px; }
+  *::-webkit-scrollbar-thumb { background: #00ff66; border-radius: 3px; }
+  *::-webkit-scrollbar-track, *::-webkit-scrollbar-corner { background: transparent; }
+
+  h1 { font-size: 13px; letter-spacing: 0.12em; margin-bottom: 4px; }
+  h1 .tag { color: var(--p40); }
+  .rule { color: var(--p70); font-size: 12px; margin-bottom: 22px; }
+  h2 { font-size: 11px; letter-spacing: 0.14em; color: var(--p70); margin: 24px 0 12px; text-transform: uppercase; }
+  h2::before { content: "─ "; color: var(--p40); }
+
+  .lane { border: 1px solid var(--p20); background: var(--surface); padding: 16px 20px; margin-bottom: 18px; }
+
+  .u { display: flex; gap: 10px; margin: 14px 0 4px; }
+  .u:first-child { margin-top: 0; }
+  .u .psign { color: var(--p100); flex: none; }
+  .u .utext { color: var(--p100); background: rgba(61,255,143,0.06); padding: 0 8px; }
+  .body { color: var(--p100); margin: 4px 0 4px 20px; }
+  .meta { color: var(--p40); font-size: 11px; margin: 8px 0 0 20px; }
+
+  /* 分隔变体:前后间距一致(上下各 12px),无间距突变 */
+  .sep-a { border: none; border-top: 1px solid var(--p20); margin: 12px 0; }
+  .sep-b { border: none; margin: 12px 0; text-align: center; color: var(--p20); font-size: 12px; letter-spacing: 0.5em; }
+  .sep-b::before { content: "- - - - - - -"; }
+
+  .note { color: var(--p40); font-size: 11px; line-height: 1.8; margin-top: 6px; }
+</style>
+</head>
+<body>
+
+<h1>C06 · 发丝消息分隔 <span class="tag">— A 全宽发丝线 vs B 居中 ASCII 虚线</span></h1>
+<div class="rule">分隔只是「缝」:20% 档、上下间距一致(12px)、不占注意力。它服务回合边界(C10 块分组的前置),不是自己当主角。</div>
+
+<h2>A · 全宽 1px 发丝线</h2>
+<div class="lane">
+  <div class="u"><span class="psign">❯</span><span class="utext">把迁移流程封装成 skill</span></div>
+  <div class="body">已按 playbook 完成,两份清单同步打勾。</div>
+  <div class="meta">2 轮 · 4 步 │ LLM 2.5s │ 89 tok/s</div>
+  <hr class="sep-a">
+  <div class="u"><span class="psign">❯</span><span class="utext">C04+C05</span></div>
+  <div class="body">B notch 定案,框线卡换装完成。</div>
+  <div class="meta">1 轮 · 2 步 │ LLM 1.8s │ 92 tok/s</div>
+  <hr class="sep-a">
+  <div class="u"><span class="psign">❯</span><span class="utext">C06</span></div>
+  <div class="body">分隔变体对照中——</div>
+</div>
+
+<h2>B · 居中 ASCII 虚线(- - -)</h2>
+<div class="lane">
+  <div class="u"><span class="psign">❯</span><span class="utext">把迁移流程封装成 skill</span></div>
+  <div class="body">已按 playbook 完成,两份清单同步打勾。</div>
+  <div class="meta">2 轮 · 4 步 │ LLM 2.5s │ 89 tok/s</div>
+  <hr class="sep-b">
+  <div class="u"><span class="psign">❯</span><span class="utext">C04+C05</span></div>
+  <div class="body">B notch 定案,框线卡换装完成。</div>
+  <div class="meta">1 轮 · 2 步 │ LLM 1.8s │ 92 tok/s</div>
+  <hr class="sep-b">
+  <div class="u"><span class="psign">❯</span><span class="utext">C06</span></div>
+  <div class="body">分隔变体对照中——</div>
+</div>
+
+<div class="note">参照:Claude Code/Zed 的回合缝是发丝线;ASCII 虚线是 cracktro/ANSI 传统(更「年代感」但更「装饰」)。被替代物:回合间的大间距突变与卡片间隙。</div>
+
+</body>
+</html>
