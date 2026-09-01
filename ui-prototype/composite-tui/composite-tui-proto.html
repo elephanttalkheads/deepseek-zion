@@ -60,6 +60,10 @@
   .s.idle .t { color: var(--p40); }
   .s.done .t { color: var(--p70); }
   .s.err  .t, .s.err .age { color: var(--danger); }
+  .s:hover { background: rgba(61,255,143,0.06); }
+  /* 反色选中行(DESIGN.md §2.10):整行反显,行内一切一并反色 */
+  .s.sel, .s.sel:hover { background: var(--p100); }
+  .s.sel *, .s.sel:hover * { color: var(--bg) !important; }
   .side-foot { padding: 8px 16px; border-top: 1px solid var(--p20); font-size: 11px; color: var(--p40); }
 
   /* ── 主列 ── */
@@ -138,7 +142,7 @@
     <button class="newbtn">+ 新会话</button>
     <input class="search" placeholder="Search sessions…">
     <div class="sessions">
-      <div class="s run"><span class="g ic c-run" data-k="run"></span><span class="t">重构视觉规范</span><span class="age">当前</span></div>
+      <div class="s run sel"><span class="g ic c-run" data-k="run"></span><span class="t">重构视觉规范</span><span class="age">当前</span></div>
       <div class="s wait"><span class="g ic c-wait" data-k="wait"></span><span class="t">队列验收准备完成</span><span class="age">1天</span></div>
       <div class="s done"><span class="g ic c-done" data-k="done"></span><span class="t">M6 验收收尾</span><span class="age">2天</span></div>
       <div class="s idle"><span class="g ic c-idle" data-k="idle"></span><span class="t">单消息测试</span><span class="age">3天</span></div>

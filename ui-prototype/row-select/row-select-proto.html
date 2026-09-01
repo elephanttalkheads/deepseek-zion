@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<!-- PROTOTYPE — throwaway: C08 反色选中行微 demo
+     裁决问题:选中行 = A 全反(底 #3dff8f)还是 B 柔反(底 70% 档)?
+     纪律:选中 = 整行反显(前景背景互换),不加边框、不加左侧色条;行内图标/文字一并反色;
+     hover 与选中分两档(hover = 6% 薄底,选中 = 反显)。 -->
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<title>C08 · 反色选中行</title>
+<style>
+  @font-face { font-family: "Matrix Code"; src: url("../../renderer/src/assets/fonts/Matrix-Code.ttf"); font-display: swap; }
+  :root {
+    --bg: #010a04;
+    --surface: rgba(2, 18, 9, 0.92);
+    --p100: rgba(61, 255, 143, 1);
+    --p70: rgba(61, 255, 143, 0.7);
+    --p40: rgba(61, 255, 143, 0.4);
+    --p20: rgba(61, 255, 143, 0.2);
+    --danger: #ff5555;
+    --font: "Share Tech Mono", ui-monospace, "Cascadia Mono", "Courier New", "Sarasa Term SC", "Microsoft YaHei", monospace;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: var(--bg); color: var(--p100); font: 15px/1.55 var(--font); padding: 28px 32px; }
+  *::-webkit-scrollbar { width: 6px; height: 6px; }
+  *::-webkit-scrollbar-thumb { background: #00ff66; border-radius: 3px; }
+  *::-webkit-scrollbar-track, *::-webkit-scrollbar-corner { background: transparent; }
+
+  h1 { font-size: 13px; letter-spacing: 0.12em; margin-bottom: 4px; }
+  h1 .tag { color: var(--p40); }
+  .rule { color: var(--p70); font-size: 12px; margin-bottom: 22px; }
+  h2 { font-size: 11px; letter-spacing: 0.14em; color: var(--p70); margin: 24px 0 10px; text-transform: uppercase; }
+  h2::before { content: "─ "; color: var(--p40); }
+
+  .lanes { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  .grp { border: 1px solid var(--p20); background: var(--surface); padding: 12px 14px; margin-bottom: 16px; }
+  .grp .gt { font-size: 11px; letter-spacing: 0.1em; color: var(--p40); margin-bottom: 8px; }
+
+  .li { display: flex; gap: 8px; align-items: center; font-size: 13px; line-height: 1.9;
+    white-space: nowrap; padding: 0 8px; margin: 0 -8px; }
+  .li .t { overflow: hidden; text-overflow: ellipsis; }
+  .li .age { margin-left: auto; font-size: 11px; color: var(--p40); }
+  .li .ic svg { width: 12px; height: 12px; display: block; }
+  .c-run { color: var(--p100); } .c-wait { color: var(--p70); } .c-idle { color: var(--p40); }
+  .c-done { color: var(--p70); } .c-err { color: var(--danger); }
+  .li.idle { color: var(--p40); } .li.wait { color: var(--p70); } .li.done { color: var(--p70); }
+  .li.err { color: var(--danger); }
+  .li.hover { background: rgba(61,255,143,0.06); }
+  .li .key { color: var(--p100); }
+  .li .hint { margin-left: auto; font-size: 11px; color: var(--p40); }
+
+  /* A 全反:底 100% 磷光,字黑场 */
+  .lane-a .li.sel { background: var(--p100); color: var(--bg); }
+  .lane-a .li.sel * { color: var(--bg) !important; }
+  /* B 柔反:底 70% 磷光,字黑场 */
+  .lane-b .li.sel { background: var(--p70); color: var(--bg); }
+  .lane-b .li.sel * { color: var(--bg) !important; }
+
+  .note { color: var(--p40); font-size: 11px; line-height: 1.8; margin-top: 6px; }
+</style>
+</head>
+<body>
+
+<h1>C08 · 反色选中行 <span class="tag">— A 全反(100% 底)vs B 柔反(70% 底)</span></h1>
+<div class="rule">选中 = 整行反显,行内一切(图标/文字/age/hint)一并反色;不加边框不加色条。hover = 6% 薄底,与选中分两档。</div>
+
+<div class="lanes">
+  <div class="lane-a">
+    <h2>A · 全反 #3dff8f</h2>
+    <div class="grp">
+      <div class="gt">SIDEBAR · 会话列表</div>
+      <div class="li sel"><span class="ic" data-k="run"></span><span class="t">重构视觉规范</span><span class="age">当前</span></div>
+      <div class="li wait"><span class="ic c-wait" data-k="wait"></span><span class="t">队列验收准备完成</span><span class="age">1天</span></div>
+      <div class="li done hover"><span class="ic c-done" data-k="done"></span><span class="t">M6 验收收尾</span><span class="age">2天</span></div>
+      <div class="li idle"><span class="ic c-idle" data-k="idle"></span><span class="t">单消息测试</span><span class="age">3天</span></div>
+      <div class="li err"><span class="ic c-err" data-k="err"></span><span class="t">模型拉取失败</span><span class="age">4天</span></div>
+    </div>
+    <div class="grp">
+      <div class="gt">QUEUE · 队列坞</div>
+      <div class="li sel"><span class="key">[1]</span><span class="t">补充第二条指令</span><span class="hint">编辑</span></div>
+      <div class="li wait"><span class="key">[2]</span><span class="t">回勾 HANDOFF</span><span class="hint">esc 取消</span></div>
+    </div>
+    <div class="grp">
+      <div class="gt">PALETTE · 命令菜单</div>
+      <div class="li sel"><span class="key">/model</span><span class="t">切换模型</span><span class="hint">tab</span></div>
+      <div class="li wait"><span class="key">/permission</span><span class="t">权限预设</span></div>
+      <div class="li wait"><span class="key">/goal</span><span class="t">设定目标</span></div>
+    </div>
+  </div>
+  <div class="lane-b">
+    <h2>B · 柔反 70% 底</h2>
+    <div class="grp">
+      <div class="gt">SIDEBAR · 会话列表</div>
+      <div class="li sel"><span class="ic" data-k="run"></span><span class="t">重构视觉规范</span><span class="age">当前</span></div>
+      <div class="li wait"><span class="ic c-wait" data-k="wait"></span><span class="t">队列验收准备完成</span><span class="age">1天</span></div>
+      <div class="li done hover"><span class="ic c-done" data-k="done"></span><span class="t">M6 验收收尾</span><span class="age">2天</span></div>
+      <div class="li idle"><span class="ic c-idle" data-k="idle"></span><span class="t">单消息测试</span><span class="age">3天</span></div>
+      <div class="li err"><span class="ic c-err" data-k="err"></span><span class="t">模型拉取失败</span><span class="age">4天</span></div>
+    </div>
+    <div class="grp">
+      <div class="gt">QUEUE · 队列坞</div>
+      <div class="li sel"><span class="key">[1]</span><span class="t">补充第二条指令</span><span class="hint">编辑</span></div>
+      <div class="li wait"><span class="key">[2]</span><span class="t">回勾 HANDOFF</span><span class="hint">esc 取消</span></div>
+    </div>
+    <div class="grp">
+      <div class="gt">PALETTE · 命令菜单</div>
+      <div class="li sel"><span class="key">/model</span><span class="t">切换模型</span><span class="hint">tab</span></div>
+      <div class="li wait"><span class="key">/permission</span><span class="t">权限预设</span></div>
+      <div class="li wait"><span class="key">/goal</span><span class="t">设定目标</span></div>
+    </div>
+  </div>
+</div>
+
+<div class="note">判断点:① 反色行是列表里唯一允许的大面积高亮(其余一切走亮度档)——A 最响,B 折中;② 错误行若被选中,红也一并反成黑字(红让位给反显,语义由 ✗ 图标保留);③ hover(6% 薄底)与选中(反显)必须可一眼区分。</div>
+
+<script>
+const MXCHARS = 'アウエオカキケコサシスセソタツテナニヌネハヒホマミムメモヤヨラリワー012345789*+<>:|';
+const MXFONT = '"Matrix Code","Share Tech Mono",monospace';
+let clipSeq = 0;
+const ICON = {
+  run:  `<text class="mx-run" x="6" y="9.2" text-anchor="middle" font-family='${MXFONT}' font-size="9" fill="currentColor">ア</text>`,
+  wait: `<path d="M2.8 1.8 H9.2 M2.8 10.2 H9.2 M3.7 1.8 L8.3 10.2 M8.3 1.8 L3.7 10.2" fill="none" stroke="currentColor"/><path d="M4.7 3.1 L7.3 3.1 L6 5.3 Z" fill="currentColor"/>`,
+  idle: `<rect x="2.5" y="2.5" width="7" height="7" fill="none" stroke="currentColor" stroke-width="0.9"/>`,
+  done: `<rect x="2" y="2" width="8" height="8" fill="none" stroke="currentColor"/><path d="M3.7 6.3 L5.4 8 L8.5 4.1" fill="none" stroke="currentColor" stroke-width="1.1"/>`,
+};
+function glitchSvg() {
+  const n = ++clipSeq;
+  return `<clipPath id="mct${n}"><rect x="0" y="0" width="12" height="5.5"/></clipPath>` +
+    `<clipPath id="mcb${n}"><rect x="0" y="5.5" width="12" height="6.5"/></clipPath>` +
+    `<text x="6.9" y="9.2" text-anchor="middle" font-family='${MXFONT}' font-size="9" fill="currentColor" clip-path="url(#mct${n})">メ</text>` +
+    `<text x="5.1" y="9.2" text-anchor="middle" font-family='${MXFONT}' font-size="9" fill="currentColor" clip-path="url(#mcb${n})">メ</text>`;
+}
+document.querySelectorAll('.ic').forEach((el) => {
+  const k = el.dataset.k;
+  el.innerHTML = `<svg viewBox="0 0 12 12" aria-hidden="true">${k === 'err' ? glitchSvg() : ICON[k]}</svg>`;
+});
+setInterval(() => {
+  document.querySelectorAll('.mx-run').forEach((t) => {
+    t.textContent = MXCHARS[(Math.random() * MXCHARS.length) | 0];
+  });
+}, 120);
+</script>
+</body>
+</html>
