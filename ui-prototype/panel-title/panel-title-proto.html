@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<!-- PROTOTYPE — throwaway: C09 标题嵌边框面板 微 demo
+     裁决问题:面板标题的承载——A 全框嵌题(lazygit 直译:四边发丝框,标题嵌顶边,右端位置指示)
+     vs B 单线嵌题(只有顶发丝线,标题与位置指示嵌在线上,内容不围框;与 §2.9 回合发丝线同族)。
+     共同语义:标题不占内容行;位置指示 = 选中项序号/总数,40% 档。 -->
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<title>C09 · 标题嵌边框面板</title>
+<style>
+  :root {
+    --bg: #010a04;
+    --surface: rgba(2, 18, 9, 0.92);
+    --p100: rgba(61, 255, 143, 1);
+    --p70: rgba(61, 255, 143, 0.7);
+    --p40: rgba(61, 255, 143, 0.4);
+    --p20: rgba(61, 255, 143, 0.2);
+    --danger: #ff5555;
+    --font: "Share Tech Mono", ui-monospace, "Cascadia Mono", "Courier New", "Sarasa Term SC", "Microsoft YaHei", monospace;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: var(--bg); color: var(--p100); font: 15px/1.55 var(--font); padding: 28px 32px; }
+  *::-webkit-scrollbar { width: 6px; height: 6px; }
+  *::-webkit-scrollbar-thumb { background: #00ff66; border-radius: 3px; }
+  *::-webkit-scrollbar-track, *::-webkit-scrollbar-corner { background: transparent; }
+
+  h1 { font-size: 13px; letter-spacing: 0.12em; margin-bottom: 4px; }
+  h1 .tag { color: var(--p40); }
+  .rule { color: var(--p70); font-size: 12px; margin-bottom: 20px; }
+  h2 { font-size: 11px; letter-spacing: 0.14em; color: var(--p70); margin: 22px 0 8px; text-transform: uppercase; }
+  h2::before { content: "─ "; color: var(--p40); }
+  h2 .d { color: var(--p40); letter-spacing: 0; text-transform: none; }
+
+  .lane { border: 1px solid var(--p20); background: var(--surface); padding: 18px 20px 20px; margin-bottom: 14px; }
+  .panels { display: flex; gap: 36px; }
+  .panel { flex: 1; min-width: 0; }
+
+  /* 会话行(与 composite 侧栏同构) */
+  .s { display: flex; gap: 8px; align-items: center; padding: 4px 14px; font-size: 13px; white-space: nowrap; }
+  .s .nm { overflow: hidden; text-overflow: ellipsis; }
+  .s .age { margin-left: auto; color: var(--p40); font-size: 11px; }
+  .s.hover { background: rgba(61,255,143,0.06); }
+  .s.sel { background: var(--p100); color: var(--bg); }
+  .s.sel .age { color: var(--bg); }
+  .s.err { color: var(--danger); }
+  .s.err .age { color: var(--danger); }
+
+  /* A 全框嵌题(lazygit 直译):四边发丝框,标题嵌顶边 */
+  .a .panel { position: relative; border: 1px solid var(--p20); padding: 8px 0 6px; margin-top: 8px; }
+  .a .pt { position: absolute; top: -8px; left: 10px; right: 10px; display: flex; align-items: baseline; }
+  .a .pt .t { background: var(--surface); padding: 0 6px; color: var(--p70); font-size: 12px; }
+  .a .pt .t .n { color: var(--p40); }
+  .a .pt .pos { margin-left: auto; background: var(--surface); padding: 0 6px; color: var(--p40); font-size: 11px; font-variant-numeric: tabular-nums; }
+
+  /* B 单线嵌题:标题与位置指示嵌在一条顶发丝线上,内容不围框 */
+  .b .pt { display: flex; align-items: center; gap: 8px; margin: 8px 0 6px; }
+  .b .pt::before { content: ""; width: 10px; border-top: 1px solid var(--p20); }
+  .b .pt .t { color: var(--p70); font-size: 12px; }
+  .b .pt .t .n { color: var(--p40); }
+  .b .pt .fill { flex: 1; border-top: 1px solid var(--p20); }
+  .b .pt .pos { color: var(--p40); font-size: 11px; font-variant-numeric: tabular-nums; }
+  .b .pt::after { content: ""; width: 10px; border-top: 1px solid var(--p20); }
+
+  .note { color: var(--p40); font-size: 11px; line-height: 1.8; margin-top: 6px; }
+</style>
+</head>
+<body>
+
+<h1>C09 · 标题嵌边框面板 <span class="tag">— A 全框嵌题 vs B 单线嵌题</span></h1>
+<div class="rule">共同语义:标题不占内容行,右端位置指示 = 选中序号/总数(40% 档)。内容统一用侧栏会话列表(含选中反显行 §2.10、错误行、hover 薄底)。</div>
+
+<h2>A · 全框嵌题 <span class="d">lazygit 直译:四边发丝框,标题嵌顶边,右端位置指示</span></h2>
+<div class="lane a">
+  <div class="panels">
+    <div class="panel">
+      <div class="pt"><span class="t">会话 <span class="n">(12)</span></span><span class="pos">3/12</span></div>
+      <div class="s hover"><span class="nm">重构视觉规范</span><span class="age">当前</span></div>
+      <div class="s"><span class="nm">队列验收准备完成</span><span class="age">1天</span></div>
+      <div class="s sel"><span class="nm">M6 验收收尾</span><span class="age">2天</span></div>
+      <div class="s"><span class="nm">单消息测试</span><span class="age">3天</span></div>
+      <div class="s err"><span class="nm">模型拉取失败</span><span class="age">4天</span></div>
+    </div>
+    <div class="panel">
+      <div class="pt"><span class="t">队列 <span class="n">(3)</span></span><span class="pos">1/3</span></div>
+      <div class="s sel"><span class="nm">编译 renderer</span><span class="age">运行中</span></div>
+      <div class="s"><span class="nm">探针:审批接管</span><span class="age">排队</span></div>
+      <div class="s"><span class="nm">探针:队列 dock</span><span class="age">排队</span></div>
+    </div>
+  </div>
+</div>
+
+<h2>B · 单线嵌题 <span class="d">只有顶发丝线,标题与位置指示嵌在线上,内容不围框——与 §2.9 同族</span></h2>
+<div class="lane b">
+  <div class="panels">
+    <div class="panel">
+      <div class="pt"><span class="t">会话 <span class="n">(12)</span></span><span class="fill"></span><span class="pos">3/12</span></div>
+      <div class="s hover"><span class="nm">重构视觉规范</span><span class="age">当前</span></div>
+      <div class="s"><span class="nm">队列验收准备完成</span><span class="age">1天</span></div>
+      <div class="s sel"><span class="nm">M6 验收收尾</span><span class="age">2天</span></div>
+      <div class="s"><span class="nm">单消息测试</span><span class="age">3天</span></div>
+      <div class="s err"><span class="nm">模型拉取失败</span><span class="age">4天</span></div>
+    </div>
+    <div class="panel">
+      <div class="pt"><span class="t">队列 <span class="n">(3)</span></span><span class="fill"></span><span class="pos">1/3</span></div>
+      <div class="s sel"><span class="nm">编译 renderer</span><span class="age">运行中</span></div>
+      <div class="s"><span class="nm">探针:审批接管</span><span class="age">排队</span></div>
+      <div class="s"><span class="nm">探针:队列 dock</span><span class="age">排队</span></div>
+    </div>
+  </div>
+</div>
+
+<div class="note">判断点:A 的封闭框分组边界最强(多面板并排时互不串),但框线总量翻倍——与「全框工具卡被判臃肿」同源的风险;B 用一条线拿到同样的标题位与位置指示,墨量最少,但面板右/下无边界,并排时靠间距分组。位置指示在选中变化时跟随(此处静态 mock)。</div>
+
+</body>
+</html>
