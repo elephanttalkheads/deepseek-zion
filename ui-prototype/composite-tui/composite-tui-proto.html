@@ -245,6 +245,9 @@
   </main>
 </div>
 
+<!-- 临时开关(throwaway,非设计内容):切换审批接管态 -->
+<button id="apToggle" style="position:fixed;right:10px;top:10px;z-index:99;background:var(--surface);color:var(--p70);border:1px solid var(--p20);font:11px var(--font);padding:3px 8px;cursor:pointer;border-radius:3px;">审批态</button>
+
 <script>
 // ── SET D 字形舱位图标(DESIGN.md §2.5,与 status-icons demo 同源)──
 const MXCHARS = 'アウエオカキケコサシスセソタツテナニヌネハヒホマミムメモヤヨラリワー012345789*+<>:|';
@@ -377,6 +380,15 @@ function frame(ts) {
   ctx.restore();
 }
 requestAnimationFrame(frame);
+
+// 临时开关(throwaway):审批接管态 ⇄ 输入态
+document.getElementById('apToggle').addEventListener('click', () => {
+  const ap = document.getElementById('apPanel');
+  const on = ap.style.display !== 'block';
+  ap.style.display = on ? 'block' : 'none';
+  document.querySelector('.input-box').style.display = on ? 'none' : '';
+  document.querySelector('.subline').style.display = on ? 'none' : '';
+});
 </script>
 </body>
 </html>

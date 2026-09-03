@@ -12,6 +12,7 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 app.whenReady().then(async () => {
   const win = new BrowserWindow({ width: 1280, height: 800, show: false });
   await win.loadFile(path.join(dir, 'composite-tui-proto.html'));
+  await win.webContents.executeJavaScript(`document.getElementById('apToggle').style.display='none'; 'ok'`); // 临时开关不入镜
   await sleep(9000); // 让数字雨积累拖尾与密度(雨列初生在屏上 -60 行,需多帧爬入)
   // 无头 capturePage 滞后一拍——先拍丢弃强制合成,再拍取真帧
   await win.webContents.capturePage();
