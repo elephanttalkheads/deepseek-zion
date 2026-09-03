@@ -99,9 +99,6 @@
   .cb .lines { font-size: 13px; color: var(--p70); }
   .cb .lines .out { padding-left: 14px; }
   .cb .lines .out .x { color: var(--p40); }
-  .meta { color: var(--p40); font-size: 11px; margin: 8px 0 0 20px; }
-  /* 回合发丝分隔(DESIGN.md §2.9):全宽 1px、20% 档、上下等距 */
-  .sep { border: none; border-top: 1px solid var(--p20); margin: 12px 0; }
   /* C10 回复尾操作条(§2.14 修订二):固定在每轮已结束回复底部;图标 40% 常显,hover/激活 100%;meta 随行 40% */
   .abar { display: flex; align-items: center; gap: 14px; margin: 8px 0 0 20px; }
   .abar .ai { color: var(--p40); display: inline-flex; cursor: pointer; }
@@ -109,6 +106,10 @@
   .abar .ai.on { color: var(--p100); }
   .abar .ai svg { width: 13px; height: 13px; display: block; }
   .abar .ameta { color: var(--p40); font-size: 11.5px; font-variant-numeric: tabular-nums; margin-left: 6px; }
+  /* C03 流尾光标(§2.15):字形蛾——Matrix Code 120ms 扰码 + 1.1s 呼吸,70% 档,流毕即消失 */
+  .caret { font-family: "Matrix Code", var(--font); color: var(--p70); animation: moth 1.1s ease-in-out infinite; }
+  @keyframes moth { 0%, 100% { opacity: 0.55; } 50% { opacity: 1; } }
+  @media (prefers-reduced-motion: reduce) { .caret { animation: none; opacity: 1; } }
   /* 思考块磁带纹(DESIGN.md §2.7) */
   .thinkline { display: flex; gap: 10px; align-items: center; font-size: 13px; color: var(--p70); margin: 6px 0 2px 20px; }
   .thinkline.closed { color: var(--p40); }
@@ -214,13 +215,10 @@
         <span class="ai" data-k="branch" title="在新对话中分支"></span>
         <span class="ameta">10:12 · 用时 3分30秒 · 首 token 61秒 · 117 tok/s</span>
       </div>
-      <div class="meta">2 轮 · 4 步 │ LLM 2.5s │ 首 token 1s · 89 tok/s │ 缓存 51%</div>
-
-      <hr class="sep">
 
       <div class="u"><span class="psign">❯</span><span class="utext">SET D 定了</span></div>
       <div class="thinkline"><span>▾</span><span class="st-tag">THINKING</span><span class="tape-track"><canvas data-tape="live"></canvas></span><span>· 思考中…</span></div>
-      <div class="body">字形舱位五枚进规范,综合骨架换装上屏——</div>
+      <div class="body">字形舱位五枚进规范,综合骨架换装上屏——<span class="caret" id="moth">ア</span></div>
       <div class="cb">
         <span class="cnr ct cl">⌜</span><span class="cnr ct cr">⌝</span><span class="cnr cb2 cl">⌞</span><span class="cnr cb2 cr">⌟</span>
         <span class="cap"><span class="ic c-run" data-k="run"></span>Write · ui-prototype/composite-tui/composite-tui-proto.html</span>
@@ -304,11 +302,13 @@ document.querySelectorAll('.ctxbar').forEach((bar) => {
   for (let i = 0; i < n; i++) html += `<span class="c${i < on ? ' on' : ''}"></span>`;
   bar.innerHTML = html;
 });
-// 运行态扰码循环(120ms,与雨同族)
+// 运行态扰码循环(120ms,与雨同族)+ 流尾字形蛾(§2.15,同频同族)
+const mothEl = document.getElementById('moth');
 setInterval(() => {
   document.querySelectorAll('.mx-run').forEach((t) => {
     t.textContent = MXCHARS[(Math.random() * MXCHARS.length) | 0];
   });
+  if (mothEl) mothEl.textContent = MXCHARS[(Math.random() * MXCHARS.length) | 0];
 }, 120);
 
 // ── 思考块磁带纹(DESIGN.md §2.7:V3 流式突发 + V1 闭环慢波)──
