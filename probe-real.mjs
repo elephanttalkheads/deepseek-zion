@@ -66,7 +66,7 @@ app.whenReady().then(async () => {
 
   const chatNodes = await win.webContents.executeJavaScript(`document.querySelectorAll('.chat-node').length`)
   out(`chat nodes: ${chatNodes}`)
-  const toolCards = await win.webContents.executeJavaScript(`document.querySelectorAll('.trace.track').length`)
+  const toolCards = await win.webContents.executeJavaScript(`document.querySelectorAll('.tool-line').length`)
   out(`tool cards: ${toolCards}`)
   const modelOptions = await grab(win, '.input-bar-model-select')
   out(`model selector: ${modelOptions === null ? 'missing' : modelOptions.replace(/\\n/g,' / ').slice(0,200)}`)

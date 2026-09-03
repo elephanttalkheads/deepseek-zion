@@ -3,26 +3,25 @@
  *
  * Renders the assembled `ChatConversationViewNode[]` (official conversation
  * definitions already turned Session events into these nodes). Kind dispatch is
- * keyed on the node's business kind. 消息行动作 = 官方 vendored MessageIconActions
- * (复制图标 + 分支 + 运行统计;user/steering clock=start;每轮底部 turn-tail
- * clock=end + 用时/首 token/tok/s 统计 + 消息反馈入口(好的回答/有问题的回答,
- * 官方 messageFeedback 契约)),分支 fork at anchorSeq(经 runtime.forkSession
- * 真后端 fork 并选中子会话)。
+ * keyed on the node's business kind. user 节点行动作 = 官方 vendored
+ * MessageIconActions(复制 + 时钟,clock=start,保留不动);每轮底部 turn-tail =
+ * 自研 ReplyActionBar(DESIGN.md §2.14:复制/好的回答/有问题的回答/分支 + meta,
+ * 数据面 = vendor writeClipboard + forkSession(anchorSeq) + MessageFeedbackSeat
+ * 官方 messageFeedback 契约)。
  * 消息图片 = 官方 vendored ui-attachment(ImageGallery → 点击 MessageImage →
  * ImageLightbox 原图预览;loader 走 session.readAttachment,同官方 resolveImage)。
  *
- * ZION 风格化(块 6/7/11/12,数值逐字照 ui-prototype/conversation/conversation-proto.html):
- * - 块 11:节点流按回合分组——user 类(user/steering/context)节点开启新回合,
- *   其后非 user 节点直到下个 user 前为一个 agent 回合,包 .turn-agent 并挂
- *   TurnRail 凝结雨轨(活动回合走带,闭环/历史凝 ◆);分组是纯加法包裹,
- *   既有渲染/插件槽/动作语义不变。
- * - 块 6:user 类节点 = OPERATOR 头 + 右对齐 .msg.user 形态,文本入场注入解码
- *   一次(InjectDecode);assistant 侧 .msg/.msg-body 排版语言。
- * - 块 7:reasoning 块 = ThinkBlock(<details.think> 默认折叠 + 磁带纹横轨)。
- * - 块 12:流式 assistant 末文本块挂 MothCaret 字形蛾光标;interrupted
+ * 风格规范(DESIGN.md 新 TUI 定稿,取代旧 ZION 块 6/11 形态):
+ * - §2.6 节点前缀:user 类节点 = ❯ 话头行(100% 档前缀 + 6% 磷光薄底文本);
+ *   多行续行对齐文本起点,不重复前缀。
+ * - §2.9 回合不分隔:回合之间不画分隔线/雨轨,靠 ❯ 话头行与自然间距分组;
+ *   每轮回复下无汇总 meta 行(信息由 §2.14 操作条 meta 承担)。
+ * - §2.14 回复尾操作条:固定在每轮已结束回复底部(turn-tail)。
+ * - 块 7(沿用):reasoning 块 = ThinkBlock(<details.think> 默认折叠 + 磁带纹横轨)。
+ * - 块 12(沿用):流式 assistant 末文本块挂 MothCaret 字形蛾光标;interrupted
  *   assistant 末文本块挂 AbortedMark 中断乱码锁定(官方 data.status 字段)。
  */
-import { useMemo, useRef } from 'react'
+import { useMemo } from 'react'
 import type { ImageLoader } from '../../vendor/ui-attachment/index.ts'
 import { ImageGallery } from '../../vendor/ui-attachment/index.ts'
 import type { ImageAttachmentRef } from '@deepseek-ai/dsh-attachment'
@@ -41,9 +40,9 @@ import type { ContextMessageNode } from '@deepseek-ai/dsh-client-runtime/client'
 import type { SessionId } from '../../vendor/client-connection/client/api.ts'
 import type { ToolCallBlock } from '../../vendor/client-runtime/client/sessions/conversation.ts'
 import { ToolCallCard } from './ToolCallCard.tsx'
-import { TurnRail } from './TurnRail.tsx'
 import { ThinkBlock } from './ThinkBlock.tsx'
-import { AbortedMark, InjectDecode, MothCaret } from './chat-fx.tsx'
+import { ReplyActionBar } from './ReplyActionBar.tsx'
+import { AbortedMark, MothCaret } from './chat-fx.tsx'
 import { SlotAnchor } from '../plugin/anchors.tsx'
 import { MessageFeedbackSeat } from '../app/message-feedback.tsx'
 
@@ -138,19 +137,13 @@ function nodeTime(node: ChatConversationViewNode): number | undefined {
   return typeof data.time === 'number' ? data.time : undefined
 }
 
-/** msg-head 时钟(demo 形态 HH:MM:SS)。 */
-function fmtClock(t: number): string {
-  const d = new Date(t)
-  const p = (n: number): string => String(n).padStart(2, '0')
-  return `${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`
-}
-
 /** user 类节点(user/steering/context)开启新回合。 */
 function isUserKind(node: ChatConversationViewNode): boolean {
   return node.kind === 'user' || node.kind === 'steering' || node.kind === 'context'
 }
 
-/** 块 11 回合分组:user 类节点独立成行;其间的非 user 节点收进一个 agent 回合。 */
+/** 块 11 已废(§2.9 回合不分隔):分组保留为结构包裹——user 类节点独立成行;
+ *  其间的非 user 节点收进一个 agent 回合(.turn-agent,无分隔线/雨轨)。 */
 type NodeGroup =
   | { kind: 'user'; node: ChatConversationViewNode }
   | { kind: 'agent'; key: string; nodes: ChatConversationViewNode[] }
@@ -169,27 +162,17 @@ function groupNodes(nodes: readonly ChatConversationViewNode[]): NodeGroup[] {
   return groups
 }
 
-export function ChatView({ nodes, sessionId, wire, timeline, streaming }: {
+export function ChatView({ nodes, sessionId, wire, timeline }: {
   nodes: readonly ChatConversationViewNode[]
   sessionId: SessionId
   wire: AssembledWire
   timeline: ConversationTimelineSnapshot
-  /** 会话 streaming/running(ConversationDock 的 useConversation(s => s.running)):最后一个 agent 回合的活动判定。 */
-  streaming: boolean
 }): JSX.Element {
   const { forkSession } = useRuntime()
 
   const forkNode = (node: ChatConversationViewNode): void => {
     void forkSession(node.anchorSeq)
   }
-
-  // 历史判定锚:挂载时已在场的节点属历史回合(.turn-agent.historical 压平动画,
-  // 基态=终态直出);挂载后新到的回合保留入场编舞,活动→闭环时 seal 仍可沉降。
-  const mountKeysRef = useRef<Set<string> | null>(null)
-  if (mountKeysRef.current === null) {
-    mountKeysRef.current = new Set(nodes.map(n => n.key))
-  }
-  const mountKeys = mountKeysRef.current
 
   // 历史图片 loader(官方 resolveImage 等位):session.readAttachment →
   // Blob URL(缺 createObjectURL 时回退 data URL)。
@@ -206,7 +189,8 @@ export function ChatView({ nodes, sessionId, wire, timeline, streaming }: {
   }, [wire, sessionId])
   const imageLabels = useMemo(() => messageImageLabels(chatT), [])
 
-  /** user 类节点:OPERATOR 头 + 右对齐 .msg.user 形态(块 6);动作行/图片/槽原样保留。 */
+  /** user 类节点:§2.6 ❯ 话头行(100% 档前缀 + 6% 磷光薄底文本);图片 gallery、
+   *  user reasoning ThinkBlock、vendor MessageIconActions(clock=start)原样保留。 */
   const renderUserNode = (node: ChatConversationViewNode): JSX.Element => {
     // context 注入节点走官方 ContextInjectionRow(默认折叠的「上下文注入」行):
     // <system-reminder>/<available_skills> 等模型向文本不直接铺满会话流(2026-08-29
@@ -228,33 +212,36 @@ export function ChatView({ nodes, sessionId, wire, timeline, streaming }: {
     const blocks: BlockLike[] = Array.isArray(data.content) ? (data.content as BlockLike[]) : []
     const images = nodeImages(node)
     const gallery = images.length > 0
-      ? <ImageGallery images={images} load={loadImage} align="end" labels={imageLabels} />
+      ? <ImageGallery images={images} load={loadImage} align="start" labels={imageLabels} />
       : null
     const time = nodeTime(node)
+    // ❯ 话头行 = 全部 text/未知块(按序);reasoning 块下行挂 ThinkBlock(块 7,非流式)。
+    const lineParts: JSX.Element[] = []
+    const thinks: JSX.Element[] = []
+    blocks.forEach((b, i) => {
+      const key = `${node.key}:${i}`
+      if (b.type === 'reasoning') {
+        thinks.push(<ThinkBlock key={key} text={b.text ?? ''} streaming={false} />)
+        return
+      }
+      if (b.type === 'image') return // 图片统一由 gallery 渲染
+      lineParts.push(<span key={key}>{b.text ?? ''}</span>)
+    })
     return (
       <div
         key={node.key}
-        className={`chat-node chat-node--${node.kind} msg user`}
+        className={`chat-node chat-node--${node.kind} u`}
         data-kind={node.kind}
         data-time-hover-root
       >
-        <div className="msg-head">
-          <span>OPERATOR</span>
-          {time !== undefined && <span className="m-time">{fmtClock(time)}</span>}
-        </div>
+        {lineParts.length > 0 && (
+          <div className="u-line">
+            <span className="psign" aria-hidden="true">❯</span>
+            <span className="utext">{lineParts}</span>
+          </div>
+        )}
         {gallery}
-        <div className="msg-body">
-          {blocks.map((b, i) => {
-            const key = `${node.key}:${i}`
-            if (b.type === 'reasoning') {
-              // 块 7:user 侧 reasoning 与 assistant 走同一 ThinkBlock(非流式)
-              return <ThinkBlock key={key} text={b.text ?? ''} streaming={false} />
-            }
-            if (b.type === 'text') return <InjectDecode key={key} text={b.text ?? ''} />
-            if (b.type === 'image') return null // 图片统一由 gallery 渲染
-            return <span key={key}>{b.text ?? ''}</span>
-          })}
-        </div>
+        {thinks}
         <MessageIconActions
           text={userText(node)}
           time={time}
@@ -314,8 +301,9 @@ export function ChatView({ nodes, sessionId, wire, timeline, streaming }: {
     )
   }
 
-  /** turn 底部 Footer(官方 TurnTailNodeView 等位):产物行 + 行动作行(复制/分支/
-   *  统计/消息反馈)。assistant 消息本体不再挂动作行(官方同:每轮一个 turn-tail)。 */
+  /** turn 底部 Footer(官方 TurnTailNodeView 等位):产物行 + §2.14 回复尾操作条
+   *  (ReplyActionBar:复制/好的回答/有问题的回答/分支 + 用时/首 token/tok/s meta)。
+   *  assistant 消息本体不再挂动作行(官方同:每轮一个 turn-tail)。 */
   const renderTurnTailNode = (node: ChatConversationViewNode): JSX.Element => {
     const data = node.data as {
       turn?: number; time?: number; ttftMs?: number; tokensPerSecond?: number;
@@ -341,20 +329,18 @@ export function ChatView({ nodes, sessionId, wire, timeline, streaming }: {
         data-time-hover-root
       >
         {deliverables}
-        <MessageIconActions
+        <ReplyActionBar
           text={closing === null ? '' : assistantBlocksText(closing.blocks)}
           time={typeof data.time === 'number' ? data.time : undefined}
           runMs={runMs}
           ttftMs={data.ttftMs}
           tokensPerSecond={data.tokensPerSecond}
-          clock="end"
           onBranch={() => { forkNode(node) }}
           branchUnavailable={data.branchUnavailable === true}
-          className="chat-node-actions"
-          t={chatT}
-          extraActions={messageId === undefined
+          feedback={messageId === undefined
             ? null
             : <MessageFeedbackSeat remote={wire.messageFeedback} sessionId={sessionId} messageId={messageId} />}
+          t={chatT}
         />
       </div>
     )
@@ -410,20 +396,14 @@ export function ChatView({ nodes, sessionId, wire, timeline, streaming }: {
   }
 
   const groups = groupNodes(nodes)
-  // 活动回合 = 最后一个 agent 回合且会话 streaming/running(块 11 雨轨走带判定)。
-  let lastAgentIdx = -1
-  groups.forEach((g, i) => { if (g.kind === 'agent') lastAgentIdx = i })
 
   return (
     <div className="chat-view">
-      {groups.map((group, gi) => {
+      {groups.map((group) => {
         if (group.kind === 'user') return renderUserNode(group.node)
-        const active = gi === lastAgentIdx && streaming
-        // 历史回合(挂载时已在场)压平动画;活动/本会话新闭环回合保留编舞。
-        const historical = !active && group.nodes.every(n => mountKeys.has(n.key))
+        // §2.9:回合之间不画分隔线/雨轨,.turn-agent 仅为结构包裹(无编舞)。
         return (
-          <div key={group.key} className={`turn-agent${active ? ' is-active' : ''}${historical ? ' historical' : ''}`}>
-            <TurnRail active={active} />
+          <div key={group.key} className="turn-agent">
             {group.nodes.map(node =>
               node.kind === 'assistant' || node.kind === 'assistant-step'
                 ? renderAssistantNode(node)

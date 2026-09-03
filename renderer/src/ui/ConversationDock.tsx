@@ -123,7 +123,7 @@ export function ConversationDock(): JSX.Element {
           {nodes.length === 0 ? (
             <p className="conversation-placeholder-muted">Loading conversation…</p>
           ) : (
-            <ChatView nodes={nodes} sessionId={selectedSessionId} wire={wire} timeline={timeline} streaming={running} />
+            <ChatView nodes={nodes} sessionId={selectedSessionId} wire={wire} timeline={timeline} />
           )}
         </div>
       )}

@@ -28,6 +28,7 @@ import { SlotAnchor } from '../plugin/anchors.tsx'
 import { GoalBar } from './GoalBar.tsx'
 import { QueueDock } from './QueueDock.tsx'
 import { TodoDock } from './TodoDock.tsx'
+import { StatusIcon } from './status-icon.tsx'
 import type { PromptContentPart } from '../../vendor/client-connection/client/api.ts'
 import type { CommandDescriptor } from '@deepseek-ai/dsh-commands/types'
 
@@ -260,6 +261,7 @@ export function InputBar(): JSX.Element {
           )}
           <ContextCapsule />
           <span className="input-bar-state" data-running={running || undefined}>
+            <StatusIcon kind={running ? 'run' : 'idle'} />
             {running ? (composerPhase === 'active' ? 'STREAMING' : 'RUNNING') : 'READY'}
           </span>
         </span>

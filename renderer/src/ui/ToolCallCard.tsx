@@ -1,14 +1,18 @@
 /**
  * M3 — ToolCallCard (Q19A self-authored presentational layer).
  *
- * ZION 块 8 机械继电器:外壳 = .trace.track > .unit.{run|ok|err}[.open]
- * (button + aria-expanded 语义与键盘可达保留),.contact 触点 LED 三态
- * (coil/clack/err),.urest(.tname 线名 + .desc 摘要),.dur 数码管耗时。
- * 展开区 ToolBody 全部分支(terminal/diff/JSON/content/args/error)不变;
+ * DESIGN.md §2.8 工具纯行 + 角括号聚光(D2+V2;数值照 composite-tui .tl/.cb):
+ * 外壳 = .tool-line.{run|ok|err}(button + aria-expanded 语义与键盘可达保留)。
+ * 闭环/错误 = 纯行(状态图标 + 工具名 · 参数摘要,无框无底;错误 = 红字行不画红框);
+ * 运行中 = 四角角括号 ⌜⌝⌞⌟(70% 档,绝对定位不连线)+ ┐标题┌ notch。
+ * 状态图标复用 ./status-icon.tsx 的 SET D 原子(§2.5:run 扰码 / done 锁定勾 /
+ * err 故障切片);展开内容 ⎿ 缩进续行,ToolBody 全部分支
+ * (terminal/diff/JSON/content/args/error)不变;
  * diff 卡 = MatrixDiffCard 烧录显影(块 9,数值照 demo)。
  */
 import { useState } from 'react'
 import type { RunningToolCall, ToolCallBlock, ToolResultNode } from '../../vendor/client-runtime/client/sessions/conversation.ts'
+import { StatusIcon, type StatusIconKind } from './status-icon.tsx'
 
 /** Settled discrimination: only ToolResultNode carries the literal kind marker. */
 function isSettled(block: ToolCallBlock): block is ToolResultNode {
@@ -231,34 +235,42 @@ export function ToolCallCard({ block }: { block: ToolCallBlock }): JSX.Element {
   const name = toolName(block)
   const summary = deriveSummary(block)
   const isError = settled && block.isError === true
-  // 块 8 数码管耗时(R4:只用 wire 真实字段,禁止伪造):running→执行中…、
+  // 耗时读数(R4:只用 wire 真实字段,禁止伪造):running→执行中…、
   // err→失败、settled 有 callTime 配对→x.xs(time-callTime),无耗时数据→—。
   const sec = settled ? settledDurationSec(block) : null
   const dur = !settled ? '执行中…' : isError ? '失败' : sec === null ? '—' : `${sec.toFixed(1)}s`
   const state = !settled ? 'run' : isError ? 'err' : 'ok'
+  // SET D 状态图标(DESIGN.md §2.5):run→扰码 / ok→锁定勾 / err→故障切片;判定逻辑不变。
+  const stateIcon: StatusIconKind = !settled ? 'run' : isError ? 'err' : 'done'
 
   return (
     <div
-      className="trace track"
+      className={`tool-line ${state}`}
       data-tool={name}
       data-state={settled ? (isError ? 'error' : 'done') : 'running'}
     >
+      {!settled && (
+        <>
+          <span className="t-cnr t-cnr--tl" aria-hidden="true">⌜</span>
+          <span className="t-cnr t-cnr--tr" aria-hidden="true">⌝</span>
+          <span className="t-cnr t-cnr--bl" aria-hidden="true">⌞</span>
+          <span className="t-cnr t-cnr--br" aria-hidden="true">⌟</span>
+        </>
+      )}
       <button
-        className={`unit ${state}${expanded ? ' open' : ''}`}
+        className={`t-head${expanded ? ' open' : ''}`}
         type="button"
         aria-expanded={expanded}
         onClick={() => setExpanded(v => !v)}
       >
-        <span className="contact" aria-hidden="true" />
-        <span className="urest">
-          <span className="tname">[{name}]</span>
-          <span className="desc">{summary}</span>
-        </span>
-        <span className="dur">{dur}</span>
+        <StatusIcon kind={stateIcon} className="t-ic" />
+        <span className="t-name">{TOOL_TITLES[name] ?? name}</span>
+        <span className="t-desc">{summary}</span>
+        <span className="t-dur">{dur}</span>
       </button>
       {expanded && (
-        <div className="trace-expand">
-          <div className="te-title">{name} → {summary}</div>
+        <div className="t-expand">
+          <div className="t-ex-title">⎿ {name} → {summary}</div>
           <ToolBody block={block} />
         </div>
       )}

@@ -6,17 +6,18 @@
  * 结构 1:1 对官方 TodoPanel:整头可点 button[aria-expanded] + 「任务」label +
  * 计数汇总 + chevron;点击向上展开任务列表(逐行 staggered 显影)。默认收起、
  * 展开态不持久(组件内 state,对齐官方);空列表/键缺失 → 不渲染。
- * 视觉照 ui-prototype/input-bar/input-bar-proto.html 的 .tododock(✓/◐/○ 状态
- * 字形 + 磷光绿/近白绿/暗绿语义色),类名按真组件体系(.todo-dock*)。
+ * 视觉照 ui-prototype/input-bar/input-bar-proto.html 的 .tododock(状态图标
+ * 2026-08 换 DESIGN.md §2.5 SET D 字形舱位 + 磷光绿/近白绿/暗绿语义色),类名按真组件体系(.todo-dock*)。
  */
 import { useState } from 'react'
 import { useRuntime } from '../app/runtime.tsx'
+import { StatusIcon, type StatusIconKind } from './status-icon.tsx'
 // Type-only:拉入 ts-types 的 SessionProjectionMap 'todos' 键 merge(原由 vendor
 // TodoPanel 的同款 import 带入编译面;自研替换后由本文件承接)。
 import type { TodoItem } from '@deepseek-ai/dsh-tool-todo/client'
 
-/** 状态字形(demo TODO_ICON):completed ✓ / in_progress ◐ / pending ○。 */
-const STATUS_GLYPH: Record<TodoItem['status'], string> = { completed: '✓', in_progress: '◐', pending: '○' }
+/** 状态图标(DESIGN.md §2.5 SET D):completed→done 锁定勾 / in_progress→run 扰码 / pending→idle 空舱。 */
+const STATUS_ICON: Record<TodoItem['status'], StatusIconKind> = { completed: 'done', in_progress: 'run', pending: 'idle' }
 
 export function TodoDock(): JSX.Element | null {
   const { useProjection } = useRuntime()
@@ -60,7 +61,7 @@ export function TodoDock(): JSX.Element | null {
               data-status={item.status}
               style={{ animationDelay: `${index * 60}ms` }}
             >
-              <span className="todo-dock-glyph" data-status={item.status} aria-hidden="true">{STATUS_GLYPH[item.status]}</span>
+              <span className="todo-dock-glyph" data-status={item.status}><StatusIcon kind={STATUS_ICON[item.status]} /></span>
               <span className="todo-dock-text">{item.content}</span>
             </li>
           ))}

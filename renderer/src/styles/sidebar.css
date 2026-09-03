@@ -2,7 +2,8 @@
    移植自 ui-prototype/sidebar/sidebar-proto.html(形态基准 replica/ 七态截图)。
    调色板/字体分工在 .sidebar 作用域内定义,不污染全局令牌:
    Share Tech Mono = 协议标签/坐标/状态码;Sarasa Term SC = 中文标题正文;
-   Matrix Code 只用于 canvas 氛围字形(字形白名单见 city-engine.ts)。 */
+   Matrix Code 用于 canvas 氛围字形(字形白名单见 city-engine.ts)与 SET D 状态
+   图标扰码(DESIGN.md §2.5,status-icon.tsx 内联 SVG text)。 */
 .sidebar {
   --void: #010403;
   --matrix: #37ff79;
@@ -287,7 +288,8 @@
   width: 100%;
   padding: 3px 20px 3px 8px;
   overflow: hidden;
-  display: block;
+  display: flex;
+  align-items: center;
   color: #c4e8cd;
   border: 0;
   background:
@@ -310,10 +312,14 @@
 }
 .session-portal .sidebar-row-title {
   display: block;
+  flex: 1;
+  min-width: 0;
   overflow: hidden;
   white-space: nowrap;
   text-overflow: ellipsis;
 }
+/* 会话行状态图标(SET D,DESIGN.md §2.5:streaming=run 扰码 / ready=idle 空舱),色随 --status-color */
+.session-status-icon { color: var(--status-color); margin-right: 6px; }
 .session-portal:hover,
 .session-portal:focus-visible,
 .session-portal-wrap[data-selected] .session-portal {
@@ -522,6 +528,9 @@
   outline-offset: -1px;
 }
 .map-session-button .title { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+/* 索引行状态图标:grouped 有 gap 不加 margin;baseline 布局下图标自居中 */
+.map-body.grouped .map-session-button .session-status-icon { margin-right: 0; }
+.map-session-button .session-status-icon { align-self: center; }
 
 /* 行容器:caret / ⋯ / 拖拽指示线 */
 .map-row { position: relative; }

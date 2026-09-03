@@ -44,8 +44,8 @@ app.whenReady().then(async () => {
 
   const COPY = 'button[aria-label="复制"]'
   const BRANCH = 'button[aria-label="在新对话中分支"]'
-  // 官方 TurnTail(每轮底部)拥有行动作行:data-turn-tail 节点内。
-  const ASSISTANT_ROW = `.chat-node[data-turn-tail] .chat-node-actions`
+  // 官方 TurnTail(每轮底部)拥有行动作行:data-turn-tail 节点内的 .reply-actions(§2.14 回复尾操作条)。
+  const ASSISTANT_ROW = `.chat-node[data-turn-tail] .reply-actions`
 
   // ---- M1: 进入含 assistant 节点的会话 ----
   const found = tag === 'fixture'
@@ -83,7 +83,7 @@ app.whenReady().then(async () => {
 
   // ---- M2d: 官方位置对齐——每轮底部(turn-tail)流内常显,非 hover 悬浮 ----
   const alwaysShown = await js(win, `(() => {
-    const rows = [...document.querySelectorAll('.chat-node[data-turn-tail] .chat-node-actions')]
+    const rows = [...document.querySelectorAll('.chat-node[data-turn-tail] .reply-actions')]
     if (rows.length === 0) return false
     const r = rows[0]
     const s = getComputedStyle(r)

@@ -64,8 +64,8 @@
 .input-bar-ctxbar:hover > i { background: #66ff99; }
 .input-bar-ctxpct { color: var(--m-text-tertiary); }
 
-/* 会话状态 mi-state(READY 磷光绿 / 非 READY 琥珀) */
-.input-bar-state { color: var(--m-accent); letter-spacing: 0.06em; }
+/* 会话状态 mi-state(READY 磷光绿 / 非 READY 琥珀;状态图标 = SET D run 扰码/idle 空舱,DESIGN.md §2.5) */
+.input-bar-state { color: var(--m-accent); letter-spacing: 0.06em; display: inline-flex; align-items: center; gap: 5px; }
 .input-bar-state[data-running] { color: var(--m-warning); }
 
 /* --- 输入盒 .input-box(上下发丝边框壳)+ .input-row 单行合并 --- */

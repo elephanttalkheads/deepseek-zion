@@ -40,7 +40,7 @@
 .todo-dock-list { display: flex; flex-direction: column; gap: 3px; margin: 0; padding: 0 10px 8px 12px; list-style: none; }
 .todo-dock-item { display: flex; align-items: center; gap: 8px; animation: todo-dock-in 0.28s ease-out backwards; }
 @keyframes todo-dock-in { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
-.todo-dock-glyph { flex: none; width: 14px; text-align: center; }
+.todo-dock-glyph { flex: none; width: 14px; display: inline-flex; align-items: center; justify-content: center; }
 .todo-dock-glyph[data-status='completed'] { color: var(--m-accent); text-shadow: 0 0 6px rgba(0,255,65,0.55); }
 .todo-dock-glyph[data-status='in_progress'] { color: var(--m-bright); animation: todo-dock-pulse 1.6s ease-in-out infinite; }
 .todo-dock-glyph[data-status='pending'] { color: var(--m-text-tertiary); opacity: 0.6; }
@@ -49,20 +49,17 @@
 .todo-dock-item[data-status='in_progress'] .todo-dock-text { color: var(--m-text-primary); }
 .todo-dock-item[data-status='pending'] .todo-dock-text { color: var(--m-text-tertiary); }
 
-/* --- GoalBar 三态编舞(active=磷光绿旋转环 / paused=琥珀静止 / blocked=橙红 glitch)--- */
+/* --- GoalBar 相位编舞(状态图标 = DESIGN.md §2.5 SET D:active=run 扰码/paused=wait 沙漏/blocked=err 故障切片/complete=done 锁定勾)--- */
 .goal-bar { display: flex; align-items: center; gap: 10px; padding: 5px 10px 5px 12px; margin-bottom: 0; flex-wrap: nowrap; }
-.goal-bar-target { flex: none; width: 18px; height: 18px; color: var(--m-text-tertiary); }
-.goal-bar-target-outer { transform-origin: center; }
+.goal-bar-target { flex: none; width: 14px; height: 14px; color: var(--m-text-tertiary); }
 .goal-bar[data-phase='active'] .goal-bar-target { color: var(--m-accent); filter: drop-shadow(0 0 5px rgba(0,255,65,0.55)); }
-.goal-bar[data-phase='active'] .goal-bar-target-outer { animation: goal-bar-spin 7s linear infinite; }
-.goal-bar[data-phase='active'] .goal-bar-target-core { animation: todo-dock-pulse 2.2s ease-in-out infinite; }
 .goal-bar[data-phase='paused'] .goal-bar-target { color: var(--m-warning); filter: drop-shadow(0 0 4px rgba(255,176,0,0.4)); }
 .goal-bar[data-phase='paused'] .goal-bar-phase { color: var(--m-warning); }
 .goal-bar[data-phase='blocked'] { animation: goal-bar-glitch 2.8s steps(1) infinite; border-color: rgba(255,85,85,0.35); }
 .goal-bar[data-phase='blocked']::before { background: linear-gradient(180deg, var(--m-danger), rgba(255,85,85,0.06)); box-shadow: 0 0 6px rgba(255,85,85,0.4); }
 .goal-bar[data-phase='blocked'] .goal-bar-target { color: var(--m-danger); filter: drop-shadow(0 0 5px rgba(255,85,85,0.5)); }
 .goal-bar[data-phase='blocked'] .goal-bar-phase { color: var(--m-danger); }
-@keyframes goal-bar-spin { to { transform: rotate(360deg); } }
+.goal-bar[data-phase='complete'] .goal-bar-target { color: var(--m-text-tertiary); }
 @keyframes goal-bar-glitch { 0%, 91%, 100% { transform: translateX(0); } 93% { transform: translateX(-1px); } 95% { transform: translateX(1px); } 97% { transform: translateX(-1px); } }
 .goal-bar-phase {
   flex: none; letter-spacing: 0.1em; color: var(--m-accent);
@@ -104,7 +101,9 @@
   display: flex; align-items: baseline; gap: 8px; font-size: 12px;
   border: 1px dashed var(--m-border); border-radius: 0; padding: 4px 8px;
 }
-.queue-placement { color: var(--m-accent); flex-shrink: 0; font-size: 11px; letter-spacing: 0.1em; }
+.queue-placement { color: var(--m-accent); flex-shrink: 0; font-size: 11px; letter-spacing: 0.1em; display: inline-flex; align-items: center; gap: 5px; }
+.queue-placement-icon { color: var(--m-text-secondary); }
+.queue-feedback-icon { flex-shrink: 0; align-self: center; }
 .queue-preview { color: var(--m-text-secondary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; }
 .queue-action {
   background: none; border: 1px solid var(--m-border); border-radius: 0; color: var(--m-text-tertiary);

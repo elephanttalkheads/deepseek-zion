@@ -13,6 +13,7 @@
  */
 import { useState } from 'react'
 import { useRuntime } from '../app/runtime.tsx'
+import { StatusIcon } from './status-icon.tsx'
 
 const PLACEMENT_LABELS: Record<string, string> = { queued: '待发送', steering: '插队' }
 
@@ -55,6 +56,7 @@ export function QueueDock(): JSX.Element | null {
     <div className="queue-dock">
       {lastAgentError !== null && (
         <div className="queue-feedback queue-feedback--error" data-kind="agent-error">
+          <StatusIcon kind="err" className="queue-feedback-icon" />
           <span className="queue-feedback-label">Agent 反馈</span>
           <span className="queue-feedback-text">{lastAgentError}</span>
         </div>
@@ -63,7 +65,7 @@ export function QueueDock(): JSX.Element | null {
         <div className="queue-list" data-count={queue.length}>
           {queue.map(msg => (
             <div className="queue-row" key={msg.id} data-placement={msg.placement}>
-              <span className="queue-placement">{PLACEMENT_LABELS[msg.placement] ?? msg.placement}</span>
+              <span className="queue-placement"><StatusIcon kind="wait" className="queue-placement-icon" />{PLACEMENT_LABELS[msg.placement] ?? msg.placement}</span>
               {editingId === String(msg.id) ? (
                 <span className="queue-edit">
                   <input

@@ -14,6 +14,7 @@ import {
   IconArchiveOutline20, IconBranchOutline16, IconEditOutline16, IconEllipsisOutline16,
 } from '../../../vendor/ui-primitives/icons/index.tsx'
 import { CITY_STATUS, MATRIX_GLYPHS, type CitySession, type CityWorkspace } from './city-engine.ts'
+import { StatusIcon } from '../status-icon.tsx'
 
 const COLLAPSED_SESSION_LIMIT = 5
 
@@ -156,6 +157,7 @@ export function CityIndex({
           >
             {flat && <span className="idx">{String(opts.flatIndex ?? 0).padStart(2, '0')}</span>}
             <span className="cur">&gt;</span>
+            <StatusIcon kind={session.status === 'streaming' ? 'run' : 'idle'} className="session-status-icon" />
             <span className="title">{session.title}</span>
             <span className="age">{session.time}</span>
           </button>

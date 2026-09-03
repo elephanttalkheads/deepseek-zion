@@ -3,9 +3,11 @@
  * 风格化重设计). Reads the selected session's `goal` projection (useGoal); 无目标
  * 时整条隐藏(2026-08-21,对齐官方——官方仅以 hasGoal 做 /goal hint 消歧;
  * 创建入口 = /goal slash 命令,见 ui-change-log 2026-08-21--hide-idle-goal-bar.md);
- * when a goal exists it shows 靶标 SVG + 相位标签 + 目标文本 +
+ * when a goal exists it shows SET D 相位状态图标(DESIGN.md §2.5:active=run
+ * 扰码 / paused=wait 沙漏 / blocked=err 故障切片 / complete=done 锁定勾)+
+ * 相位标签 + 目标文本 +
  * 右侧动作组(pause↔resume 切换 / edit / complete / clear)via the goal.*
- * contract. 三态编舞:active=磷光绿旋转环,paused=琥珀静止,blocked=橙红
+ * contract. 相位编舞:active=磷光绿,paused=琥珀静止,blocked=红
  * glitch;受阻相不显示 pause/resume 切换钮(对齐官方,见 ui-change-log
  * 2026-08-21--goal-bar-blocked-no-toggle.md)。动作全部接 goalActions;
  * complete 保留接 goals/complete RPC。编辑交互保持既有 GoalForm 表单语义,
@@ -13,6 +15,7 @@
  */
 import { useEffect, useRef, useState } from 'react'
 import { useRuntime, type GoalProjectionValue } from '../app/runtime.tsx'
+import { StatusIcon, type StatusIconKind } from './status-icon.tsx'
 
 /** 相位标签(demo GOAL_PHASES;complete 相沿用既有 PHASE_LABEL 文案)。 */
 const PHASE_LABEL: Record<GoalProjectionValue['goal']['phase'], string> = {
@@ -22,15 +25,13 @@ const PHASE_LABEL: Record<GoalProjectionValue['goal']['phase'], string> = {
   complete: '已完成',
 }
 
-/** 靶标 SVG(demo GOAL_TARGET_SVG):双环 + 核心;active 外环旋转由 CSS 驱动。 */
-function GoalTarget(): JSX.Element {
-  return (
-    <svg className="goal-bar-target" viewBox="0 0 18 18" aria-hidden="true">
-      <circle className="goal-bar-target-outer" cx="9" cy="9" r="7.4" fill="none" stroke="currentColor" strokeWidth="1" strokeDasharray="9 5" />
-      <circle cx="9" cy="9" r="3.6" fill="none" stroke="currentColor" strokeWidth="1" />
-      <circle className="goal-bar-target-core" cx="9" cy="9" r="1.5" fill="currentColor" />
-    </svg>
-  )
+/** 相位状态图标(DESIGN.md §2.5 SET D):active=run 扰码 / paused=wait 沙漏 /
+ *  blocked=err 故障切片 / complete=done 锁定勾;className 保留 .goal-bar-target 钩子。 */
+const PHASE_ICON: Record<GoalProjectionValue['goal']['phase'], StatusIconKind> = {
+  active: 'run',
+  paused: 'wait',
+  blocked: 'err',
+  complete: 'done',
 }
 
 /* 自绘 Matrix 风动作图标(demo G_ICON 移植):细线尖角、currentColor 继承状态色。 */
@@ -164,7 +165,7 @@ export function GoalBar(): JSX.Element | null {
     if (mode === 'idle') return null
     return (
       <div className="goal-bar" data-has-goal={undefined}>
-        <GoalTarget />
+        <StatusIcon kind="idle" className="goal-bar-target" />
         <span className="goal-bar-phase goal-bar-phase-empty">未设定目标</span>
         <span className="goal-bar-controls">
           <button type="button" className="goal-bar-btn" onClick={() => setMode('create')}>＋ 设定目标</button>
@@ -196,7 +197,7 @@ export function GoalBar(): JSX.Element | null {
 
   return (
     <div className="goal-bar" data-has-goal="true" data-phase={current.phase}>
-      <GoalTarget />
+      <StatusIcon kind={PHASE_ICON[current.phase]} className="goal-bar-target" />
       <span className="goal-bar-phase" data-phase={current.phase}>{PHASE_LABEL[current.phase]}</span>
       <span className="goal-bar-objective-text" title={current.objective}>{current.objective}</span>
       <span className="goal-bar-controls">

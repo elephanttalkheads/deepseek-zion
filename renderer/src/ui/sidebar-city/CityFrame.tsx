@@ -12,6 +12,7 @@ import {
   type BuildingPoint, type CityWorkspace, type RainColumn3D,
 } from './city-engine.ts'
 import type { CityCamera } from './useCityCamera.ts'
+import { StatusIcon } from '../status-icon.tsx'
 
 interface CityFrameProps {
   model: CityWorkspace[]
@@ -141,6 +142,7 @@ export function CityFrame({ model, camera, selectedSessionId, total, mapOpen, on
               aria-label={`${session.title},${CITY_STATUS[session.status].label},${session.time}`}
               onClick={() => onSelectSession(session.id)}
             >
+              <StatusIcon kind={session.status === 'streaming' ? 'run' : 'idle'} className="session-status-icon" />
               <span className="sidebar-row-title">{session.title}</span>
             </button>
           </div>

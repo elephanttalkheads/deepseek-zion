@@ -1,15 +1,15 @@
 // 会话区 ZION 块 6/7/8/9/11/12 落地探针(fixture 轨为主,real 轨只读)。
 // 断言面:
-//  A. fixture fx-alpha 历史(闭环回合):.turn-agent 分组 + historical 压平、
-//     user OPERATOR 头 + 右对齐、雨轨凝 ◆ seal、details.think 折叠交互 + tape canvas、
-//     工具卡 .trace.track/.unit/.contact/.tname/.desc/.dur、消息行动作入口保留。
-//  B. 流式(真 prompt → fixture 回放):.turn-agent.is-active + .rail canvas 走带、
-//     流式 .caret;闭环后 is-active 消退、末回合凝 ◆。
+//  A. fixture fx-alpha 历史(闭环回合):.turn-agent 分组包裹、
+//     user ❯ 话头行(.u .psign/.utext)、details.think 折叠交互 + tape canvas、
+//     工具纯行 .tool-line/.t-head/svg.status-icon/.t-name/.t-desc/.t-dur、消息行动作入口保留。
+//  B. 流式(真 prompt → fixture 回放):running 态 assistant 节点 + 流式 .caret 字形蛾;
+//     闭环后 running 消退、末回合 settled。
 //  C. 中断(探针缝 __zionProbePushMuxFrame 推 session/event 合成回合:
 //     新空白会话 seq 从 0 连续推 turn/start→user/message→step/start→chunks→turn/end
 //     cancelled,无 assistant/message → interrupted 冻结 partial):
 //     data-status=interrupted、.aborted 450ms 后锁定「 [已被操作员中断]」、
-//     该回合 details.think 双行、user 注入解码终态文本。
+//     该回合 details.think 双行、user ❯ 话头行终态文本(.u .utext)。
 // 用法:
 //   npx electron probe-conversation.mjs                       # fixture(默认)
 //   $env:ZION_URL='http://localhost:5199/'; npx electron probe-conversation.mjs   # real 只读
@@ -33,7 +33,7 @@ const waitFor = async (win, expr, waitMs = 12000, every = 400) => {
   }
   return false
 }
-// rAF 驱动的乱码帧(注入解码/中断锁定)在无头隐藏窗口里被 occlusion 节流,
+// rAF 驱动的乱码帧(中断锁定)在无头隐藏窗口里被 occlusion 节流,
 // capturePage 强制 BeginFrame 让 rAF 走帧——等终态文案时必须边拍边等。
 const waitFx = async (win, expr, waitMs = 10000) => {
   const t0 = Date.now()
@@ -89,24 +89,26 @@ app.whenReady().then(async () => {
     await js(win, `(() => { const r = document.querySelector('.sidebar-row'); if (r) r.click(); return !!r })()`)
   }
   await waitFor(win, `document.querySelectorAll('.chat-node').length >= 1`, 15000)
-  await sleep(1200) // 注入解码(≤700ms)收官
+  await sleep(1200) // 渲染收官
 
   mark('a1', await js(win, `document.querySelectorAll('.turn-agent').length >= 2`), 'A1 回合分组:.turn-agent ≥ 2',
     `count=${await js(win, `document.querySelectorAll('.turn-agent').length`)}`)
 
-  const hist = await js(win, `document.querySelectorAll('.turn-agent.historical').length`)
-  mark('a2', tag !== 'fixture' ? hist >= 0 : hist >= 1, 'A2 历史回合 .turn-agent.historical 压平', `count=${hist}`)
+  mark('a2', await js(win, `[...document.querySelectorAll('.turn-agent')].every(t => t.querySelectorAll('.chat-node').length >= 1)`),
+    'A2 .turn-agent 结构包裹存在(historical 编舞已废止,纯包裹)')
 
   const userHead = await js(win, `(() => {
-    const h = document.querySelector('.chat-node--user .msg-head')
-    if (!h) return null
-    return { text: h.innerText, time: /\\d{2}:\\d{2}:\\d{2}/.test(h.querySelector('.m-time')?.innerText ?? '') }
+    const p = document.querySelector('.chat-node--user.u .psign, .u .psign')
+    const t = document.querySelector('.chat-node--user.u .utext, .u .utext')
+    if (!p || !t) return null
+    return { psign: p.innerText.trim(), utext: (t.innerText ?? '').length > 0 }
   })()`)
-  mark('a3', userHead !== null && userHead.text.includes('OPERATOR') && userHead.time, 'A3 user 节点 OPERATOR 头 + HH:MM:SS 时钟', JSON.stringify(userHead))
+  mark('a3', userHead !== null && userHead.psign === '❯' && userHead.utext, 'A3 user 话头行:.psign = ❯ + .utext 存在', JSON.stringify(userHead))
 
-  mark('a3b', await js(win, `getComputedStyle(document.querySelector('.chat-node--user.msg.user .msg-body')).textAlign === 'right'`), 'A3b user .msg.user 右对齐形态')
-
-  mark('a4', await js(win, `[...document.querySelectorAll('.turn-agent .rail .seal')].some(e => e.innerText.trim() === '◆')`), 'A4 闭环回合雨轨凝 ◆ seal')
+  mark('a3b', await js(win, `(() => {
+    const t = document.querySelector('.u .utext')
+    return !!t && getComputedStyle(t).backgroundColor.includes('rgba(61, 255, 143, 0.06)')
+  })()`), 'A3b user .utext 底染 rgba(61,255,143,0.06)')
 
   // A5/A6:思考块折叠交互 + 磁带纹(fx-alpha turn%3===1 带 reasoning;real 轨软断言)
   const thinkCount = await js(win, `document.querySelectorAll('details.think').length`)
@@ -128,37 +130,49 @@ app.whenReady().then(async () => {
     mark('a6', tag !== 'fixture', 'A6 think 折叠交互(real:跳过)')
   }
 
-  // A7:工具卡机械继电器
+  // A7:工具纯行 + 角括号(.tool-line > .t-head)
   const trace = await js(win, `(() => {
-    const t = document.querySelector('.trace.track')
+    const t = document.querySelector('.tool-line')
     if (!t) return null
-    const u = t.querySelector('.unit')
+    const u = t.querySelector('.t-head')
+    if (!u) return null
     return {
-      contact: !!u.querySelector('.contact'),
-      tname: u.querySelector('.tname')?.innerText ?? '',
-      desc: (u.querySelector('.desc')?.innerText ?? '').length > 0,
-      dur: u.querySelector('.dur')?.innerText ?? '',
+      contact: !!u.querySelector('svg.status-icon'),
+      tname: u.querySelector('.t-name')?.innerText ?? '',
+      desc: (u.querySelector('.t-desc')?.innerText ?? '').length > 0,
+      dur: u.querySelector('.t-dur')?.innerText ?? '',
       aria: u.getAttribute('aria-expanded'),
-      count: document.querySelectorAll('.trace.track').length,
+      count: document.querySelectorAll('.tool-line').length,
     }
   })()`)
-  mark('a7', trace !== null && trace.contact && /^\[.+\]$/.test(trace.tname) && trace.desc && /^(\d+\.\ds|—|失败|执行中…)$/.test(trace.dur) && trace.aria !== null,
-    'A7 工具卡 .trace.track > .unit(.contact/.tname/.desc/.dur/aria-expanded)', JSON.stringify(trace))
+  mark('a7', trace !== null && trace.contact && trace.tname.length > 0 && !/^\[/.test(trace.tname)
+    && trace.desc && /^(\d+\.\ds|—|失败|执行中…)$/.test(trace.dur) && trace.aria !== null,
+    'A7 工具纯行 .tool-line > .t-head(svg.status-icon/.t-name/.t-desc/.t-dur/aria-expanded)', JSON.stringify(trace))
 
-  // A8:user 注入解码终态(无残留乱码帧,正文为真文本);rAF 节流环境边拍边等
-  const decDone = await js(win, `(() => {
-    const bodies = [...document.querySelectorAll('.chat-node--user .msg-body')]
-    if (bodies.length === 0) return null
-    return { sample: bodies[0].innerText.slice(0, 24) }
+  // A7b:工具行展开 → .t-expand + .t-ex-title,再点折回(React 状态提交异步:点击后 waitFor)
+  const toolBefore = await js(win, `(() => {
+    const t = document.querySelector('.tool-line')
+    if (!t) return null
+    const u = t.querySelector('.t-head')
+    const before = u.getAttribute('aria-expanded')
+    u.click()
+    return before
   })()`)
-  mark('a8', decDone !== null && decDone.sample.length > 0
-    && await waitFx(win, `document.querySelectorAll('.msg-body .decoding').length === 0`), 'A8 user 注入解码收官(无 .decoding 残留,正文真文本)', JSON.stringify(decDone))
+  const toolExpanded = await waitFor(win, `(() => {
+    const t = document.querySelector('.tool-line')
+    return !!t && t.querySelector('.t-head')?.getAttribute('aria-expanded') === 'true'
+      && !!t.querySelector('.t-expand .t-ex-title')
+  })()`, 6000)
+  await js(win, `document.querySelector('.tool-line .t-head')?.click(); true`)
+  const toolRestored = await waitFor(win, `document.querySelector('.tool-line .t-head')?.getAttribute('aria-expanded') === 'false'`, 6000)
+  mark('a7b', toolBefore === 'false' && toolExpanded && toolRestored,
+    'A7b 工具行折叠交互(展开 .t-expand/.t-ex-title → 折回)', JSON.stringify({ before: toolBefore, expanded: toolExpanded, restored: toolRestored }))
 
-  // A9:既有入口保留(user 复制按钮 + turn-tail 行动作行;官方语义:assistant 本体
+  // A9:既有入口保留(user 复制按钮 + turn-tail 回复尾操作条;官方语义:assistant 本体
   // 不挂动作,每轮一个 turn-tail 承载复制/分支/统计/反馈)
   mark('a9', await js(win, `!!document.querySelector('.chat-node--user .chat-node-actions button[aria-label="复制"]')`)
-    && await js(win, `!!document.querySelector('.chat-node[data-kind="turn-tail"] .chat-node-actions button[aria-label="复制"]')`),
-    'A9 消息行动作入口保留(user 复制 + turn-tail 行动作行)')
+    && await js(win, `!!document.querySelector('.chat-node[data-kind="turn-tail"] .reply-actions button[aria-label="复制"]')`),
+    'A9 消息行动作入口保留(user 复制 + turn-tail .reply-actions 行动作行)')
 
   if (tag === 'fixture') {
     // ---- B. 流式回合(真 prompt → fixture 回放) ----
@@ -176,16 +190,16 @@ app.whenReady().then(async () => {
     await sleep(300)
     await js(win, `(() => { const b = document.querySelector('.input-bar-send'); if (b) b.click(); return !!b })()`)
 
-    mark('b1', await waitFor(win, `!!document.querySelector('.turn-agent.is-active .rail canvas')`, 10000, 80), 'B1 活动回合:.turn-agent.is-active + .rail canvas 走带')
-    mark('b2', await waitFor(win, `!!document.querySelector('.turn-agent.is-active .msg-body .caret')`, 10000, 80), 'B2 流式字形蛾光标 .caret 挂末文本块')
+    mark('b1', await waitFor(win, `!!document.querySelector('.chat-node[data-kind="assistant-step"][data-status="running"], .chat-node[data-kind="assistant"][data-status="running"]')`, 10000, 80), 'B1 活动回合:running 态 assistant 节点(is-active 编舞已废止,data-status 为锚)')
+    mark('b2', await waitFor(win, `!!document.querySelector('.chat-node[data-status="running"] .msg-body .caret')`, 10000, 80), 'B2 流式字形蛾光标 .caret 挂末文本块')
     await shot(win, `conversation-${tag}-streaming`)
 
-    // 闭环:is-active 消退,末回合凝 ◆(本会话新到回合不带 historical,seal 沉降动画保留)
-    mark('b3', await waitFor(win, `!document.querySelector('.turn-agent.is-active') && (() => {
+    // 闭环:running 消退,末回合 settled(无活动态编舞,data-status 为锚)
+    mark('b3', await waitFor(win, `!document.querySelector('.chat-node[data-status="running"]') && (() => {
       const turns = [...document.querySelectorAll('.turn-agent')]
       const last = turns[turns.length - 1]
-      return !!last && last.querySelector('.rail .seal')?.innerText.trim() === '◆'
-    })()`, 25000), 'B3 回合闭环:is-active 消退 + 末回合雨轨凝 ◆')
+      return !!last && last.querySelector('.chat-node[data-kind="assistant-step"][data-status="settled"], .chat-node[data-kind="assistant"][data-status="settled"]') !== null
+    })()`, 25000), 'B3 回合闭环:running 消退 + 末回合 settled')
 
     // ---- C. 中断回合(探针缝推合成 session/event;空白会话 seq 从 0) ----
     await js(win, `document.querySelector('.shell-new').click(); true`)
@@ -214,14 +228,15 @@ app.whenReady().then(async () => {
       mark('c2', await waitFx(win, `document.querySelector('.chat-node[data-status="interrupted"] .msg-body .aborted')?.textContent === ' [已被操作员中断]'`), 'C2 中断标记锁定「 [已被操作员中断]」')
       mark('c3', await js(win, `document.querySelectorAll('.chat-node[data-status="interrupted"] details.think .think-body .tl').length === 2`), 'C3 中断回合 ThinkBlock 双行(reasoning 块)')
       mark('c4', await waitFx(win, `(() => {
-        const b = document.querySelector('.chat-node--user .msg-body')
-        return !!b && b.innerText.trim() === '探针:中断回合' && document.querySelectorAll('.msg-body .decoding').length === 0
-      })()`), 'C4 中断回合 user 注入解码终态文本')
+        const b = document.querySelector('.chat-node--user .utext')
+        return !!b && b.innerText.trim() === '探针:中断回合'
+      })()`), 'C4 中断回合 user 话头行终态文本(.u .utext)')
       mark('c5', await js(win, `(() => {
         const turns = [...document.querySelectorAll('.turn-agent')]
         const last = turns[turns.length - 1]
-        return !!last && !last.classList.contains('is-active') && last.querySelector('.rail .seal')?.innerText.trim() === '◆'
-      })()`), 'C5 中断回合非活动,雨轨凝 ◆')
+        return !!last && last.querySelector('.chat-node[data-status="interrupted"]') !== null
+          && last.querySelector('.chat-node[data-status="running"]') === null
+      })()`), 'C5 中断回合非活动,data-status=interrupted 冻结')
       await shot(win, `conversation-${tag}-interrupted`)
     } else {
       mark('c1', false, 'C1 缺少 __zionProbeGetSelectedSessionId 探针缝')

@@ -9,12 +9,13 @@
  * - MessageFeedbackRemote:wire 面(assemble.ts 按 ?fixture 提供内存/HTTP 实现);
  * - MessageFeedbackController:per-session 状态机(ensure/toggle/rate/clearNote,
  *   以 observed version 比对,冲突刷新);
- * - MessageFeedbackSeat:按钮 + note 编辑器(对齐官方文案与交互语义)。
+ * - MessageFeedbackSeat:按钮 + note 编辑器(对齐官方文案与交互语义);
+ *   按钮视觉 = DESIGN.md §2.14 直角细线拇指(reply-icons),数据面/RPC/契约零改动。
  */
 import { useEffect, useMemo, useState, useSyncExternalStore } from 'react'
 import type { RemoteResult } from '@deepseek-ai/dsh-typert-protocol'
 import { Tooltip } from '../../vendor/ui-primitives/index.ts'
-import { IconDislikeOutline16, IconLikeOutline16 } from '../../vendor/ui-primitives/icons/index.tsx'
+import { ThumbDownIcon, ThumbUpIcon } from '../ui/reply-icons.tsx'
 
 export type MessageFeedbackRating = 'positive' | 'negative'
 
@@ -312,7 +313,7 @@ export function MessageFeedbackSeat({ remote, sessionId, messageId }: {
           disabled={pending}
           onClick={() => { onRate('positive') }}
         >
-          <IconLikeOutline16 />
+          <ThumbUpIcon />
         </button>
       </Tooltip>
       <Tooltip label={dislikeLabel} side="bottom">
@@ -325,7 +326,7 @@ export function MessageFeedbackSeat({ remote, sessionId, messageId }: {
           disabled={pending}
           onClick={() => { onRate('negative') }}
         >
-          <IconDislikeOutline16 />
+          <ThumbDownIcon />
         </button>
       </Tooltip>
       {rating !== undefined && !noteOpen && (

@@ -108,7 +108,11 @@ app.whenReady().then(async () => {
         && p.querySelectorAll('.todo-dock-item').length >= 1
     })()`, 6000)
     const itemCount = await js(win, `document.querySelectorAll('[data-testid="todo-panel"] .todo-dock-item').length`)
-    const glyphOk = await js(win, `[...document.querySelectorAll('[data-testid="todo-panel"] .todo-dock-glyph')].every(g => ['✓','◐','○'].includes(g.innerText.trim()))`)
+    const glyphOk = await js(win, `[...document.querySelectorAll('[data-testid="todo-panel"] .todo-dock-item')].every(item => {
+      const g = item.querySelector('.todo-dock-glyph')
+      return g !== null && g.querySelector('svg.status-icon') !== null
+        && ['completed','in_progress','pending'].includes(g.getAttribute('data-status') ?? '')
+    })`)
     await js(win, `document.querySelector('[data-testid="todo-panel"] .todo-dock-head')?.click()`)
     const collapsedOk = await waitFor(win, `(() => {
       const p = document.querySelector('[data-testid="todo-panel"]')
@@ -116,7 +120,7 @@ app.whenReady().then(async () => {
         && p.querySelectorAll('.todo-dock-item').length === 0
     })()`, 6000)
     mark('c2', collapsedByDefault && expandedOk && glyphOk && collapsedOk,
-      'C2 TodoDock 展开/收起(默认收起 → aria-expanded + 任务行 + ✓◐○ → 收起)', `count=${itemCount} glyph=${glyphOk}`)
+      'C2 TodoDock 展开/收起(默认收起 → aria-expanded + 任务行 + svg.status-icon → 收起)', `count=${itemCount} glyph=${glyphOk}`)
   } else {
     // 真后端只读:选中的会话可能没有 standing plan(todos=null → 不渲染),
     // 也可能有(如本机常驻会话)→ 有则同样核对头结构。
