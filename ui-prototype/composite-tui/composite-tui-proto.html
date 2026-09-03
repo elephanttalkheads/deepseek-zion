@@ -140,10 +140,14 @@
   .ap .sub { font-size: 12.5px; color: var(--p70); margin: 4px 0 8px 22px; }
   .ap .opts { display: flex; gap: 26px; margin-left: 22px; font-size: 13.5px; }
   .ap .opt { display: inline-flex; gap: 8px; align-items: center; padding: 0 6px; }
-  .ap .opt .cap-pill { width: 14px; height: 7px; border-radius: 4px; flex: none; }
-  .ap .opt.allow .cap-pill { background: linear-gradient(90deg, #6db3ff 0 48%, #1c5fb0 52% 100%); box-shadow: 0 0 6px rgba(63,157,255,0.55); }
-  .ap .opt.trust .cap-pill { background: linear-gradient(90deg, #8fffc0 0 48%, #14b850 52% 100%); box-shadow: 0 0 6px rgba(61,255,143,0.55); }
-  .ap .opt.deny .cap-pill { background: linear-gradient(90deg, #ff8a8a 0 48%, #b01c1c 52% 100%); box-shadow: 0 0 6px rgba(255,77,77,0.55); }
+  .ap .opt.allow { --hi: #6db3ff; --lo: #1c5fb0; }
+  .ap .opt.trust { --hi: #8fffc0; --lo: #14b850; }
+  .ap .opt.deny  { --hi: #ff8a8a; --lo: #b01c1c; }
+  .ap .opt .cap-pill { position: relative; width: 16px; height: 8px; border-radius: 4px; overflow: hidden; flex: none; }
+  .ap .opt .cap-pill .h { position: absolute; top: 0; bottom: 0; width: 8px; }
+  .ap .opt .cap-pill .a { left: 0; background: var(--hi); }
+  .ap .opt .cap-pill .b { left: 8px; background-color: var(--lo);
+    background-image: repeating-conic-gradient(rgba(1,10,4,0.8) 0% 25%, transparent 0% 50%); background-size: 1.5px 1.5px; }
   .ap .opt.allow .lbl { color: #6db3ff; }
   .ap .opt.trust .lbl { color: var(--p100); }
   .ap .opt.deny .lbl { color: #ff6b6b; }
@@ -227,9 +231,9 @@
         <div class="req"><span class="ic c-wait" data-k="wait"></span><span>Bash 请求执行</span><span>rm -rf build/</span><span class="why">高危:递归删除</span></div>
         <div class="sub">⎿ 该命令将删除 build/ 下全部内容,不可恢复</div>
         <div class="opts">
-          <span class="opt allow focus"><span class="cap-pill"></span><span class="lbl">允许</span></span>
-          <span class="opt trust"><span class="cap-pill"></span><span class="lbl">本次会话不再询问</span></span>
-          <span class="opt deny"><span class="cap-pill"></span><span class="lbl">拒绝</span></span>
+          <span class="opt allow focus"><span class="cap-pill"><span class="h a"></span><span class="h b"></span></span><span class="lbl">允许</span></span>
+          <span class="opt trust"><span class="cap-pill"><span class="h a"></span><span class="h b"></span></span><span class="lbl">本次会话不再询问</span></span>
+          <span class="opt deny"><span class="cap-pill"><span class="h a"></span><span class="h b"></span></span><span class="lbl">拒绝</span></span>
         </div>
         <div class="foot"><span class="k">1</span> 蓝丸=允许 · <span class="k">2</span> 绿丸=不再询问 · <span class="k">3</span> 红丸=拒绝 · <span class="k">←→</span> 移焦点 · <span class="k">enter</span> 吞下 · <span class="k">esc</span> 拒绝</div>
       </div>

@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<!-- PROTOTYPE — throwaway: 药丸样式变体 · 第三轮(字符块肌理,参照 context.JPEG)
+     参照图 DNA:█ 实块 + ░ 虚影的字符网格质感。配色沿用 §2.11 V2 双色半囊(亮半/暗半):
+     蓝 #6db3ff/#1c5fb0 / 绿 #8fffc0/#14b850 / 红 #ff8a8a/#b01c1c。
+     V1 双纹半囊(左半 █ 实纹 + 右半 ▓ 虚纹) / V2 实头虚尾(█ 实芯 + ░ 虚尾,吞丸方向感) / V3 方块拼囊(4 枚方块格,两亮两暗)
+     裁决:哪款丸形取代现行双色半囊渐变。 -->
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<title>药丸变体 · 字符块肌理</title>
+<style>
+  :root {
+    --bg: #010a04;
+    --surface: rgba(2, 18, 9, 0.92);
+    --p100: rgba(61, 255, 143, 1);
+    --p70: rgba(61, 255, 143, 0.7);
+    --p40: rgba(61, 255, 143, 0.4);
+    --p20: rgba(61, 255, 143, 0.2);
+    --font: "Share Tech Mono", ui-monospace, "Cascadia Mono", "Courier New", "Sarasa Term SC", "Microsoft YaHei", monospace;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: var(--bg); color: var(--p100); font: 15px/1.55 var(--font); padding: 28px 32px; }
+  *::-webkit-scrollbar { width: 6px; height: 6px; }
+  *::-webkit-scrollbar-thumb { background: #00ff66; border-radius: 3px; }
+  *::-webkit-scrollbar-track, *::-webkit-scrollbar-corner { background: transparent; }
+
+  h1 { font-size: 13px; letter-spacing: 0.12em; margin-bottom: 4px; }
+  h1 .tag { color: var(--p40); }
+  .rule { color: var(--p70); font-size: 12px; margin-bottom: 20px; }
+  h2 { font-size: 11px; letter-spacing: 0.14em; color: var(--p70); margin: 22px 0 8px; text-transform: uppercase; }
+  h2::before { content: "─ "; color: var(--p40); }
+  h2 .d { color: var(--p40); letter-spacing: 0; text-transform: none; }
+
+  .lane { border: 1px solid var(--p20); background: var(--surface); padding: 12px 16px 14px; margin-bottom: 14px; }
+  .opts-pill { display: flex; gap: 26px; margin-left: 22px; font-size: 13.5px; }
+  .popt { display: inline-flex; gap: 8px; align-items: center; padding: 0 6px; }
+  .popt.allow .lbl { color: #6db3ff; }
+  .popt.trust .lbl { color: var(--p100); }
+  .popt.deny  .lbl { color: #ff6b6b; }
+  .popt.focus { background: var(--p100); }
+  .popt.focus .lbl { color: var(--bg) !important; }
+  .cp { flex: none; }
+  .spec { display: flex; gap: 60px; margin: 10px 0 0 22px; }
+  .spec .cell { text-align: center; }
+  .spec .zoom { transform: scale(4); transform-origin: center; margin: 16px 0 6px; display: inline-block; }
+  .spec .nm { font-size: 10.5px; color: var(--p40); letter-spacing: 0.08em; margin-top: 2px; }
+
+  /* 三色双色半囊配色(§2.11 V2):亮半 / 暗半 */
+  .allow { --hi: #6db3ff; --lo: #1c5fb0; }
+  .trust { --hi: #8fffc0; --lo: #14b850; }
+  .deny  { --hi: #ff8a8a; --lo: #b01c1c; }
+
+  /* V1 双纹半囊:两个精确 8px 半格(绝对定位无缝)——左半纯亮无颗粒、右半 1.5px 密颗粒(暗,强抖) */
+  .v1 .cp { position: relative; width: 16px; height: 8px; border-radius: 4px; overflow: hidden; display: inline-block; }
+  .v1 .cp .h { position: absolute; top: 0; bottom: 0; width: 8px; }
+  .v1 .cp .a { left: 0; background: var(--hi); }
+  .v1 .cp .b { left: 8px; background-color: var(--lo);
+    background-image: repeating-conic-gradient(rgba(1,10,4,0.8) 0% 25%, transparent 0% 50%); background-size: 1.5px 1.5px; }
+
+  /* V2 实头虚尾:█ 实芯(亮)+ ░ 虚尾(亮色的 40% 档),吞丸的方向感 */
+  .v2 .cp { width: 16px; height: 8px; border-radius: 4px; overflow: hidden; display: inline-flex;
+    font: 8px/1 ui-monospace, "Cascadia Mono", monospace; letter-spacing: 0; }
+  .v2 .cp .h { overflow: hidden; white-space: pre; }
+  .v2 .cp .h.a { width: 9px; color: var(--hi); }
+  .v2 .cp .h.b { width: 7px; color: var(--hi); opacity: 0.4; }
+
+  /* V3 方块拼囊:4 枚 3×8 方块格(间隙 1px),两亮两暗交替——字符格的像素化直译 */
+  .v3 .cp { display: inline-flex; gap: 1px; }
+  .v3 .cp .b { width: 4px; height: 8px; }
+  .v3 .cp .b:first-child { border-radius: 2px 0 0 2px; }
+  .v3 .cp .b:last-child { border-radius: 0 2px 2px 0; }
+  .v3 .cp .b.hi { background: var(--hi); }
+  .v3 .cp .b.lo { background: var(--lo); }
+
+  .note { color: var(--p40); font-size: 11px; line-height: 1.8; margin-top: 6px; }
+</style>
+</head>
+<body>
+
+<h1>药丸变体 · 字符块肌理 <span class="tag">— 参照 context.JPEG(█ 实块 + ░ 虚影),配色 = V2 双色半囊</span></h1>
+<div class="rule">把「两半胶囊」从 CSS 渐变翻译回字符网格:实纹/虚纹/拼格三种译法。对照物:现行 §2.11 定稿 = 双色半囊渐变(同款配色)。</div>
+
+<h2>V1 · 双纹半囊 <span class="d">左半 ▓ 粗颗粒(亮)+ 右半 ▒ 细颗粒(暗),连续字符无中缝——双色半囊的字符化直译</span></h2>
+<div class="lane v1">
+  <div class="opts-pill">
+    <span class="popt allow focus"><span class="cp"><span class="h a"></span><span class="h b"></span></span><span class="lbl">允许</span></span>
+    <span class="popt trust"><span class="cp"><span class="h a"></span><span class="h b"></span></span><span class="lbl">本次会话不再询问</span></span>
+    <span class="popt deny"><span class="cp"><span class="h a"></span><span class="h b"></span></span><span class="lbl">拒绝</span></span>
+  </div>
+  <div class="spec">
+    <div class="cell"><span class="zoom"><span class="popt allow"><span class="cp"><span class="h a"></span><span class="h b"></span></span></span></span><div class="nm">允许</div></div>
+    <div class="cell"><span class="zoom"><span class="popt trust"><span class="cp"><span class="h a"></span><span class="h b"></span></span></span></span><div class="nm">信任</div></div>
+    <div class="cell"><span class="zoom"><span class="popt deny"><span class="cp"><span class="h a"></span><span class="h b"></span></span></span></span><div class="nm">拒绝</div></div>
+  </div>
+</div>
+
+<h2>V2 · 实头虚尾 <span class="d">█ 实芯 + ░ 虚尾(同色 40% 档)——药丸在字符雨里被「吞下」的方向感</span></h2>
+<div class="lane v2">
+  <div class="opts-pill">
+    <span class="popt allow focus"><span class="cp"><span class="h a">██</span><span class="h b">░░</span></span><span class="lbl">允许</span></span>
+    <span class="popt trust"><span class="cp"><span class="h a">██</span><span class="h b">░░</span></span><span class="lbl">本次会话不再询问</span></span>
+    <span class="popt deny"><span class="cp"><span class="h a">██</span><span class="h b">░░</span></span><span class="lbl">拒绝</span></span>
+  </div>
+  <div class="spec">
+    <div class="cell"><span class="zoom"><span class="popt allow"><span class="cp"><span class="h a">██</span><span class="h b">░░</span></span></span></span><div class="nm">允许</div></div>
+    <div class="cell"><span class="zoom"><span class="popt trust"><span class="cp"><span class="h a">██</span><span class="h b">░░</span></span></span></span><div class="nm">信任</div></div>
+    <div class="cell"><span class="zoom"><span class="popt deny"><span class="cp"><span class="h a">██</span><span class="h b">░░</span></span></span></span><div class="nm">拒绝</div></div>
+  </div>
+</div>
+
+<h2>V3 · 方块拼囊 <span class="d">4 枚方块格,亮/暗/亮/暗交替——双色半囊的像素化拼贴</span></h2>
+<div class="lane v3">
+  <div class="opts-pill">
+    <span class="popt allow focus"><span class="cp"><span class="b hi"></span><span class="b lo"></span><span class="b hi"></span><span class="b lo"></span></span><span class="lbl">允许</span></span>
+    <span class="popt trust"><span class="cp"><span class="b hi"></span><span class="b lo"></span><span class="b hi"></span><span class="b lo"></span></span><span class="lbl">本次会话不再询问</span></span>
+    <span class="popt deny"><span class="cp"><span class="b hi"></span><span class="b lo"></span><span class="b hi"></span><span class="b lo"></span></span><span class="lbl">拒绝</span></span>
+  </div>
+  <div class="spec">
+    <div class="cell"><span class="zoom"><span class="popt allow"><span class="cp"><span class="b hi"></span><span class="b lo"></span><span class="b hi"></span><span class="b lo"></span></span></span></span><div class="nm">允许</div></div>
+    <div class="cell"><span class="zoom"><span class="popt trust"><span class="cp"><span class="b hi"></span><span class="b lo"></span><span class="b hi"></span><span class="b lo"></span></span></span></span><div class="nm">信任</div></div>
+    <div class="cell"><span class="zoom"><span class="popt deny"><span class="cp"><span class="b hi"></span><span class="b lo"></span><span class="b hi"></span><span class="b lo"></span></span></span></span><div class="nm">拒绝</div></div>
+  </div>
+</div>
+
+<div class="note">判断点:V1 保留「两半压合」结构但肌理全字符化(实纹/虚纹 = 亮半/暗半);V2 用实芯+虚尾做出方向感,与上下文条 █/░ 同语汇,但读作「进度」的风险最高;V3 最像素、最硬,但药丸联想最弱。1× 下字符纹会糊成色块属预期——肌理是给 4× 注视时看的。</div>
+
+</body>
+</html>
