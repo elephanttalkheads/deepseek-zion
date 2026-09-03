@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<!-- PROTOTYPE — throwaway: C10 回复尾操作条(修订二)变体微 demo
+     官方口径(3080 实测 + 截图):每轮已结束回复的**底部固定**操作条——
+     复制 / 好的回答(👍,messageFeedback) / 有问题的回答(👎) / 分支(forkSession) 四枚图标常显;
+     meta(10:12 · 用时 3分30秒 · 首 token 61秒 · 117 tok/s)随行,40% 档。
+     裁决问题:赞/踩图标字形 + meta 布局——
+     V1 直角细线拇指 + meta 随行(官方直译) / V2 赞踩 = 舱内 ±(TUI 替代,不画拇指) / V3 直角拇指 + meta 贴行右端。 -->
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<title>C10 · 回复尾操作条</title>
+<style>
+  :root {
+    --bg: #010a04;
+    --surface: rgba(2, 18, 9, 0.92);
+    --p100: rgba(61, 255, 143, 1);
+    --p70: rgba(61, 255, 143, 0.7);
+    --p40: rgba(61, 255, 143, 0.4);
+    --p20: rgba(61, 255, 143, 0.2);
+    --font: "Share Tech Mono", ui-monospace, "Cascadia Mono", "Courier New", "Sarasa Term SC", "Microsoft YaHei", monospace;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: var(--bg); color: var(--p100); font: 15px/1.55 var(--font); padding: 28px 32px; }
+  *::-webkit-scrollbar { width: 6px; height: 6px; }
+  *::-webkit-scrollbar-thumb { background: #00ff66; border-radius: 3px; }
+  *::-webkit-scrollbar-track, *::-webkit-scrollbar-corner { background: transparent; }
+
+  h1 { font-size: 13px; letter-spacing: 0.12em; margin-bottom: 4px; }
+  h1 .tag { color: var(--p40); }
+  .rule { color: var(--p70); font-size: 12px; margin-bottom: 20px; }
+  h2 { font-size: 11px; letter-spacing: 0.14em; color: var(--p70); margin: 22px 0 8px; text-transform: uppercase; }
+  h2::before { content: "─ "; color: var(--p40); }
+  h2 .d { color: var(--p40); letter-spacing: 0; text-transform: none; }
+
+  .lane { border: 1px solid var(--p20); background: var(--surface); padding: 14px 20px 16px; margin-bottom: 14px; }
+  .tail { color: var(--p70); font-size: 13px; margin: 0 0 2px 26px; }
+  .tail .x { color: var(--p40); }
+
+  /* 操作条:固定,图标 40% 档,hover 图标升 100%;meta 40% 档 tabular-nums */
+  .abar { display: flex; align-items: center; gap: 14px; margin: 8px 0 0 26px; }
+  .abar .ai { color: var(--p40); display: inline-flex; cursor: pointer; }
+  .abar .ai:hover { color: var(--p100); }
+  .abar .ai.on { color: var(--p100); } /* 已赞/已踩激活态 */
+  .abar .ai svg { width: 13px; height: 13px; display: block; }
+  .abar .meta { color: var(--p40); font-size: 11.5px; font-variant-numeric: tabular-nums; margin-left: 6px; }
+  .abar .meta.r { margin-left: auto; } /* V3 贴右端 */
+
+  .spec { display: flex; gap: 56px; margin: 10px 0 0 26px; }
+  .spec .cell { text-align: center; }
+  .spec .zoom { transform: scale(4); transform-origin: center; margin: 18px 0 8px; display: inline-block; color: var(--p70); }
+  .spec .nm { font-size: 10.5px; color: var(--p40); letter-spacing: 0.08em; margin-top: 2px; }
+
+  .note { color: var(--p40); font-size: 11px; line-height: 1.8; margin-top: 6px; }
+</style>
+</head>
+<body>
+
+<h1>C10 · 回复尾操作条(修订二)<span class="tag">— 固定在每轮已结束回复底部:复制 / 赞 / 踩 / 分支 + meta</span></h1>
+<div class="rule">官方直译:四枚图标常显 40% 档,hover 升 100%;已赞/已踩 = 激活态 100%。meta = 时间 · 用时 · 首 token · tok/s,40% 档。语境统一:一轮回复的最后一行(工具续行)之下。</div>
+
+<h2>V1 · 直角细线拇指 + meta 随行 <span class="d">官方直译:拇指形用 SET D 1px 方角语言重画,meta 跟图标组后</span></h2>
+<div class="lane">
+  <div class="tail">⎿ 12 处标题追加 ✅ 已迁移 + 落点行</div>
+  <div class="abar">
+    <span class="ai" title="复制"><svg viewBox="0 0 12 12"><rect x="4.5" y="1.5" width="6" height="6" fill="none" stroke="currentColor"/><rect x="1.5" y="4.5" width="6" height="6" fill="none" stroke="currentColor"/></svg></span>
+    <span class="ai on" title="好的回答"><svg viewBox="0 0 12 12"><path d="M1.8 5 H3.6 V10.6 H1.8 Z" fill="none" stroke="currentColor"/><path d="M3.6 6.2 L6.2 1.8 H7.6 L7 4.8 H10.2 V9.4 H3.6" fill="none" stroke="currentColor"/></svg></span>
+    <span class="ai" title="有问题的回答"><svg viewBox="0 0 12 12"><path d="M1.8 1.8 H3.6 V7.4 H1.8 Z" fill="none" stroke="currentColor"/><path d="M3.6 6.2 L6.2 10.6 H7.6 L7 7.6 H10.2 V3 H3.6" fill="none" stroke="currentColor"/></svg></span>
+    <span class="ai" title="在新对话中分支"><svg viewBox="0 0 12 12"><rect x="2" y="1.5" width="3" height="3" fill="none" stroke="currentColor"/><rect x="2" y="7.5" width="3" height="3" fill="none" stroke="currentColor"/><rect x="7" y="1.5" width="3" height="3" fill="none" stroke="currentColor"/><path d="M3.5 4.5 V7.5 M5 3 H7" fill="none" stroke="currentColor"/></svg></span>
+    <span class="meta">10:12 · 用时 3分30秒 · 首 token 61秒 · 117 tok/s</span>
+  </div>
+  <div class="spec">
+    <div class="cell"><span class="zoom"><svg width="13" height="13" viewBox="0 0 12 12"><path d="M1.8 5 H3.6 V10.6 H1.8 Z" fill="none" stroke="currentColor"/><path d="M3.6 6.2 L6.2 1.8 H7.6 L7 4.8 H10.2 V9.4 H3.6" fill="none" stroke="currentColor"/></svg></span><div class="nm">赞</div></div>
+    <div class="cell"><span class="zoom"><svg width="13" height="13" viewBox="0 0 12 12"><path d="M1.8 1.8 H3.6 V7.4 H1.8 Z" fill="none" stroke="currentColor"/><path d="M3.6 6.2 L6.2 10.6 H7.6 L7 7.6 H10.2 V3 H3.6" fill="none" stroke="currentColor"/></svg></span><div class="nm">踩</div></div>
+  </div>
+</div>
+
+<h2>V2 · 赞踩 = 舱内 ± <span class="d">不画拇指:好 = 舱内 +,坏 = 舱内 −——与 SET D 空心方块完全同族</span></h2>
+<div class="lane">
+  <div class="tail">⎿ 12 处标题追加 ✅ 已迁移 + 落点行</div>
+  <div class="abar">
+    <span class="ai" title="复制"><svg viewBox="0 0 12 12"><rect x="4.5" y="1.5" width="6" height="6" fill="none" stroke="currentColor"/><rect x="1.5" y="4.5" width="6" height="6" fill="none" stroke="currentColor"/></svg></span>
+    <span class="ai on" title="好的回答"><svg viewBox="0 0 12 12"><rect x="2" y="2" width="8" height="8" fill="none" stroke="currentColor"/><path d="M4 6 H8 M6 4 V8" fill="none" stroke="currentColor"/></svg></span>
+    <span class="ai" title="有问题的回答"><svg viewBox="0 0 12 12"><rect x="2" y="2" width="8" height="8" fill="none" stroke="currentColor"/><path d="M4 6 H8" fill="none" stroke="currentColor"/></svg></span>
+    <span class="ai" title="在新对话中分支"><svg viewBox="0 0 12 12"><rect x="2" y="1.5" width="3" height="3" fill="none" stroke="currentColor"/><rect x="2" y="7.5" width="3" height="3" fill="none" stroke="currentColor"/><rect x="7" y="1.5" width="3" height="3" fill="none" stroke="currentColor"/><path d="M3.5 4.5 V7.5 M5 3 H7" fill="none" stroke="currentColor"/></svg></span>
+    <span class="meta">10:12 · 用时 3分30秒 · 首 token 61秒 · 117 tok/s</span>
+  </div>
+  <div class="spec">
+    <div class="cell"><span class="zoom"><svg width="13" height="13" viewBox="0 0 12 12"><rect x="2" y="2" width="8" height="8" fill="none" stroke="currentColor"/><path d="M4 6 H8 M6 4 V8" fill="none" stroke="currentColor"/></svg></span><div class="nm">赞 = 舱+</div></div>
+    <div class="cell"><span class="zoom"><svg width="13" height="13" viewBox="0 0 12 12"><rect x="2" y="2" width="8" height="8" fill="none" stroke="currentColor"/><path d="M4 6 H8" fill="none" stroke="currentColor"/></svg></span><div class="nm">踩 = 舱−</div></div>
+  </div>
+</div>
+
+<h2>V3 · 直角拇指 + meta 贴行右端 <span class="d">布局变体:图标组居左,meta 推到行尾——操作与信息分边</span></h2>
+<div class="lane">
+  <div class="tail">⎿ 12 处标题追加 ✅ 已迁移 + 落点行</div>
+  <div class="abar">
+    <span class="ai" title="复制"><svg viewBox="0 0 12 12"><rect x="4.5" y="1.5" width="6" height="6" fill="none" stroke="currentColor"/><rect x="1.5" y="4.5" width="6" height="6" fill="none" stroke="currentColor"/></svg></span>
+    <span class="ai on" title="好的回答"><svg viewBox="0 0 12 12"><path d="M1.8 5 H3.6 V10.6 H1.8 Z" fill="none" stroke="currentColor"/><path d="M3.6 6.2 L6.2 1.8 H7.6 L7 4.8 H10.2 V9.4 H3.6" fill="none" stroke="currentColor"/></svg></span>
+    <span class="ai" title="有问题的回答"><svg viewBox="0 0 12 12"><path d="M1.8 1.8 H3.6 V7.4 H1.8 Z" fill="none" stroke="currentColor"/><path d="M3.6 6.2 L6.2 10.6 H7.6 L7 7.6 H10.2 V3 H3.6" fill="none" stroke="currentColor"/></svg></span>
+    <span class="ai" title="在新对话中分支"><svg viewBox="0 0 12 12"><rect x="2" y="1.5" width="3" height="3" fill="none" stroke="currentColor"/><rect x="2" y="7.5" width="3" height="3" fill="none" stroke="currentColor"/><rect x="7" y="1.5" width="3" height="3" fill="none" stroke="currentColor"/><path d="M3.5 4.5 V7.5 M5 3 H7" fill="none" stroke="currentColor"/></svg></span>
+    <span class="meta r">10:12 · 用时 3分30秒 · 首 token 61秒 · 117 tok/s</span>
+  </div>
+</div>
+
+<div class="note">判断点:拇指是官方语义(👍👎)的直译,12×12 方角化后 1× 可读性一般但语义零损耗;舱内 ± 最同族最稳,但 +/− 与「数量增减」歧义相邻,且丢了拇指的通识性。meta 随行(V1/V2)= 官方布局,信息聚在操作旁;贴右端(V3)= 行更干净,但宽窗下 meta 离操作远。已赞激活态此处 mock 为 100% 档(实心由落地再议)。</div>
+
+</body>
+</html>

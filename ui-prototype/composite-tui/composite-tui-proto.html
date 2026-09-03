@@ -102,14 +102,13 @@
   .meta { color: var(--p40); font-size: 11px; margin: 8px 0 0 20px; }
   /* 回合发丝分隔(DESIGN.md §2.9):全宽 1px、20% 档、上下等距 */
   .sep { border: none; border-top: 1px solid var(--p20); margin: 12px 0; }
-  /* C10 消息级 hover 操作(§2.14 修订):常态零痕迹,hover 消息行尾显形;复制/分支 = V1 直角细线图标 */
-  .body { display: flex; gap: 10px; align-items: baseline; }
-  .body .btext { flex: 1; min-width: 0; }
-  .macts { margin-left: auto; display: inline-flex; gap: 12px; align-items: center; visibility: hidden; flex: none; }
-  .macts .ai { color: var(--p40); display: inline-flex; cursor: pointer; }
-  .macts .ai:hover { color: var(--p100); }
-  .macts .ai svg { width: 13px; height: 13px; display: block; }
-  .u:hover .macts, .body:hover .macts { visibility: visible; }
+  /* C10 回复尾操作条(§2.14 修订二):固定在每轮已结束回复底部;图标 40% 常显,hover/激活 100%;meta 随行 40% */
+  .abar { display: flex; align-items: center; gap: 14px; margin: 8px 0 0 20px; }
+  .abar .ai { color: var(--p40); display: inline-flex; cursor: pointer; }
+  .abar .ai:hover { color: var(--p100); }
+  .abar .ai.on { color: var(--p100); }
+  .abar .ai svg { width: 13px; height: 13px; display: block; }
+  .abar .ameta { color: var(--p40); font-size: 11.5px; font-variant-numeric: tabular-nums; margin-left: 6px; }
   /* 思考块磁带纹(DESIGN.md §2.7) */
   .thinkline { display: flex; gap: 10px; align-items: center; font-size: 13px; color: var(--p70); margin: 6px 0 2px 20px; }
   .thinkline.closed { color: var(--p40); }
@@ -199,22 +198,29 @@
 
   <main class="console">
     <div class="feed">
-      <div class="u"><span class="psign">❯</span><span class="utext">把迁移流程封装成 skill,回勾两份清单</span><span class="macts"><span class="ai" data-k="copy" title="复制"></span></span></div>
+      <div class="u"><span class="psign">❯</span><span class="utext">把迁移流程封装成 skill,回勾两份清单</span></div>
       <div class="thinkline closed"><span>▸</span><span class="st-tag">THINKING</span><span class="tape-track"><canvas data-tape="closed"></canvas></span><span>· 12.4s</span></div>
-      <div class="body"><span class="btext">已按 playbook 完成。流程迁出为独立 skill,两份清单同步打勾,要点:</span><span class="macts"><span class="ai" data-k="copy" title="复制"></span><span class="ai" data-k="branch" title="分支"></span></span></div>
+      <div class="body">已按 playbook 完成。流程迁出为独立 skill,两份清单同步打勾,要点:</div>
       <div class="tl"><span class="ic c-done" data-k="done"></span>Write · .agents/skills/zion-ui-migration/SKILL.md</div>
       <div class="cont2">⎿ 59 行:强制流程 0–5 + 硬性判定 + 陷阱 <span class="x">(自 AGENTS.md §8 迁出)</span></div>
       <div class="tl"><span class="ic c-done" data-k="done"></span>Edit · docs/zion-ui-visual-inventory.md</div>
       <div class="cont2">⎿ 12 处标题追加 ✅ 已迁移 + 落点行</div>
       <div class="tl err"><span class="ic c-err" data-k="err"></span>Read · 废弃设计文档/DESIGN.md.bak</div>
       <div class="cont2 err">⎿ ENOENT: 文件不存在,已跳过</div>
+      <div class="abar">
+        <span class="ai" data-k="copy" title="复制"></span>
+        <span class="ai on" data-k="up" title="好的回答"></span>
+        <span class="ai" data-k="down" title="有问题的回答"></span>
+        <span class="ai" data-k="branch" title="在新对话中分支"></span>
+        <span class="ameta">10:12 · 用时 3分30秒 · 首 token 61秒 · 117 tok/s</span>
+      </div>
       <div class="meta">2 轮 · 4 步 │ LLM 2.5s │ 首 token 1s · 89 tok/s │ 缓存 51%</div>
 
       <hr class="sep">
 
-      <div class="u"><span class="psign">❯</span><span class="utext">SET D 定了</span><span class="macts"><span class="ai" data-k="copy" title="复制"></span></span></div>
+      <div class="u"><span class="psign">❯</span><span class="utext">SET D 定了</span></div>
       <div class="thinkline"><span>▾</span><span class="st-tag">THINKING</span><span class="tape-track"><canvas data-tape="live"></canvas></span><span>· 思考中…</span></div>
-      <div class="body"><span class="btext">字形舱位五枚进规范,综合骨架换装上屏——</span><span class="macts"><span class="ai" data-k="copy" title="复制"></span><span class="ai" data-k="branch" title="分支"></span></span></div>
+      <div class="body">字形舱位五枚进规范,综合骨架换装上屏——</div>
       <div class="cb">
         <span class="cnr ct cl">⌜</span><span class="cnr ct cr">⌝</span><span class="cnr cb2 cl">⌞</span><span class="cnr cb2 cr">⌟</span>
         <span class="cap"><span class="ic c-run" data-k="run"></span>Write · ui-prototype/composite-tui/composite-tui-proto.html</span>
@@ -277,6 +283,8 @@ const ICON = {
   done: `<rect x="2" y="2" width="8" height="8" fill="none" stroke="currentColor"/><path d="M3.7 6.3 L5.4 8 L8.5 4.1" fill="none" stroke="currentColor" stroke-width="1.1"/>`,
   copy: `<rect x="4.5" y="1.5" width="6" height="6" fill="none" stroke="currentColor"/><rect x="1.5" y="4.5" width="6" height="6" fill="none" stroke="currentColor"/>`,
   branch: `<rect x="2" y="1.5" width="3" height="3" fill="none" stroke="currentColor"/><rect x="2" y="7.5" width="3" height="3" fill="none" stroke="currentColor"/><rect x="7" y="1.5" width="3" height="3" fill="none" stroke="currentColor"/><path d="M3.5 4.5 V7.5 M5 3 H7" fill="none" stroke="currentColor"/>`,
+  up: `<path d="M1.8 5 H3.6 V10.6 H1.8 Z" fill="none" stroke="currentColor"/><path d="M3.6 6.2 L6.2 1.8 H7.6 L7 4.8 H10.2 V9.4 H3.6" fill="none" stroke="currentColor"/>`,
+  down: `<path d="M1.8 1.8 H3.6 V7.4 H1.8 Z" fill="none" stroke="currentColor"/><path d="M3.6 6.2 L6.2 10.6 H7.6 L7 7.6 H10.2 V3 H3.6" fill="none" stroke="currentColor"/>`,
 };
 function glitchSvg() {
   const n = ++clipSeq;
