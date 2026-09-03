@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<!-- PROTOTYPE — throwaway: C10 Warp block 回合分组 微 demo
+     已前置:§2.9 回合发丝缝(分隔一轮 user→assistant→tools)。C10 补的是:轮 = 块,块级操作(复制/重跑)hover 才显,40% 档小字。
+     裁决问题:块级操作挂哪——A 挂回合首行(user 行)行尾(Warp 直译) vs B 挂回合缝右端(缝尾嵌字,与 §2.9 同线)。
+     共同语义:hover 块 = 整块 6% 薄底 + 操作显形;非 hover 零痕迹。静态 mock:每案第一轮 = 常态,第二轮 = hover 态。 -->
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<title>C10 · 回合分组 block</title>
+<style>
+  :root {
+    --bg: #010a04;
+    --surface: rgba(2, 18, 9, 0.92);
+    --p100: rgba(61, 255, 143, 1);
+    --p70: rgba(61, 255, 143, 0.7);
+    --p40: rgba(61, 255, 143, 0.4);
+    --p20: rgba(61, 255, 143, 0.2);
+    --danger: #ff5555;
+    --font: "Share Tech Mono", ui-monospace, "Cascadia Mono", "Courier New", "Sarasa Term SC", "Microsoft YaHei", monospace;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: var(--bg); color: var(--p100); font: 15px/1.55 var(--font); padding: 28px 32px; }
+  *::-webkit-scrollbar { width: 6px; height: 6px; }
+  *::-webkit-scrollbar-thumb { background: #00ff66; border-radius: 3px; }
+  *::-webkit-scrollbar-track, *::-webkit-scrollbar-corner { background: transparent; }
+
+  h1 { font-size: 13px; letter-spacing: 0.12em; margin-bottom: 4px; }
+  h1 .tag { color: var(--p40); }
+  .rule { color: var(--p70); font-size: 12px; margin-bottom: 20px; }
+  h2 { font-size: 11px; letter-spacing: 0.14em; color: var(--p70); margin: 22px 0 8px; text-transform: uppercase; }
+  h2::before { content: "─ "; color: var(--p40); }
+  h2 .d { color: var(--p40); letter-spacing: 0; text-transform: none; }
+
+  .lane { border: 1px solid var(--p20); background: var(--surface); padding: 14px 20px 16px; margin-bottom: 14px; }
+
+  /* 对话流基元(与 composite 同构) */
+  .u { display: flex; gap: 10px; margin: 14px 0 4px; }
+  .u .psign { color: var(--p100); flex: none; }
+  .u .utext { background: rgba(61,255,143,0.06); padding: 0 4px; }
+  .body { margin: 2px 0 2px; font-size: 13.5px; }
+  .tl { display: flex; gap: 8px; align-items: center; font-size: 13.5px; color: var(--p70); margin: 6px 0 0 20px; }
+  .cont2 { color: var(--p70); font-size: 13px; margin: 0 0 0 46px; }
+  .cont2 .x { color: var(--p40); }
+  .meta { color: var(--p40); font-size: 11px; margin: 8px 0 2px; font-variant-numeric: tabular-nums; }
+  hr.sep { border: none; border-top: 1px solid var(--p20); margin: 12px 0; }
+  .ic { display: inline-flex; flex: none; }
+  .ic svg { width: 12px; height: 12px; display: block; }
+  .c-done { color: var(--p70); }
+
+  /* 块级操作(40% 档小字) */
+  .acts { color: var(--p40); font-size: 11px; letter-spacing: 0.04em; white-space: nowrap; }
+  .acts b { font-weight: normal; color: var(--p70); }
+
+  /* A 挂回合首行行尾(Warp 直译) */
+  .a .u .acts { margin-left: auto; align-self: center; visibility: hidden; }
+  .a .blk.hover .u .acts { visibility: visible; }
+  .a .blk.hover { background: rgba(61,255,143,0.06); margin: 0 -8px; padding: 0 8px; }
+
+  /* B 挂回合缝右端(缝尾嵌字) */
+  .b .seprow { position: relative; }
+  .b .seprow .acts { position: absolute; right: 0; top: -7px; background: var(--surface); padding: 0 4px; visibility: hidden; }
+  .b .blk.hover + .seprow .acts, .b .seprow.hover .acts { visibility: visible; }
+  .b .blk.hover { background: rgba(61,255,143,0.06); margin: 0 -8px; padding: 0 8px; }
+
+  .note { color: var(--p40); font-size: 11px; line-height: 1.8; margin-top: 6px; }
+</style>
+</head>
+<body>
+
+<h1>C10 · 回合分组 block <span class="tag">— A 操作挂 user 行行尾 vs B 操作挂回合缝右端</span></h1>
+<div class="rule">轮 = 块(user→assistant→tools,缝见 §2.9);块级操作 = 复制 / 重跑,hover 才显,40% 档小字。每案:第一轮 = 常态(零痕迹),第二轮 = hover 态(整块薄底 + 操作显形)。</div>
+
+<h2>A · 挂回合首行行尾 <span class="d">Warp 直译:hover 块时,user 行右端浮出「复制 · 重跑」</span></h2>
+<div class="lane a">
+  <div class="blk">
+    <div class="u"><span class="psign">❯</span><span class="utext">把迁移流程封装成 skill,回勾两份清单</span><span class="acts"><b>复制</b> · <b>重跑</b></span></div>
+    <div class="body">已按 playbook 完成。流程迁出为独立 skill,两份清单同步打勾。</div>
+    <div class="tl"><span class="ic c-done" data-k="done"></span>Edit · docs/zion-ui-visual-inventory.md</div>
+    <div class="cont2">⎿ 12 处标题追加 ✅ 已迁移 + 落点行</div>
+    <div class="meta">2 轮 · 4 步 │ LLM 2.5s │ 缓存 51%</div>
+  </div>
+  <hr class="sep">
+  <div class="blk hover">
+    <div class="u"><span class="psign">❯</span><span class="utext">SET D 定了</span><span class="acts"><b>复制</b> · <b>重跑</b></span></div>
+    <div class="body">字形舱位五枚进规范,综合骨架换上屏。</div>
+    <div class="meta">1 轮 · 2 步 │ LLM 1.8s │ 缓存 47%</div>
+  </div>
+</div>
+
+<h2>B · 挂回合缝右端 <span class="d">缝尾嵌字:hover 块(或缝)时,操作嵌在该块下方发丝缝的右端</span></h2>
+<div class="lane b">
+  <div class="blk">
+    <div class="u"><span class="psign">❯</span><span class="utext">把迁移流程封装成 skill,回勾两份清单</span></div>
+    <div class="body">已按 playbook 完成。流程迁出为独立 skill,两份清单同步打勾。</div>
+    <div class="tl"><span class="ic c-done" data-k="done"></span>Edit · docs/zion-ui-visual-inventory.md</div>
+    <div class="cont2">⎿ 12 处标题追加 ✅ 已迁移 + 落点行</div>
+    <div class="meta">2 轮 · 4 步 │ LLM 2.5s │ 缓存 51%</div>
+  </div>
+  <div class="seprow"><hr class="sep"><span class="acts"><b>复制</b> · <b>重跑</b></span></div>
+  <div class="blk hover">
+    <div class="u"><span class="psign">❯</span><span class="utext">SET D 定了</span></div>
+    <div class="body">字形舱位五枚进规范,综合骨架换上屏。</div>
+    <div class="meta">1 轮 · 2 步 │ LLM 1.8s │ 缓存 47%</div>
+  </div>
+  <div class="seprow hover"><hr class="sep"><span class="acts"><b>复制</b> · <b>重跑</b></span></div>
+</div>
+
+<div class="note">判断点:A 的操作贴着这轮的「话头」(user 行),指认最直接,但 user 行已有 ❯ 前缀 + 薄底,行尾再浮字信息密度偏高;B 把操作嵌进缝(缝本就是块边界),user 行保持干净,但操作离话头一行远。B 的嵌字与 C09 单线嵌题同手法——线即语义承载面。</div>
+
+<script>
+const ICON = {
+  done: `<rect x="2" y="2" width="8" height="8" fill="none" stroke="currentColor"/><path d="M3.7 6.3 L5.4 8 L8.5 4.1" fill="none" stroke="currentColor" stroke-width="1.1"/>`,
+};
+document.querySelectorAll('.ic').forEach((el) => {
+  el.innerHTML = `<svg viewBox="0 0 12 12" aria-hidden="true">${ICON[el.dataset.k]}</svg>`;
+});
+</script>
+</body>
+</html>
