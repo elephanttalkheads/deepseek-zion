@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<!-- PROTOTYPE — throwaway: 上下文进度条重设计(参照 context.JPEG 的终端方块条)
+     V0 1:1 复刻(█ 实块 + ░ 虚影 + 方括号 + 右读数) / V1 药丸分段(滚动条同族小胶囊格) / V2 发丝刻度(2px 轨道 + 四分之一刻度)
+     裁决:上下文占用条的定稿形态(目标位:InputBar 微簇 #mCtxbar)。 -->
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<title>上下文进度条 · 终端方块条</title>
+<style>
+  :root {
+    --bg: #010a04;
+    --surface: rgba(2, 18, 9, 0.92);
+    --p100: rgba(61, 255, 143, 1);
+    --p70: rgba(61, 255, 143, 0.7);
+    --p40: rgba(61, 255, 143, 0.4);
+    --p20: rgba(61, 255, 143, 0.2);
+    --font: "Share Tech Mono", ui-monospace, "Cascadia Mono", "Courier New", "Sarasa Term SC", "Microsoft YaHei", monospace;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: var(--bg); color: var(--p100); font: 15px/1.55 var(--font); padding: 28px 32px; }
+  *::-webkit-scrollbar { width: 6px; height: 6px; }
+  *::-webkit-scrollbar-thumb { background: #00ff66; border-radius: 3px; }
+  *::-webkit-scrollbar-track, *::-webkit-scrollbar-corner { background: transparent; }
+
+  h1 { font-size: 13px; letter-spacing: 0.12em; margin-bottom: 4px; }
+  h1 .tag { color: var(--p40); }
+  .rule { color: var(--p70); font-size: 12px; margin-bottom: 20px; }
+  h2 { font-size: 11px; letter-spacing: 0.14em; color: var(--p70); margin: 22px 0 8px; text-transform: uppercase; }
+  h2::before { content: "─ "; color: var(--p40); }
+  h2 .d { color: var(--p40); letter-spacing: 0; text-transform: none; }
+
+  .lane { border: 1px solid var(--p20); background: var(--surface); padding: 12px 16px 14px; margin-bottom: 14px; }
+  .row { display: flex; align-items: baseline; gap: 8px; font-size: 13.5px; margin: 6px 0; }
+  .row + .row { margin-top: 10px; }
+  .row .tag2 { color: var(--p40); font-size: 11px; width: 64px; flex: none; }
+  .lab { color: var(--p70); }
+  .readout { color: var(--p70); font-variant-numeric: tabular-nums; }
+
+  /* V0 1:1 复刻:█ 实块 + ░ 虚影 */
+  .v0 .bar { letter-spacing: 0; white-space: pre; }
+  .v0 .bar .f { color: var(--p100); }
+  .v0 .bar .e { color: var(--p40); }
+
+  /* V1 药丸分段:26 格小胶囊(4×9,半径 1.5px,间隙 1px) */
+  .v1 .bar { display: inline-flex; gap: 1px; align-items: center; }
+  .v1 .c { width: 4px; height: 9px; border-radius: 1.5px; background: var(--p20); }
+  .v1 .c.on { background: var(--p100); }
+
+  /* V2 发丝刻度:2px 轨道 + 实心填充 + 25/50/75 刻度 */
+  .v2 .bar { position: relative; width: 150px; height: 8px; flex: none; align-self: center; }
+  .v2 .bar::before { content: ""; position: absolute; left: 0; right: 0; top: 3px; height: 2px; background: var(--p20); }
+  .v2 .bar .fill { position: absolute; left: 0; top: 3px; height: 2px; background: var(--p100); }
+  .v2 .bar .tip { position: absolute; top: 1px; width: 3px; height: 6px; border-radius: 1.5px; background: var(--p100); }
+  .v2 .bar .tk { position: absolute; top: 2px; width: 1px; height: 4px; background: var(--p40); }
+
+  .note { color: var(--p40); font-size: 11px; line-height: 1.8; margin-top: 6px; }
+</style>
+</head>
+<body>
+
+<h1>上下文进度条 <span class="tag">— V0 1:1 复刻 / V1 药丸分段 / V2 发丝刻度</span></h1>
+<div class="rule">参照:终端方块条 Context: [████░░░░…] 142k/1.0M。每款给 14%(参照图原值)与 91%(高位)两态;色相随亮度四阶纪律,不动语义红。</div>
+
+<h2>V0 · 1:1 复刻 <span class="d">█ 实块 + ░ 虚影 + 方括号——字符网格原生,最 TUI</span></h2>
+<div class="lane v0">
+  <div class="row"><span class="tag2">14%</span><span class="lab">Context:</span><span class="bar">[<span class="f">████</span><span class="e">░░░░░░░░░░░░░░░░░░░░░░</span>]</span><span class="readout">142k/1.0M</span></div>
+  <div class="row"><span class="tag2">91%</span><span class="lab">Context:</span><span class="bar">[<span class="f">████████████████████████</span><span class="e">░░</span>]</span><span class="readout">912k/1.0M</span></div>
+</div>
+
+<h2>V1 · 药丸分段 <span class="d">26 格小胶囊——滚动条/药丸同族肌理,格数语义同 V0</span></h2>
+<div class="lane v1">
+  <div class="row"><span class="tag2">14%</span><span class="lab">Context:</span><span class="bar" data-on="4"></span><span class="readout">142k/1.0M</span></div>
+  <div class="row"><span class="tag2">91%</span><span class="lab">Context:</span><span class="bar" data-on="24"></span><span class="readout">912k/1.0M</span></div>
+</div>
+
+<h2>V2 · 发丝刻度 <span class="d">2px 轨道 + 填充 + 端头胶囊 + 25/50/75 刻度——最极简,与回合发丝线同族</span></h2>
+<div class="lane v2">
+  <div class="row"><span class="tag2">14%</span><span class="lab">Context:</span><span class="bar"><span class="fill" style="width:14%"></span><span class="tip" style="left:calc(14% - 2px)"></span><span class="tk" style="left:25%"></span><span class="tk" style="left:50%"></span><span class="tk" style="left:75%"></span></span><span class="readout">142k/1.0M</span></div>
+  <div class="row"><span class="tag2">91%</span><span class="lab">Context:</span><span class="bar"><span class="fill" style="width:91%"></span><span class="tip" style="left:calc(91% - 2px)"></span><span class="tk" style="left:25%"></span><span class="tk" style="left:50%"></span><span class="tk" style="left:75%"></span></span><span class="readout">912k/1.0M</span></div>
+</div>
+
+<div class="note">判断点:V0 是参照图的逐格复刻(26 格,字符网格原生,辨识度=「只能是终端」);V1 把字符格换成滚动条同族的小胶囊,与药丸/滚动条一血;V2 最静但信息密度最低。空格档位:V0 用 40%(参照图虚影偏亮),V1 用 20%(与轨道纪律一致)。色不测红——占用高不是错误,高位只走 100% 档。</div>
+
+<script>
+// V1 生成 26 格胶囊,按 data-on 点亮
+document.querySelectorAll('.v1 .bar').forEach((bar) => {
+  const on = +bar.dataset.on;
+  let html = '';
+  for (let i = 0; i < 26; i++) html += `<span class="c${i < on ? ' on' : ''}"></span>`;
+  bar.innerHTML = html;
+});
+</script>
+</body>
+</html>

@@ -111,8 +111,9 @@
   .mi-cluster { margin-left: auto; display: flex; gap: 8px; align-items: center; }
   .mi-model { font: 12px var(--font); color: var(--p70); background: none; border: none; cursor: pointer; }
   .mi-model:hover { color: var(--p100); }
-  .ctxbar { width: 56px; height: 6px; border-radius: 3px; background: var(--p20); display: inline-block; }
-  .ctxbar i { display: block; height: 100%; width: 51%; background: #00ff66; border-radius: 3px; }
+  .ctxbar { display: inline-flex; gap: 1px; align-items: center; }
+  .ctxbar .c { width: 3px; height: 7px; border-radius: 1.5px; background: var(--p20); }
+  .ctxbar .c.on { background: var(--p100); }
   .mi-ctx { color: var(--p40); font-size: 11px; font-variant-numeric: tabular-nums; }
   .mi-think { color: var(--p100); font-size: 11px; }
   .mi-state { color: var(--p100); font-size: 11px; letter-spacing: 0.08em; display: inline-flex; gap: 5px; align-items: center; }
@@ -206,7 +207,7 @@
         <button class="chip">Plan</button>
         <span class="mi-cluster">
           <button class="mi-model">DeepSeek V4 Flash · Default</button>
-          <span class="ctxbar"><i></i></span>
+          <span class="ctxbar" data-on="8" data-cells="16"></span>
           <span class="mi-ctx">51%</span>
           <span class="mi-think">max</span>
           <span class="mi-state"><span class="ic c-run" data-k="run"></span>RUNNING</span>
@@ -261,6 +262,13 @@ function glitchSvg() {
 document.querySelectorAll('.ic').forEach((el) => {
   const k = el.dataset.k;
   el.innerHTML = `<svg viewBox="0 0 12 12" aria-hidden="true">${k === 'err' ? glitchSvg() : ICON[k]}</svg>`;
+});
+// 上下文条:分段小胶囊(§2.12),按 data-on 点亮
+document.querySelectorAll('.ctxbar').forEach((bar) => {
+  const on = +bar.dataset.on, n = +bar.dataset.cells;
+  let html = '';
+  for (let i = 0; i < n; i++) html += `<span class="c${i < on ? ' on' : ''}"></span>`;
+  bar.innerHTML = html;
 });
 // 运行态扰码循环(120ms,与雨同族)
 setInterval(() => {
